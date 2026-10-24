@@ -120,6 +120,7 @@ main{padding:0 16px 72px}
 .chip.on{background:var(--ac);border-color:var(--ac);color:var(--bf)}
 .afilt{display:flex;gap:8px;margin:-2px 0 10px}
 .selw{position:relative;flex:1;min-width:0;display:block}
+.payrow{display:flex;align-items:center;gap:12px}.payrow label{margin:0;flex:none}.payrow .selw select{min-height:44px;border-color:var(--b2);font-weight:500}
 .selw select{width:100%;min-width:0;min-height:40px;-webkit-appearance:none;appearance:none;border-radius:var(--r2);border:1px solid var(--b1);background:var(--p1);color:var(--t1);
   font-size:16px;font-weight:600;padding:0 30px 0 12px;text-overflow:ellipsis}
 .selw::after{content:'';position:absolute;right:13px;top:50%;width:7px;height:7px;margin-top:-6px;border:solid var(--t2);border-width:0 2px 2px 0;transform:rotate(45deg);pointer-events:none}
@@ -182,7 +183,7 @@ main{padding:0 16px 72px}
 .cchips{display:flex;flex-wrap:wrap;gap:6px}
 .cchips .chip{height:32px}
 .sugg{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-.sugg button{font-size:13px;padding:5px 10px;border-radius:999px;border:1px solid var(--b2);background:var(--p1);color:var(--t2)}
+.sugg button{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;font-size:13px;padding:5px 10px;border-radius:999px;border:1px solid var(--b2);background:var(--p1);color:var(--t2)}
 .hint{font-size:12px;color:var(--t3);margin-top:4px}
 /* sheet */
 #scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .2s}
@@ -515,6 +516,8 @@ table.tb tr.tot td{font-weight:700;border-top:2px solid var(--b2)}
 .tripcard .l1 em{font-style:normal;font-weight:700;white-space:nowrap}
 .tripcard .bar{margin-top:8px}
 .tchip{display:inline-flex;align-items:center}
+[hidden]{display:none!important}
+.ocat .unhide{flex:none;min-height:36px;padding:0 12px;font-size:14px}
 .tripnew{display:flex;gap:8px;margin-top:8px}
 .tripnew input{flex:1;min-width:0;min-height:44px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--p1);padding:10px 12px}
 .tripnew .btn{flex:0 0 auto;padding:0 16px}
@@ -758,7 +761,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.8';
+var VERSION = '2.9';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -2040,7 +2043,7 @@ function txForm(t, isNew) {
   h += '<div class="seg' + (isNew ? '' : ' kseg') + '" role="tablist"><button type="button" class="' + (kind === 'e' ? 'on' : '') + '" data-act="fkind" data-v="e">Expense</button><button type="button" class="' + (kind === 'i' ? 'on' : '') + '" data-act="fkind" data-v="i">Income</button></div>';
   h += '<div class="field"><label for="f_a">Amount</label><div class="amtwrap"><span class="cur" aria-hidden="true">$</span><input id="f_a" class="amtin" inputmode="decimal" placeholder="0.00" value="' + (t.a ? Math.abs(t.a).toFixed(2) : '') + '"></div></div>';
   if (kind === 'e') h += '<div class="chips" style="margin:-4px 0 10px"><button type="button" class="chip' + (refund ? ' on' : '') + '" data-act="frefund" id="f_refund" aria-pressed="' + refund + '">Refund / return</button></div>';
-  h += '<div class="field"><label for="f_v">' + (kind === 'i' ? 'From' : 'Store / vendor') + '</label><input id="f_v" value="' + esc(t.v) + '" placeholder="' + (kind === 'i' ? 'work' : 'costco') + '"><div class="sugg" id="f_sugg"></div></div>';
+  h += '<div class="field"><label for="f_v">' + (kind === 'i' ? 'From' : 'Store / vendor') + '</label><input id="f_v" name="piggy_v" autocomplete="off" enterkeyhint="next" value="' + esc(t.v) + '" placeholder="' + (kind === 'i' ? 'work' : 'costco') + '"><div class="sugg" id="f_sugg"></div></div>';
   h += '<div class="field"><span class="flabel">Category</span>' +
     '<button type="button" class="catpick' + (t.c ? '' : ' empty') + '" id="f_csel" data-act="openpicker">' + catSelInner(low(t.c), kind, ymKey(t.y, t.m)) + '</button>' +
     '<div class="hint cauto" id="f_cauto"></div>' +
@@ -2090,10 +2093,10 @@ function payWithHtml(t) {
   var cats = saveCats(), fs = low(t.fs || '');
   if (fs && cats.indexOf(fs) < 0) cats.push(fs);
   if (!cats.length) return '';
-  return '<div class="field"><span class="flabel">Paid with</span><div class="cchips" id="f_fsch">' +
-    '<button type="button" class="chip' + (!fs ? ' on' : '') + '" data-act="ffs" data-v="">My account</button>' +
-    cats.map(function (c) { return '<button type="button" class="chip' + (fs === c ? ' on' : '') + '" data-act="ffs" data-v="' + esc(c) + '">' + esc(c) + '</button>'; }).join('') +
-    '</div><div class="hint" id="f_fshint"' + (fs ? '' : ' hidden') + '>Comes out of ' + esc(fs || 'savings') + ', not this month’s budget.</div><input type="hidden" id="f_fs" value="' + esc(fs) + '"></div>';
+  return '<div class="field"><div class="payrow"><label for="f_fs">Paid with</label><span class="selw"><select id="f_fs">' +
+    '<option value="">My account</option>' +
+    cats.map(function (c) { return '<option value="' + esc(c) + '"' + (fs === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') +
+    '</select></span></div><div class="hint" id="f_fshint"' + (fs ? '' : ' hidden') + '>Comes out of ' + esc(fs || 'savings') + ', not this month’s budget.</div></div>';
 }
 // ---- "others owe me": count only your share; keep a list until it's paid back
 function owedHtml(t) {
@@ -4328,7 +4331,7 @@ function closeSheet() {
   SHEET = null;
   CLOSED_AT = Date.now();
   playPending();
-  var shk = $('sheet'); if (shk && shk.classList.contains('kb')) { shk.classList.remove('kb'); shk.style.bottom = ''; shk.style.maxHeight = ''; }
+  unfitSheet();
   $('scrim').classList.remove('on');
   $('sheet').classList.remove('on');
   $('sheet').style.transform = '';
@@ -4640,6 +4643,7 @@ function settingsHtml() {
     '<details class="itip"><summary>ⓘ <span>Using the link with Siri or the Action button</span></summary><div class="hint">In the Shortcuts app make a shortcut with <b>Open URLs</b> and paste the link. It opens in Safari (iPhone opens links there, not in the Home Screen app), so connect your sheet once in Safari too — entries from either place land in the same sheet.</div></details></div></details>';
   h += appearanceHtml();
   h += catOrderHtml();
+  h += hiddenSuggHtml();
 
   h += '<details class="set" data-sec="backup"' + (isOpen('backup') ? ' open' : '') + '><summary>Backup<span>' + S.tx.length + ' entries on this device</span></summary><div class="inner">' +
     '<div class="btns"><button class="btn" data-act="export">Export</button><button class="btn" data-act="import">Import</button></div>' +
@@ -4666,12 +4670,31 @@ function formVals() {
     fs: fs, ow: isNaN(ow) || ow <= 0 ? 0 : r2(ow), pb: ow > 0 && $('f_pb') ? $('f_pb').value : '' };
 }
 
+function hiddenV(kind, vk) { return !!(S.hideV && S.hideV[kind + '|' + vk]); }
+function hideVendor(kind, v, on) {
+  S.hideV = S.hideV || {};
+  var key = kind + '|' + low(v).trim();
+  if (on) S.hideV[key] = 1; else delete S.hideV[key];
+  save(); if (!S.demo && S.cfg.url) { queuePrefs(); flushSoon(); }
+}
+function hiddenSuggHtml() {
+  var keys = Object.keys(S.hideV || {}).sort();
+  var h = '<details class="set" data-sec="sugg"' + (isOpen('sugg') ? ' open' : '') + '><summary>Name suggestions<span>' + (keys.length ? keys.length + ' hidden' : 'none hidden') + '</span></summary><div class="inner">' +
+    '<div class="hint" style="margin-bottom:10px">When you add an entry, names you’ve used before show up under the store / from box. <b>Press and hold</b> one to stop suggesting it. Your past entries aren’t changed.</div>';
+  if (!keys.length) h += '<div class="hint">Nothing hidden.</div>';
+  keys.forEach(function (k) {
+    var i = k.indexOf('|');
+    h += '<div class="ocat"><span>' + esc(k.slice(i + 1)) + ' <small class="hint">· ' + (k.slice(0, i) === 'i' ? 'income' : 'expense') + '</small></span><button class="btn unhide" data-act="unhidev" data-v="' + esc(k) + '">Show again</button></div>';
+  });
+  return h + '</div></details>';
+}
+
 function suggest() {
   var box = $('f_sugg'), inp = $('f_v'); if (!box || !inp) return;
   var kind = $('txform').querySelector('.seg .on').getAttribute('data-v');
   var q = low(inp.value), vend = usage().vend[kind];
   var list = Object.keys(vend).filter(function (k) { return q ? k.indexOf(q) === 0 || k.indexOf(' ' + q) >= 0 : true; })
-    .filter(function (k) { return k !== q; })
+    .filter(function (k) { return k !== q && !hiddenV(kind, k); })
     .sort(function (a, b) { return vend[b].n - vend[a].n; }).slice(0, 6);
   box.innerHTML = list.map(function (k) { return '<button type="button" data-act="fvend" data-v="' + esc(vend[k].v) + '">' + esc(vend[k].v) + '</button>'; }).join('');
 }
@@ -4749,6 +4772,19 @@ function refreshCat() {
   $('f_quick').innerHTML = quickChips(v.k, v.c);
   refreshSplit();
 }
+
+function focusAmount() {
+  var a = $('f_a'); if (!a) return;
+  try { a.focus({ preventScroll: true }); var n = a.value.length; a.setSelectionRange(n, n); } catch (e) {}
+  var sh = $('sheet'); if (sh) sh.scrollTop = 0;
+}
+// Tapping Expense/Income doesn't take the cursor out of the amount (so the keyboard stays up).
+['mousedown', 'pointerdown'].forEach(function (ev) {
+  document.addEventListener(ev, function (e) {
+    var b = e.target.closest ? e.target.closest('#txform[data-new="1"] [data-act=fkind]') : null;
+    if (b && typingIn($('sheet'))) e.preventDefault();
+  });
+});
 
 function rerenderForm(changes) {
   var cur = formVals(), f = $('txform');
@@ -5042,6 +5078,7 @@ function sync() {
       : op.op === 'yeartab' ? { action: 'yeartab', y: op.y }
       : op.op === 'prefs' ? { action: 'prefs', prefs: prefsObj() }
       : { action: op.op, tx: op.tx, ref: op.ref };
+    var sentPrefs = op.op === 'prefs' ? prefsHash() : '';
     return api(payload).then(function (res) {
       if (!res || !res.ok) {
         var e = (res && res.error) || 'unknown';
@@ -5059,7 +5096,8 @@ function sync() {
         }
         throw new Error(e);
       }
-      S.outbox.shift();
+      // settings changed again while they were being sent: send the newer ones too
+      if (!(op.op === 'prefs' && prefsHash() !== sentPrefs)) S.outbox.shift();
       save();
       return next();
     });
@@ -5088,7 +5126,7 @@ var PREF_KEYS = ['pal', 'mode', 'style', 'corners', 'cards', 'density', 'icon', 
 function prefsObj() {
   var cfg = {};
   PREF_KEYS.forEach(function (k) { cfg[k] = S.cfg[k]; });
-  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, at: S.prefsAt || 0 };
+  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, at: S.prefsAt || 0 };
 }
 function prefsHash() { var p = prefsObj(); delete p.at; return JSON.stringify(p); }
 function queuePrefs() {
@@ -5116,6 +5154,7 @@ function adoptPrefs(p) {
   if (p.alerts && typeof p.alerts === 'object') S.alerts = p.alerts;
   if (p.yearly && typeof p.yearly === 'object') S.yearly = p.yearly;
   if (p.roll && typeof p.roll === 'object') S.roll = p.roll;
+  if (p.hideV && typeof p.hideV === 'object') S.hideV = p.hideV;
   S.cfg.launchAdd = !!c.launchAdd;
   S.prefsAt = p.at || 0;
   S.prefsSent = prefsHash();
@@ -5181,6 +5220,8 @@ function applyPull(data) {
     });
   }
   if (data.prefs && !S.outbox.some(function (op) { return op.op === 'prefs'; }) && (+data.prefs.at || 0) > (S.prefsAt || 0)) adoptPrefs(data.prefs);
+  // hidden suggestions saved from another device (or by an older version that didn't know about them)
+  if (data.prefs && data.prefs.hideV && typeof data.prefs.hideV === 'object' && !S.hideV) S.hideV = data.prefs.hideV;
   if ((data.v || 0) >= 10) S.prefsPulled = 1;
   CACHE = {}; VER++;
   setTimeout(autoLogRecur, 0);
@@ -5606,11 +5647,11 @@ document.addEventListener('click', function (e) {
       });
       break;
     case 'checkin': openSheet('checkin'); break;
-    case 'ffs':
-      $('f_fs').value = v;
-      var fsb = document.querySelectorAll('#f_fsch .chip'); for (var fi = 0; fi < fsb.length; fi++) fsb[fi].classList.toggle('on', fsb[fi].getAttribute('data-v') === v);
-      var fsh = $('f_fshint'); if (fsh) { fsh.hidden = !v; fsh.textContent = 'Comes out of ' + v + ', not this month’s budget.'; }
-      break;
+    case 'unhidev':
+      var uk = v.split('|');
+      hideVendor(uk[0], uk.slice(1).join('|'), false);
+      toast('“' + uk.slice(1).join('|') + '” will be suggested again');
+      renderSheet(); break;
     case 'fowopen': $('f_owopen').hidden = true; $('f_owbox').hidden = false; try { $('f_ow').focus(); } catch (er) {} break;
     case 'fowsplit':
       var fa = parseAmt($('f_a').value || '0');
@@ -5745,7 +5786,10 @@ document.addEventListener('click', function (e) {
       closeEdit(cid0, true);
       if (orig0 && cur0 && !sameTx(cur0, orig0)) toast('Changes discarded', { type: 'reedit', id: cid0, vals: cur0, top: UI.editTop });
       break;
-    case 'fkind': e.preventDefault(); rerenderForm({ k: v, c: '' }); break;
+    case 'fkind':
+      e.preventDefault(); rerenderForm({ k: v, c: '' });
+      if ($('txform') && $('txform').getAttribute('data-new') === '1') focusAmount();
+      break;
     case 'frefund': e.preventDefault(); el.classList.toggle('on'); el.setAttribute('aria-pressed', el.classList.contains('on')); break;
     case 'fcat': e.preventDefault(); UI.catTouched = true; UI.catAuto = false; setCat(v); if ($('f_cauto')) $('f_cauto').textContent = ''; break;
     case 'ftrip':
@@ -5981,6 +6025,7 @@ document.addEventListener('change', function (e) {
     render();
   }
   else if (t.id === 'gl_c' || t.id === 'gl_by') { var gn2 = $('gl_need'); if (gn2) gn2.innerHTML = goalNeedText(); }
+  else if (t.id === 'f_fs') { var fsh = $('f_fshint'); if (fsh) { fsh.hidden = !t.value; fsh.textContent = 'Comes out of ' + t.value + ', not this month’s budget.'; } }
   else if (t.id === 'al_email') { alertState().email = t.value.trim(); alertsChanged(); }
   else if (t.hasAttribute && t.hasAttribute('data-split-c') && UI.split) { UI.split[+t.getAttribute('data-split-c')].c = t.value; }
   else if (t.classList && t.classList.contains('cgsel')) {
@@ -6073,20 +6118,60 @@ function boot() {
   });
 }
 
-// When the keyboard is up, keep the sheet (and its save buttons) above it, still scrollable to the end.
-function fitSheet() {
+// When the keyboard is up, the sheet fills exactly the part of the screen you can see (above the keyboard),
+// follows the iPhone when it nudges the page, and keeps the field you're typing in visible.
+var FULLH = Math.max(window.innerHeight || 0, window.visualViewport ? window.visualViewport.height : 0), FULLW = window.visualViewport ? Math.round(window.visualViewport.width * (window.visualViewport.scale || 1)) : 0;
+function safeTopPx() {
+  var pr = $('safeprobe');
+  if (!pr) { pr = document.createElement('div'); pr.id = 'safeprobe'; pr.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;padding-top:env(safe-area-inset-top);visibility:hidden;pointer-events:none'; document.body.appendChild(pr); }
+  return parseFloat(getComputedStyle(pr).paddingTop) || 0;
+}
+function typingIn(sh) {
+  var a = document.activeElement;
+  return a && sh.contains(a) && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && !/^(button|checkbox|radio|hidden|submit|file|date)$/.test(a.type))) ? a : null;
+}
+function keepInView(sh) {
+  var a = typingIn(sh); if (!a) return;
+  var sr = sh.getBoundingClientRect(), ar = a.getBoundingClientRect();
+  var bar = sh.querySelector('.btns.stickybar'), barH = bar ? bar.getBoundingClientRect().height : 0;
+  var lab = a.closest('.field'), lr = lab ? lab.getBoundingClientRect() : ar;
+  var topLim = sr.top + 8, botLim = sr.bottom - barH - 10;
+  if (ar.bottom > botLim) sh.scrollTop += Math.min(ar.bottom - botLim, Math.max(0, lr.top - topLim));
+  else if (lr.top < topLim) sh.scrollTop -= topLim - lr.top;
+}
+function fitSheet(ensure) {
   var vv = window.visualViewport, sh = $('sheet');
   if (!vv || !sh) return;
-  var kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-  if (kb > 80 && SHEET) {
+  var w = Math.round(vv.width * (vv.scale || 1));
+  if (w !== FULLW) { FULLW = w; FULLH = 0; }                    // turned the phone: measure again
+  var typing = SHEET && typingIn(sh);
+  if (!typing || vv.height > FULLH) FULLH = Math.max(FULLH, vv.height, window.innerHeight || 0);
+  var up = SHEET && FULLH - vv.height > 80;
+  if (up) {
+    var gap = safeTopPx() + 6;
     sh.classList.add('kb');
-    sh.style.bottom = kb + 'px';
-    sh.style.maxHeight = Math.max(200, vv.height - 10) + 'px';
-  } else if (sh.classList.contains('kb')) {
-    sh.classList.remove('kb'); sh.style.bottom = ''; sh.style.maxHeight = '';
-  }
+    sh.style.top = Math.round(vv.offsetTop + gap) + 'px';
+    sh.style.bottom = 'auto';
+    sh.style.height = Math.max(200, Math.round(vv.height - gap)) + 'px';
+    sh.style.maxHeight = 'none';
+    if (ensure) keepInView(sh);
+  } else if (sh.classList.contains('kb')) unfitSheet(sh);
 }
-if (window.visualViewport) { window.visualViewport.addEventListener('resize', fitSheet); window.visualViewport.addEventListener('scroll', fitSheet); }
+function unfitSheet(sh) {
+  sh = sh || $('sheet'); if (!sh) return;
+  sh.classList.remove('kb'); sh.style.top = ''; sh.style.bottom = ''; sh.style.height = ''; sh.style.maxHeight = '';
+}
+var FIT_T = [];
+function refitSoon() {          // the iPhone settles the keyboard size over a few frames; check a few times
+  FIT_T.forEach(clearTimeout);
+  FIT_T = [0, 60, 180, 350, 650].map(function (ms) { return setTimeout(function () { fitSheet(true); }, ms); });
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', function () { fitSheet(true); });
+  window.visualViewport.addEventListener('scroll', function () { fitSheet(false); });
+}
+document.addEventListener('focusin', function (e) { var sh = $('sheet'); if (SHEET && sh && sh.contains(e.target)) refitSoon(); });
+document.addEventListener('focusout', function (e) { var sh = $('sheet'); if (SHEET && sh && sh.contains(e.target)) refitSoon(); });
 
 // Works offline and opens instantly: a service worker keeps a copy of the app on the phone.
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
@@ -6101,6 +6186,28 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
 document.addEventListener('click', function (e) {
   if (e.target && e.target.id === 'toastTxt') { clearTimeout(toastTimer); $('toast').classList.remove('on'); UNDO = null; }
 });
+
+// ---- press and hold a name suggestion to stop suggesting it
+var HOLD = null, HELD = false;
+document.addEventListener('pointerdown', function (e) {
+  var b = e.target.closest ? e.target.closest('#f_sugg button') : null;
+  HELD = false;
+  if (!b) return;
+  HOLD = { b: b, x: e.clientX, y: e.clientY, t: setTimeout(function () {
+    var v = b.getAttribute('data-v'), f = $('txform'); if (!f) return;
+    var kind = f.querySelector('.seg .on').getAttribute('data-v');
+    HELD = true; HOLD = null;
+    if (navigator.vibrate) try { navigator.vibrate(10); } catch (er) {}
+    hideVendor(kind, v, true); suggest();
+    toast('“' + v + '” won’t be suggested', function () { hideVendor(kind, v, false); suggest(); });
+  }, 550) };
+});
+['pointerup', 'pointercancel'].forEach(function (ev) { document.addEventListener(ev, function () { if (HOLD) { clearTimeout(HOLD.t); HOLD = null; } }); });
+document.addEventListener('pointermove', function (e) { if (HOLD && Math.abs(e.clientX - HOLD.x) + Math.abs(e.clientY - HOLD.y) > 10) { clearTimeout(HOLD.t); HOLD = null; } });
+document.addEventListener('contextmenu', function (e) { if (e.target.closest && e.target.closest('#f_sugg')) e.preventDefault(); });
+document.addEventListener('click', function (e) {     // a hold isn't a tap
+  if (HELD) { HELD = false; if (e.target.closest && e.target.closest('#f_sugg')) { e.stopPropagation(); e.preventDefault(); } }
+}, true);
 
 // ---- swiping Activity rows
 var SW = null, SWIPED_AT = 0;
@@ -6161,7 +6268,7 @@ document.addEventListener('visibilitychange', function () {
 });
 
 // test hook
-window.__runway = { planTotals: function (k) { return planTotals(k); }, get S() { return S; }, UI: UI, sync: sync, applyPull: applyPull, monthStats: monthStats, budgetTotals: budgetTotals, render: render, save: function () { return save(); }, fitSheet: fitSheet, setNow: function (d) { FIXED_NOW = d; NOW = d; } };
+window.__runway = { planTotals: function (k) { return planTotals(k); }, get S() { return S; }, UI: UI, sync: sync, applyPull: applyPull, monthStats: monthStats, budgetTotals: budgetTotals, render: render, save: function () { return save(); }, fitSheet: fitSheet, get FULLH() { return FULLH; }, setNow: function (d) { FIXED_NOW = d; NOW = d; } };
 
 boot();
 })();
