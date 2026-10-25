@@ -155,8 +155,10 @@ main{padding:0 16px 72px}
 /* forms */
 .form{padding:14px;background:var(--p2);border-top:1px solid var(--b1)}
 /* new entry: the save buttons ride along at the bottom of the sheet (and above the keyboard) */
-#sheet .btns.stickybar{position:sticky;bottom:0;z-index:3;margin:10px -14px -14px;padding:10px 14px 12px;background:var(--p2);box-shadow:0 -10px 18px -14px rgba(0,0,0,.45);border-top:1px solid var(--b1)}
+#sheet:has(.stickybar){padding-bottom:0}
+#sheet .btns.stickybar{position:sticky;bottom:0;z-index:3;margin:10px -14px 0;padding:10px 14px calc(12px + env(safe-area-inset-bottom));background:var(--p2);box-shadow:0 -10px 18px -14px rgba(0,0,0,.45);border-top:1px solid var(--b1)}
 #sheet.kb .btns.stickybar{padding-bottom:10px}
+#sheet.hasbar{padding-bottom:0}
 #sheet input,#sheet select,#sheet textarea{scroll-margin-bottom:96px}
 #sheet.kb{border-radius:22px;padding-bottom:0}
 .field{margin-bottom:12px}
@@ -761,7 +763,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.9';
+var VERSION = '2.10';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -4186,48 +4188,53 @@ function kpi(label, val, sub) { return '<div class="kpi"><span>' + label + '</sp
 function weekStart(d) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - x.getDay()); return x; }
 
 function trendWeek() {
-  var dated = S.tx.filter(function (t) { return t.k === 'e' && t.d && !t.tr && FLEX[groupOf(t.c, ymKey(t.y, t.m))]; });
-  var tripDated = S.tx.filter(function (t) { return t.k === 'e' && t.d && t.tr; });
+  var everyday = function (t) { return t.k === 'e' && t.d && !t.tr && !t.fs && FLEX[groupOf(t.c, ymKey(t.y, t.m))]; };
+  var dated = S.tx.filter(everyday);
+  var tripDated = S.tx.filter(function (t) { return t.k === 'e' && t.d && t.tr && !t.fs; });
   var bt = budgetTotals();
   var weekly = bt.flex * 12 / 52;
-  var ws = weekStart(NOW), h = '';
+  var ws0 = weekStart(NOW), h = '';
+  // which week you're looking at (0 = this week, -1 = last week …) and which 8 weeks the chart shows
+  var first = null;
+  dated.concat(tripDated).forEach(function (t) { var d = parseD(t.d); if (d && (!first || d < first)) first = d; });
+  var minOff = first ? -Math.round((ws0 - weekStart(first)) / (7 * 864e5)) : 0;
+  var off = Math.max(minOff, Math.min(0, UI.wk || 0)); UI.wk = off;
+  var win = UI.wkWin === undefined ? 0 : Math.min(0, UI.wkWin);
+  if (off > win) win = off; if (off < win - 7) win = off;
+  UI.wkWin = win; UI.sel.w8 = 7 - (win - off);
   var weeks = [];
-  for (var i = 7; i >= 0; i--) { var d = new Date(ws); d.setDate(d.getDate() - i * 7); weeks.push({ start: d, sum: 0, trip: 0, items: [] }); }
-  dated.forEach(function (t) {
-    var d = parseD(t.d); if (!d) return;
-    var w = weekStart(d).getTime();
-    for (var j = 0; j < weeks.length; j++) if (weeks[j].start.getTime() === w) { weeks[j].sum += t.a; weeks[j].items.push(t); }
-  });
-  tripDated.forEach(function (t) {
-    var d = parseD(t.d); if (!d) return;
-    var w = weekStart(d).getTime();
-    for (var j = 0; j < weeks.length; j++) if (weeks[j].start.getTime() === w) weeks[j].trip += t.a;
-  });
-  var thisW = weeks[weeks.length - 1];
+  for (var i = 7; i >= 0; i--) { var d = new Date(ws0); d.setDate(d.getDate() + (win - i) * 7); weeks.push({ start: d, sum: 0, trip: 0, items: [] }); }
+  function slot(t) { var d = parseD(t.d); if (!d) return null; var w = weekStart(d).getTime(); for (var j = 0; j < weeks.length; j++) if (weeks[j].start.getTime() === w) return weeks[j]; return null; }
+  dated.forEach(function (t) { var w = slot(t); if (w) { w.sum += share(t); w.items.push(t); } });
+  tripDated.forEach(function (t) { var w = slot(t); if (w) w.trip += share(t); });
+  var W = weeks[UI.sel.w8], isCur = off === 0;
+  var wEnd = new Date(W.start); wEnd.setDate(wEnd.getDate() + 6);
+  var range = MON[W.start.getMonth()] + ' ' + W.start.getDate() + ' – ' + (wEnd.getMonth() !== W.start.getMonth() ? MON[wEnd.getMonth()] + ' ' : '') + wEnd.getDate();
+  var title = isCur ? 'This week' : off === -1 ? 'Last week' : 'Week of ' + MON[W.start.getMonth()] + ' ' + W.start.getDate() + (W.start.getFullYear() !== NOW.getFullYear() ? ', ' + W.start.getFullYear() : '');
   var dayN = NOW.getDay() + 1;
-  h += '<section class="card"><div class="eyebrow">This week (Sun–Sat) · day ' + dayN + ' of 7</div>' +
-    '<div class="big' + (thisW.sum > weekly ? ' neg' : '') + '">' + money(thisW.sum) + '</div>' +
-    '<div class="sub">of about ' + money(weekly) + ' a week for everyday spending' + (thisW.sum <= weekly ? ' — ' + money(weekly - thisW.sum) + ' to go' : ' — ' + money(thisW.sum - weekly) + ' over') + '</div>' +
-    '<div class="meter"><i class="' + (thisW.sum > weekly ? 'over' : '') + '" style="width:' + Math.min(100, weekly ? thisW.sum / weekly * 100 : 0).toFixed(1) + '%"></i><b style="left:' + (dayN / 7 * 100).toFixed(1) + '%"></b></div></section>';
+  h += '<section class="card wkcard"><div class="calnav"><button data-act="wk" data-v="-1" aria-label="Previous week"' + (off <= minOff ? ' disabled' : '') + '>' + svgChevron(true) + '</button><b>' + title + '</b>' +
+    '<button data-act="wk" data-v="1" aria-label="Next week"' + (isCur ? ' disabled' : '') + '>' + svgChevron(false) + '</button></div>' +
+    '<div class="eyebrow">' + range + (isCur ? ' · day ' + dayN + ' of 7' : '') + '</div>' +
+    '<div class="big' + (W.sum > weekly ? ' neg' : '') + '">' + money(W.sum) + '</div>' +
+    '<div class="sub">of about ' + money(weekly) + ' a week for everyday spending' + (W.sum <= weekly ? ' — ' + money(weekly - W.sum) + (isCur ? ' to go' : ' under') : ' — ' + money(W.sum - weekly) + ' over') + (W.trip ? ' · plus ' + money(W.trip) + ' on a trip' : '') + '</div>' +
+    '<div class="meter"><i class="' + (W.sum > weekly ? 'over' : '') + '" style="width:' + Math.min(100, weekly ? W.sum / weekly * 100 : 0).toFixed(1) + '%"></i>' + (isCur ? '<b style="left:' + (dayN / 7 * 100).toFixed(1) + '%"></b>' : '') + '</div>' +
+    (isCur ? '' : '<button class="linkbtn" data-act="wk" data-v="0" style="margin-top:8px">Back to this week</button>') + '</section>';
 
-  var anyDated = weeks.some(function (w) { return w.items.length || w.trip; });
-  if (!anyDated) {
+  if (!dated.length && !tripDated.length) {
     h += '<div class="card empty"><b>Weekly view fills in as you log</b>Your sheet only records the month for past entries, so weeks start counting from entries added with a date (anything added in this app, or typed into the sheet once the connector is installed).</div>';
     return h;
   }
   var cols = weeks.map(function (w) {
-    var end = new Date(w.start); end.setDate(end.getDate() + 6);
     return { label: (w.start.getMonth() + 1) + '/' + w.start.getDate(), vals: [w.sum + w.trip], trip: w.trip, over: w.sum > weekly,
       info: '<b>Week of ' + MON[w.start.getMonth()] + ' ' + w.start.getDate() + '</b> · ' + money(w.sum) + ' across ' + w.items.length + ' entr' + (w.items.length === 1 ? 'y' : 'ies') + (w.sum > weekly ? ' · over target' : '') + (w.trip ? ' · plus ' + money(w.trip) + ' on a trip' : '') };
   });
-  h += '<section class="card"><div class="ghead"><h3>Last 8 weeks</h3><span>everyday spending</span></div>' + barChart('w8', cols, { line: weekly, lineLabel: 'target ' + money(weekly), legend: ['Everyday'] }) +
-    '<details class="itip"><summary>ⓘ <span>What this means</span></summary><div class="hint">Everyday = daily living, going out and one-time. Bills and savings are left out so a rent week doesn’t look like a splurge. Trip spending is stacked on top and doesn’t count toward the target.</div></details></section>';
-  var items = thisW.items.slice().sort(function (a, b) { return a.d < b.d ? 1 : -1; });
-  if (items.length) {
-    h += '<section class="card"><div class="ghead"><h3>This week</h3></div>';
-    items.forEach(function (t) { h += '<div class="crow"><div class="l1"><b>' + esc(t.v || t.c) + '</b><em>' + money(t.a, true) + '</em></div><div class="l2">' + esc(t.c) + ' · ' + shortDate(t.d) + '</div></div>'; });
-    h += '</section>';
-  }
+  h += '<section class="card"><div class="ghead"><h3>' + (win === 0 ? 'Last 8 weeks' : '8 weeks to ' + MON[weeks[7].start.getMonth()] + ' ' + weeks[7].start.getDate()) + '</h3><span>tap a week</span></div>' + barChart('w8', cols, { line: weekly, lineLabel: 'target ' + money(weekly), legend: ['Everyday'] }) +
+    '<details class="itip"><summary>ⓘ <span>What this means</span></summary><div class="hint">Everyday = daily living, going out and one-time. Bills, savings and things paid from savings are left out so a rent week doesn’t look like a splurge. Trip spending is stacked on top and doesn’t count toward the target. Tap a bar or use the arrows to look at that week.</div></details></section>';
+  var items = W.items.slice().sort(function (a, b) { return a.d < b.d ? 1 : -1; });
+  h += '<section class="card"><div class="ghead"><h3>' + (isCur ? 'This week' : off === -1 ? 'Last week' : 'That week') + '</h3><span>' + items.length + ' entr' + (items.length === 1 ? 'y' : 'ies') + '</span></div>';
+  if (!items.length) h += '<div class="hint">No everyday spending logged' + (isCur ? ' yet.' : '.') + '</div>';
+  items.forEach(function (t) { h += '<div class="crow"><div class="l1"><b>' + esc(t.v || t.c) + '</b><em>' + money(share(t), true) + '</em></div><div class="l2">' + esc(t.c) + ' · ' + shortDate(t.d) + (+t.ow ? ' · your share' : '') + '</div></div>'; });
+  h += '</section>';
   return h;
 }
 
@@ -4453,6 +4460,7 @@ function renderSheet() {
     h += recapSheetHtml(SHEET.arg);
   }
   $('sheet').innerHTML = h;
+  $('sheet').classList.toggle('hasbar', !!$('sheet').querySelector('.stickybar'));
   if (SHEET.kind === 'add') suggest();
 }
 
@@ -5673,6 +5681,7 @@ document.addEventListener('click', function (e) {
     case 'ciedit':
       closeSheet(); UI.tab = 'activity'; UI.q = ''; UI.am = ''; UI.fk = 'all'; UI.asort = 'new'; UI.lim = 100000; UI.edit = v; UI.editTop = null; render();
       anchorTx(v, 120, true); break;
+    case 'wk': UI.wk = +v === 0 ? 0 : (UI.wk || 0) + (+v); if (+v === 0) UI.wkWin = 0; keepScroll(render); break;
     case 'calk': UI.calK = Math.min(nowYM(), (UI.calK === undefined ? nowYM() : UI.calK) + (+v)); keepScroll(render); break;
     case 'calall': UI.calAll = v === '1'; keepScroll(render); break;
     case 'calday': openSheet('day', v); break;
@@ -5854,7 +5863,7 @@ document.addEventListener('click', function (e) {
       else if (v === 'insights') { UI.trend = 'overview'; openSheet('insights'); }
       else UI.trend = v;
       render(); break;
-    case 'period': UI.period = v; keepScroll(render); break;
+    case 'period': UI.period = v; if (v === 'week') { UI.wk = 0; UI.wkWin = 0; } keepScroll(render); break;
     case 'allins': openSheet('insights'); break;
     case 'wim': UI.wim = +v; keepScroll(render); break;
     case 'cmode': cmpState().mode = v; UI.sel.cy = undefined; render(); break;
@@ -5870,6 +5879,7 @@ document.addEventListener('click', function (e) {
     case 'pick':
       var chart = el.getAttribute('data-chart');
       UI.sel[chart] = +v;
+      if (chart === 'w8') { UI.wk = (UI.wkWin || 0) - (7 - +v); keepScroll(render); break; }
       var plot = el.parentNode, cols = plot.querySelectorAll('.col');
       for (var i = 0; i < cols.length; i++) cols[i].classList.toggle('sel', i === +v);
       // re-render just to refresh the readout text
@@ -6155,7 +6165,7 @@ function fitSheet(ensure) {
     sh.style.height = Math.max(200, Math.round(vv.height - gap)) + 'px';
     sh.style.maxHeight = 'none';
     if (ensure) keepInView(sh);
-  } else if (sh.classList.contains('kb')) unfitSheet(sh);
+  } else if (sh.classList.contains('kb') && !typing) unfitSheet(sh);   // moving between boxes: the keyboard can blink, keep the layout
 }
 function unfitSheet(sh) {
   sh = sh || $('sheet'); if (!sh) return;
@@ -6164,13 +6174,33 @@ function unfitSheet(sh) {
 var FIT_T = [];
 function refitSoon() {          // the iPhone settles the keyboard size over a few frames; check a few times
   FIT_T.forEach(clearTimeout);
-  FIT_T = [0, 60, 180, 350, 650].map(function (ms) { return setTimeout(function () { fitSheet(true); }, ms); });
+  FIT_T = [0, 120, 300, 600].map(function (ms) { return setTimeout(function () { fitSheet(ms >= 300); }, ms); });
 }
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', function () { fitSheet(true); });
+  window.visualViewport.addEventListener('resize', function () { fitSheet(false); refitSoon(); });
   window.visualViewport.addEventListener('scroll', function () { fitSheet(false); });
 }
 document.addEventListener('focusin', function (e) { var sh = $('sheet'); if (SHEET && sh && sh.contains(e.target)) refitSoon(); });
+// With the keyboard already up, tapping another box moves the cursor there without the iPhone
+// scrolling and nudging the page around (that's what made it jump). We keep it in view ourselves.
+var TAPF = null;
+document.addEventListener('touchstart', function (e) {
+  var el = e.target, sh = $('sheet');
+  TAPF = null;
+  if (!SHEET || !sh || !sh.classList.contains('kb') || e.touches.length !== 1) return;
+  if (el.tagName !== 'INPUT' || el.type !== 'text' || el === document.activeElement || !sh.contains(el)) return;
+  TAPF = { el: el, x: e.touches[0].clientX, y: e.touches[0].clientY };
+}, { passive: true });
+document.addEventListener('touchmove', function (e) {
+  if (TAPF && Math.abs(e.touches[0].clientX - TAPF.x) + Math.abs(e.touches[0].clientY - TAPF.y) > 8) TAPF = null;
+}, { passive: true });
+document.addEventListener('touchend', function (e) {
+  var f = TAPF; TAPF = null;
+  if (!f || e.target !== f.el) return;
+  e.preventDefault();
+  try { f.el.focus({ preventScroll: true }); var n = f.el.value.length; f.el.setSelectionRange(n, n); } catch (er) {}
+  refitSoon();
+}, { passive: false });
 document.addEventListener('focusout', function (e) { var sh = $('sheet'); if (SHEET && sh && sh.contains(e.target)) refitSoon(); });
 
 // Works offline and opens instantly: a service worker keeps a copy of the app on the phone.
