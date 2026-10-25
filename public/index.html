@@ -519,6 +519,30 @@ table.tb tr.tot td{font-weight:700;border-top:2px solid var(--b2)}
 .tripcard .bar{margin-top:8px}
 .tchip{display:inline-flex;align-items:center}
 [hidden]{display:none!important}
+.preal .rrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--b1)}
+.preal .rname{flex:1;min-width:0;text-align:left;background:none;border:0;padding:0;color:var(--t1)}
+.preal .rname b{display:block;font-size:15px;overflow-wrap:anywhere}.preal .rname small{display:block;font-size:12px;color:var(--t3);margin-top:2px}
+.preal .rset{flex:none;white-space:nowrap}
+.rfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0 2px}.rfoot .btn{flex:none;min-height:38px;padding:0 14px;font-size:14px}
+.pchk .pl b.neg{color:var(--bad)}
+.pcoming .cmon{padding:8px 0;border-top:1px solid var(--b1)}.pcoming .cmon:first-of-type{border-top:0}
+.cmh{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:4px}.cmh b{font-size:15px}.cmh span{font-size:12px;color:var(--t3)}
+.citem{display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:14px}.citem i{font-style:normal;width:20px;flex:none;text-align:center}
+.citem>span{flex:1;min-width:0;overflow-wrap:anywhere}.citem em{font-style:normal;font-weight:600;float:right;margin-left:8px}.citem small{display:block;font-size:12px;color:var(--t3)}
+.ppay .ghead .linkbtn{font-size:13px;text-align:right}
+.pchk{border:1px solid var(--b1);border-radius:var(--r2);padding:10px 12px;margin-top:8px;background:var(--p1)}
+.pchk .l1{display:flex;justify-content:space-between;gap:8px}.pchk .l1 em{font-style:normal;color:var(--t2);font-size:14px;white-space:nowrap}
+.pchk .cov{font-size:12px;color:var(--t3);margin:1px 0 6px}
+.pchk .pl{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:14px}.pchk .pl span{min-width:0;overflow-wrap:anywhere}
+.pchk .pl small{display:block;font-size:12px;color:var(--t3)}.pchk .pl b{white-space:nowrap;font-weight:600}
+.pchk .pl.tot{border-top:1px solid var(--b1);margin-top:4px;padding-top:7px}.pchk .pl.tot b{font-weight:700}
+.paytip{font-size:13px;color:var(--t2);background:var(--acd);border-radius:var(--r2);padding:9px 11px;margin-top:10px}
+.phist .bhrow,.bhrow{display:flex;width:100%;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border:0;border-top:1px solid var(--b1);background:none;color:var(--t1);text-align:left}
+.bhrow span{min-width:0}.bhrow b{display:block;font-size:15px;overflow-wrap:anywhere}.bhrow small{display:block;font-size:12px;color:var(--t3)}.bhrow em{font-style:normal;font-size:14px;color:var(--t2);text-align:right}
+.card>.bhrow:first-child{border-top:0}
+.chist{border:1px solid var(--b1);border-radius:var(--r2);padding:2px 12px;background:var(--p1)}
+.chrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--b1);font-size:14px;color:var(--t3)}.chrow:first-child{border-top:0}
+.chrow b{color:var(--t2);font-weight:600}.chrow.now b,.chrow.now span{color:var(--t1)}
 .ocat .unhide{flex:none;min-height:36px;padding:0 12px;font-size:14px}
 .tripnew{display:flex;gap:8px;margin-top:8px}
 .tripnew input{flex:1;min-width:0;min-height:44px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--p1);padding:10px 12px}
@@ -763,7 +787,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.10';
+var VERSION = '2.11';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -2365,6 +2389,303 @@ function fmtAmt(a) { return (+a || 0).toFixed(2).replace(/\.00$/, ''); }
 function planDraftCount() { return Object.keys(planState().vals).length; }
 function planMonthName(k) { return MONTHS[ymM(k)] + ' ' + ymY(k); }
 
+// ================================================================== Plan helpers (2.11)
+// ---- 1. your budget vs how you actually spend (last full months, your share, trips & savings-paid left out)
+function paceMonths() {
+  var cur = nowYM(), r = dataRange(), ks = [];
+  for (var k = cur - 6; k < cur; k++) { if (k >= r.lo && monthStats(k).n) ks.push(k); }
+  return ks;
+}
+function realityRows() {
+  if (CACHE.real) return CACHE.real;
+  var cur = nowYM(), pace = paceStats(), bm = bmap(cur), rows = [], seen = {};
+  if (pace.n < 2) return (CACHE.real = rows);
+  var seenIn = {};      // in how many of those months each category had spending
+  paceMonths().forEach(function (k) { var mc = monthStats(k).cat; Object.keys(mc).forEach(function (c) { if (mc[c] > 0) seenIn[c] = (seenIn[c] || 0) + 1; }); });
+  function add(c, bud, g, isNew) {
+    var avg = pace.cat[c] || 0, gap = avg - bud;
+    if (g === 'bills' && (seenIn[c] || 0) < Math.max(2, pace.n - 1)) return;   // paid now and then (insurance…): an average would mislead
+    if (Math.abs(gap) < Math.max(15, bud * 0.15)) return;
+    var sug = g === 'bills' ? Math.round(avg) : avg >= 200 ? Math.round(avg / 10) * 10 : Math.max(0, round5(avg));
+    if (Math.abs(sug - bud) < 5) return;
+    rows.push({ c: c, bud: bud, avg: avg, gap: gap, sug: sug, g: g, isNew: isNew });
+  }
+  Object.keys(bm).forEach(function (c) {
+    var b = bm[c]; seen[c] = 1;
+    if (b.rm || b.g === 'inc' || b.g === 'save' || isYearly(c)) return;
+    add(c, b.a, b.g, false);
+  });
+  Object.keys(pace.cat).forEach(function (c) {
+    if (seen[c] || isYearly(c) || !c || (pace.cat[c] || 0) < 20) return;
+    var g = groupOf(c, cur); if (g === 'save' || g === 'inc') return;
+    add(c, 0, g, true);
+  });
+  rows.sort(function (a, b) { return Math.abs(b.gap) - Math.abs(a.gap); });
+  return (CACHE.real = rows);
+}
+function realityInDraft(x) { var d = planState().vals[x.c]; return !!(d && !d.rm && Math.abs(d.a - x.sug) < 0.005); }
+function planRealityHtml() {
+  var ks = paceMonths(); if (ks.length < 2) return '';
+  var rows = realityRows(), span = MON[ymM(ks[0])] + '–' + MON[ymM(ks[ks.length - 1])];
+  var h = '<section class="card preal" id="p_real"><div class="ghead"><h3>Budget vs real spending</h3><span>avg ' + span + '</span></div>';
+  if (!rows.length) return h + '<div class="sub">Your budgets match how you actually spend. Nice. 👍</div></section>';
+  var over = rows.filter(function (x) { return x.gap > 0; }), under = rows.filter(function (x) { return x.gap < 0; });
+  var ov = over.reduce(function (a, x) { return a + x.gap; }, 0), un = under.reduce(function (a, x) { return a - x.gap; }, 0);
+  h += '<div class="sub" style="margin-bottom:6px">' + (over.length ? 'You usually spend <b class="up">' + money(ov) + ' more</b> a month than budgeted on ' + over.length + ' categor' + (over.length === 1 ? 'y' : 'ies') : '') +
+    (over.length && under.length ? ', and ' : '') + (under.length ? (over.length ? '' : 'You usually spend ') + '<b>' + money(un) + ' less</b> on ' + under.length + (over.length ? '' : ' categor' + (under.length === 1 ? 'y' : 'ies')) : '') + '.</div>';
+  var show = UI.realAll ? rows : rows.slice(0, 5);
+  show.forEach(function (x) {
+    var on = realityInDraft(x), ch = lastBudgetChange(x.c);
+    h += '<div class="rrow"><button class="rname" data-act="pcat" data-v="' + esc(x.c) + '"><b>' + esc(x.c) + '</b><small>usually ' + money(x.avg) + ' · ' + (x.bud ? 'budget ' + money(x.bud) : 'no budget') +
+      (ch ? ' · set ' + MON[ymM(ch.s)] + ' ' + ymY(ch.s) : '') + '</small></button>' +
+      '<button class="chip rset' + (on ? ' on' : '') + '" data-act="preal" data-v="' + esc(x.c) + '" aria-pressed="' + on + '">' + (on ? '✓ ' + money(x.sug) : 'Set to ' + money(x.sug)) + '</button></div>';
+  });
+  h += '<div class="rfoot">' + (rows.length > 5 ? '<button class="linkbtn" data-act="prealmore">' + (UI.realAll ? 'Show fewer' : 'See all ' + rows.length) + '</button>' : '<span></span>') +
+    (rows.filter(function (x) { return !realityInDraft(x); }).length > 1 ? '<button class="btn" data-act="prealall" id="p_realall">Use all ' + rows.length + '</button>' : '') + '</div>';
+  h += '<details class="itip"><summary>ⓘ <span>How this works</span></summary><div class="hint">Averages of your last ' + ks.length + ' full months, counting only your share of split bills. Trips, things paid from savings and yearly bills are left out. ' +
+    'Tapping <b>Set to</b> adds it to your changes — nothing is saved until you tap <b>Continue → Review &amp; save</b> and choose when it starts.</div></details></section>';
+  return h;
+}
+
+// ---- 2. coming up in the next few months
+function comingUpItems(k) {
+  var items = [], pace = paceStats(), y = ymY(k), m = ymM(k), first = y + '-' + pad(m + 1) + '-01', last = y + '-' + pad(m + 1) + '-' + pad(daysIn(y, m));
+  Object.keys(S.yearly || {}).forEach(function (c) {
+    if ((S.yearly[c] || []).indexOf(m) < 0) return;
+    var ly = monthStats(k - 12).cat[c] || 0, b = bmap(k)[c], est = ly || (b && !b.rm ? b.a * 12 / Math.max(1, S.yearly[c].length) : 0);
+    items.push({ i: '📅', t: '<b>' + esc(c) + '</b> · yearly bill', a: est, n: ly ? 'last year ' + money(ly) : 'estimated' });
+  });
+  (S.trips || []).forEach(function (t) {
+    if (!t.start || t.start < first || t.start > last) return;
+    var st = tripStats(t.name), bud = +t.budget || planSum(t.plan);
+    items.push({ i: '✈️', t: '<b>' + esc(t.name) + '</b> · ' + shortDate(t.start) + (t.end && t.end !== t.start ? '–' + shortDate(t.end).replace(MON[m] + ' ', '') : ''),
+      a: bud ? Math.max(0, bud - st.total) : 0, n: (bud ? 'budget ' + money(bud) : 'trip') + (st.total ? ' · ' + money(st.total) + ' already spent' : '') });
+  });
+  (S.goals || []).forEach(function (g) {
+    if (g.by !== k) return;
+    var st = goalStats(g);
+    items.push({ i: '🎯', t: '<b>' + esc(g.name) + '</b> · goal date', a: 0, n: st.done ? 'reached 🎉' : money(st.left) + ' to go' });
+  });
+  var bm = bmap(k);
+  Object.keys(bm).forEach(function (c) {
+    if (bm[c].s !== k) return;
+    var was = bmap(k - 1)[c], wa = was && !was.rm ? was.a : 0;
+    if (bm[c].rm && !wa) return;
+    if (!bm[c].rm && Math.abs(bm[c].a - wa) < 0.005) return;
+    items.push({ i: '✎', t: '<b>' + esc(c) + '</b> ' + (bm[c].g === 'inc' ? 'income' : 'budget'), a: 0, n: bm[c].rm ? 'removed' : (wa ? money(wa) + ' → ' + money(bm[c].a) : 'starts at ' + money(bm[c].a)) });
+  });
+  // what this month cost last year, beyond your usual
+  var lm = monthStats(k - 12);
+  if (lm.n) {
+    var extra = Object.keys(lm.cat).filter(function (c) {
+      var g = groupOf(c, k - 12), usual = pace.cat[c] || 0;
+      return g !== 'save' && g !== 'bills' && !isYearly(c) && lm.cat[c] - usual >= Math.max(50, usual * 0.5);
+    }).sort(function (a, b) { return (lm.cat[b] - (pace.cat[b] || 0)) - (lm.cat[a] - (pace.cat[a] || 0)); }).slice(0, 3);
+    if (extra.length) items.push({ i: '↩︎', t: 'Last ' + MONTHS[m] + ': ' + extra.map(function (c) { return esc(c) + ' ' + money(lm.cat[c]); }).join(', '), a: 0,
+      n: 'more than you usually spend on ' + (extra.length === 1 ? 'it' : 'those') + (lm.trip ? ' · plus ' + money(lm.trip) + ' on trips' : '') });
+  }
+  return items;
+}
+function planComingHtml() {
+  var cur = nowYM(), h = '', any = false, body = '';
+  for (var k = cur + 1; k <= cur + 3; k++) {
+    var it = comingUpItems(k);
+    if (it.length) any = true;
+    var tot = it.reduce(function (a, x) { return a + (x.a || 0); }, 0);
+    body += '<div class="cmon"><div class="cmh"><b>' + MONTHS[ymM(k)] + (ymY(k) !== ymY(cur) ? ' ' + ymY(k) : '') + '</b>' + (tot ? '<span>about ' + money(tot) + ' extra</span>' : '') + '</div>' +
+      (it.length ? it.map(function (x) { return '<div class="citem"><i>' + x.i + '</i><span>' + x.t + (x.a ? ' <em>' + money(x.a) + '</em>' : '') + '<small>' + x.n + '</small></span></div>'; }).join('')
+        : '<div class="citem none"><span><small>Nothing out of the ordinary.</small></span></div>') + '</div>';
+  }
+  h = '<section class="card pcoming" id="p_coming"><div class="ghead"><h3>Coming up</h3><span>next 3 months</span></div>' + body;
+  if (!any) h += '<div class="hint">Yearly bills, trips, goal dates and budget changes show here. Nothing big is on the way.</div>';
+  h += '<details class="itip"><summary>ⓘ <span>Where this comes from</span></summary><div class="hint">Yearly bills (Settings for a category), trips from your trips tab, goal target dates, budget changes you’ve saved for later, and what you spent in the same month last year that was above your usual.</div></details></section>';
+  return h;
+}
+
+// ---- 3. plan by paycheck. S.pay = { k: 'semi', d: [10, 25] } or { k: 'bi', a: 'YYYY-MM-DD' (any payday) }
+function payCat() {
+  var cur = nowYM(), cnt = {};
+  S.tx.forEach(function (t) { var k = ymKey(t.y, t.m); if (t.k === 'i' && k >= cur - 3 && k <= cur && t.a > 200) cnt[low(t.c)] = (cnt[low(t.c)] || 0) + 1; });
+  var best = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; })[0];
+  return best && cnt[best] >= 4 ? best : '';
+}
+// a typical recent paycheck: the middle of your last four
+function payAmount() {
+  var c = payCat(), cur = nowYM(), list = [];
+  if (c) S.tx.forEach(function (t) { var k = ymKey(t.y, t.m); if (t.k === 'i' && low(t.c) === c && k >= cur - 3 && k <= cur && t.a > 200) list.push({ k: k, d: t.d || '', a: t.a }); });
+  if (list.length >= 2) {
+    var last = list.sort(function (p, q) { return p.k - q.k || (p.d < q.d ? -1 : 1); }).slice(-4).map(function (x) { return x.a; }).sort(function (p, q) { return p - q; });
+    var mid = last.length % 2 ? last[(last.length - 1) / 2] : (last[last.length / 2 - 1] + last[last.length / 2]) / 2;
+    return { a: r2(mid), from: c };
+  }
+  var inc = budgetTotals(cur).inc;
+  return { a: r2(inc * (S.pay && S.pay.k === 'bi' ? 12 / 26 : 0.5)), from: '' };
+}
+function lastPayDate() {
+  var c = payCat(), best = '';
+  S.tx.forEach(function (t) { if (t.k === 'i' && t.d && (!c || low(t.c) === c) && t.a > 200 && t.d > best && t.d <= isoDay(NOW)) best = t.d; });
+  return best;
+}
+function isoDay(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function paydaysIn(key) {
+  var y = ymY(key), m = ymM(key), dim = daysIn(y, m), out = [];
+  if (!S.pay) return out;
+  if (S.pay.k === 'bi') {
+    var a = parseD(S.pay.a); if (!a) return out;
+    var d = new Date(y, m, 1), diff = Math.round((d - a) / 864e5), off = ((diff % 14) + 14) % 14;
+    d.setDate(d.getDate() + (off ? 14 - off : 0));
+    while (d.getMonth() === m) { out.push(new Date(d)); d.setDate(d.getDate() + 14); }
+  } else {
+    (S.pay.d || []).slice().sort(function (p, q) { return p - q; }).forEach(function (dd) { var x = new Date(y, m, Math.min(dd, dim)); if (!out.some(function (o) { return +o === +x; })) out.push(x); });
+  }
+  return out;
+}
+function payPlan(key) {
+  var days = paydaysIn(key); if (!days.length) return null;
+  var next = paydaysIn(key + 1)[0], bt = budgetTotals(key), amt = payAmount();
+  var perYear = S.pay.k === 'bi' ? 26 : 24, perCheck = function (monthly) { return monthly * 12 / perYear; };
+  var bills = recurBills(), recurSum = bills.reduce(function (a, b) { return a + (+b.a || 0); }, 0);
+  var otherBills = Math.max(0, (bt.g.bills || 0) - recurSum);
+  return days.map(function (d, i) {
+    var end = new Date(i + 1 < days.length ? days[i + 1] : next); end.setDate(end.getDate() - 1);
+    var nd = Math.round((end - d) / 864e5) + 1, due = [];
+    bills.forEach(function (b) {
+      [new Date(d.getFullYear(), d.getMonth(), 1), new Date(end.getFullYear(), end.getMonth(), 1)].forEach(function (mo, j, arr) {
+        if (j === 1 && +arr[1] === +arr[0]) return;
+        var dt = new Date(mo.getFullYear(), mo.getMonth(), Math.min(b.day || 1, daysIn(mo.getFullYear(), mo.getMonth())));
+        if (dt >= d && dt <= end) due.push({ b: b, dt: dt });
+      });
+    });
+    var byDay = {};
+    due.forEach(function (x) { var kk = isoDay(x.dt); (byDay[kk] = byDay[kk] || { dt: x.dt, a: 0, names: [] }); byDay[kk].a += +x.b.a || 0; byDay[kk].names.push(x.b.name); });
+    var groups = Object.keys(byDay).sort().map(function (kk) { return byDay[kk]; });
+    var billTot = due.reduce(function (a, x) { return a + (+x.b.a || 0); }, 0);
+    var lines = { other: perCheck(otherBills), give: perCheck(bt.g.give || 0), save: perCheck(bt.save), every: bt.flex * 12 / 365 * nd };
+    var used = billTot + lines.other + lines.give + lines.save + lines.every;
+    return { d: d, end: end, nd: nd, amt: amt.a, groups: groups, bills: billTot, lines: lines, left: r2(amt.a - used) };
+  });
+}
+function payLabel() {
+  if (!S.pay) return '';
+  if (S.pay.k === 'bi') { var a = parseD(S.pay.a); return 'every other ' + (a ? ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][a.getDay()] : 'week'); }
+  return (S.pay.d || []).map(function (d) { return d >= 31 ? 'last day' : ordinal(d); }).join(' & ');
+}
+function planPayHtml() {
+  var h = '<section class="card ppay" id="p_pay"><div class="ghead"><h3>By paycheck</h3>' + (S.pay ? '<button class="linkbtn" data-act="payset">' + esc(payLabel()) + ' · change</button>' : '') + '</div>';
+  if (!S.pay) {
+    return h + '<div class="sub" style="margin-bottom:10px">When do you get paid? Piggy will split your bills, savings and spending between paychecks so you know what each one has to cover.</div>' +
+      '<div class="chips"><button class="chip" data-act="payquick" data-v="1,15">1st &amp; 15th</button><button class="chip" data-act="payquick" data-v="15,31">15th &amp; last day</button>' +
+      '<button class="chip" data-act="payset" data-v="bi">Every other week</button><button class="chip" data-act="payset" data-v="semi">Other days</button></div></section>';
+  }
+  var off = UI.payK || 0, key = nowYM() + off, plan = payPlan(key);
+  h += '<div class="chips" style="margin:2px 0 8px"><button class="chip' + (off ? '' : ' on') + '" data-act="payk" data-v="0">' + MONTHS[ymM(nowYM())] + '</button><button class="chip' + (off ? ' on' : '') + '" data-act="payk" data-v="1">' + MONTHS[ymM(nowYM() + 1)] + '</button></div>';
+  if (!plan) return h + '<div class="hint">No paydays found for this month.</div></section>';
+  plan.forEach(function (c, i) {
+    var dl = function (d) { return MON[d.getMonth()] + ' ' + d.getDate(); };
+    h += '<div class="pchk"><div class="l1"><b>' + dl(c.d) + ' paycheck</b><em>about ' + money(c.amt) + '</em></div><div class="cov">covers ' + dl(c.d) + ' – ' + dl(c.end) + (plan.length === 3 && i === 2 ? ' · a third paycheck this month' : '') + '</div>';
+    c.groups.forEach(function (g) {
+      h += '<div class="pl"><span>Bills due ' + dl(g.dt) + '<small>' + esc(g.names.join(', ')) + '</small></span><b>' + money(g.a) + '</b></div>';
+    });
+    if (c.lines.other >= 1) h += '<div class="pl"><span>Other bills<small>no set day, split between paychecks</small></span><b>' + money(c.lines.other) + '</b></div>';
+    if (c.lines.give >= 1) h += '<div class="pl"><span>Giving</span><b>' + money(c.lines.give) + '</b></div>';
+    if (c.lines.save >= 1) h += '<div class="pl"><span>Savings</span><b>' + money(c.lines.save) + '</b></div>';
+    h += '<div class="pl"><span>Everyday spending<small>' + c.nd + ' days</small></span><b>' + money(c.lines.every) + '</b></div>';
+    h += '<div class="pl tot"><span>Left over</span><b class="' + (c.left < 0 ? 'neg' : '') + '">' + signed(c.left) + '</b></div></div>';
+  });
+  if (plan.length >= 2) {
+    var lo = plan.reduce(function (a, c) { return c.left < a.left ? c : a; }), hi = plan.reduce(function (a, c) { return c.left > a.left ? c : a; });
+    var mv = Math.round((hi.left - lo.left) / 2 / 5) * 5, dn = function (d) { return MON[d.getMonth()] + ' ' + d.getDate(); };
+    var tips = [];
+    if (lo.left < 0 && mv >= 25) tips.push('The ' + dn(lo.d) + ' check is the tight one' + (lo.bills > lo.amt / 2 ? ' — it carries ' + money(lo.bills) + ' of bills' : '') + '. Hold back about <b>' + money(mv) + '</b> from the ' + dn(hi.d) + ' check to cover it' + (lo.lines.save >= 25 ? ', or move its savings to the ' + dn(hi.d) + ' check' : '') + '.');
+    var net = plan.reduce(function (a, c) { return a + c.left; }, 0);
+    if (net < -5) tips.push('Across ' + (plan.length === 2 ? 'both' : 'all ' + plan.length) + ' paychecks you’re planning <b>' + money(-net) + ' more</b> than they bring in.');
+    if (tips.length) h += '<div class="paytip">💡 ' + tips.join(' ') + '</div>';
+  }
+  var pa = payAmount();
+  h += '<details class="itip"><summary>ⓘ <span>How this is worked out</span></summary><div class="hint">' + (pa.from ? 'Paycheck = a typical recent “' + esc(pa.from) + '” entry (the middle of your last four).' : 'Paycheck = your planned income split by paycheck.') +
+    ' A bill belongs to the paycheck before its due day (from your recurring bills). Savings, giving and other bills are split evenly; everyday spending by how many days each paycheck covers.</div></details></section>';
+  return h;
+}
+function paySetHtml(kind) {
+  var p = S.pay || {}, k = kind || UI.payKind || p.k || 'semi'; UI.payKind = k;
+  var d = p.k === 'semi' && p.d ? p.d : [1, 15];
+  var dayOpts = function (sel) { var o = ''; for (var i = 1; i <= 31; i++) o += '<option value="' + i + '"' + (i === sel ? ' selected' : '') + '>' + (i === 31 ? 'Last day' : ordinal(i)) + '</option>'; return o; };
+  var h = '<div class="shead"><h2>Paydays</h2><button data-act="close">Cancel</button></div>';
+  h += '<div class="seg" role="tablist" style="margin-bottom:14px"><button type="button" class="' + (k === 'semi' ? 'on' : '') + '" data-act="paykind" data-v="semi">Twice a month</button><button type="button" class="' + (k === 'bi' ? 'on' : '') + '" data-act="paykind" data-v="bi">Every other week</button></div>';
+  if (k === 'semi') {
+    h += '<div class="field"><span class="flabel">Paid on</span><div class="sprow"><select id="py_d1" aria-label="First payday">' + dayOpts(d[0]) + '</select><select id="py_d2" aria-label="Second payday">' + dayOpts(d[1]) + '</select></div>' +
+      '<div class="hint">“Last day” works for 30- and 31-day months (and February).</div></div>';
+  } else {
+    h += '<div class="field"><label for="py_a">A recent payday</label><input id="py_a" type="date" value="' + esc(p.k === 'bi' ? p.a : (lastPayDate() || isoDay(NOW))) + '"><div class="hint">Piggy counts every two weeks from this day.</div></div>';
+  }
+  h += '<div class="btns"><button class="btn pri" data-act="paysave" id="py_save">Save</button></div>';
+  if (S.pay) h += '<div class="hint" style="text-align:center;margin-top:10px"><button class="linkbtn" data-act="payclear">Stop showing paychecks</button></div>';
+  return h;
+}
+function payChanged() { save(); if (!S.demo && S.cfg.url) { queuePrefs(); flushSoon(); } }
+
+// ---- 5. budget history
+function budgetHistory(c) {
+  c = low(c);
+  var rows = S.budget.filter(function (b) { return low(b.c) === c; }).sort(function (a, b) { return a.s - b.s; }), out = [], prev = null;
+  rows.forEach(function (b) {
+    var a = +b.a || 0, rm = b.n === 'removed';
+    if (prev && prev.s === b.s) { out.pop(); prev = out.length ? out[out.length - 1] : null; }
+    if (prev && Math.abs(prev.a - a) < 0.005 && prev.rm === rm) return;
+    var e = { c: c, s: b.s, a: a, rm: rm, from: prev ? (prev.rm ? 0 : prev.a) : null };
+    out.push(e); prev = e;
+  });
+  return out;     // oldest first
+}
+function lastBudgetChange(c) {
+  var h = budgetHistory(c).filter(function (e) { return e.s <= nowYM(); });
+  return h.length > 1 ? h[h.length - 1] : null;
+}
+function allBudgetChanges() {
+  var cats = {}, minS = Infinity, out = [];
+  S.budget.forEach(function (b) { cats[low(b.c)] = 1; if (b.s < minS) minS = b.s; });
+  Object.keys(cats).forEach(function (c) {
+    budgetHistory(c).forEach(function (e) { if (e.s > minS && !(e.rm && !e.from)) out.push(e); });
+  });
+  return out.sort(function (a, b) { return b.s - a.s || (a.c < b.c ? -1 : 1); });
+}
+function budgetChangeLine(e) {
+  var cur = nowYM();
+  return '<button class="bhrow" data-act="pcat" data-v="' + esc(e.c) + '"><span><b>' + esc(e.c) + '</b><small>' + (e.s > cur ? 'starts ' : 'from ') + MON[ymM(e.s)] + ' ' + ymY(e.s) + '</small></span>' +
+    '<em>' + (e.rm ? 'removed' : e.from === null || e.from === 0 ? 'added · ' + money(e.a) : money(e.from) + ' → ' + money(e.a)) + '</em></button>';
+}
+function planHistoryHtml() {
+  var all = allBudgetChanges(); if (!all.length) return '';
+  var cur = nowYM(), past = all.filter(function (e) { return e.s <= cur; }), up = all.filter(function (e) { return e.s > cur; });
+  var h = '<section class="card phist" id="p_hist"><div class="ghead"><h3>Budget changes</h3>' + (all.length > 4 ? '<button class="linkbtn" data-act="bhist">See all ' + all.length + '</button>' : '') + '</div>';
+  if (up.length) {
+    var first = up.reduce(function (a, e) { return e.s < a ? e.s : a; }, Infinity);
+    h += '<button class="bhrow bhup" data-act="bhist"><span><b>' + up.length + ' change' + (up.length === 1 ? '' : 's') + ' coming</b><small>starting ' + MON[ymM(first)] + ' ' + ymY(first) + '</small></span><em>›</em></button>';
+  }
+  return h + past.slice(0, 4).map(budgetChangeLine).join('') + '</section>';
+}
+function bhistSheetHtml() {
+  var all = allBudgetChanges(), cur = nowYM(), h = '<div class="shead"><h2>Budget changes</h2><button data-act="close">Done</button></div>', yr = null;
+  h += '<div class="sub" style="margin:-6px 0 10px">Every time a budget changed, newest first. Tap one to see that category.</div>';
+  var up = all.filter(function (e) { return e.s > cur; }).sort(function (a, b) { return a.s - b.s || (a.c < b.c ? -1 : 1); });
+  if (up.length) h += '<div class="flabel" style="margin-top:10px">Coming up</div><div class="card" style="padding:2px 12px">' + up.map(budgetChangeLine).join('') + '</div>';
+  all.filter(function (e) { return e.s <= cur; }).forEach(function (e) {
+    if (ymY(e.s) !== yr) { if (yr !== null) h += '</div>'; yr = ymY(e.s); h += '<div class="flabel" style="margin-top:10px">' + yr + '</div><div class="card" style="padding:2px 12px">'; }
+    h += budgetChangeLine(e);
+  });
+  return h + (yr !== null ? '</div>' : '');
+}
+function catHistoryHtml(c) {
+  var hist = budgetHistory(c); if (!hist.length) return '';
+  var cur = nowYM(), rows = hist.slice().reverse();
+  return '<div class="flabel" style="margin-top:14px">Budget history</div><div class="chist">' + rows.map(function (e, i) {
+    var nxt = i > 0 ? rows[i - 1] : null, endK = nxt ? nxt.s - 1 : null;
+    var when = e.s > cur ? 'starts ' + MON[ymM(e.s)] + ' ' + ymY(e.s) : endK === null ? 'since ' + MON[ymM(e.s)] + ' ' + ymY(e.s) :
+      MON[ymM(e.s)] + ' ' + ymY(e.s) + (endK > e.s ? ' – ' + MON[ymM(endK)] + ' ' + ymY(endK) : '');
+    return '<div class="chrow' + (endK === null || e.s > cur ? ' now' : '') + '"><b>' + (e.rm ? 'removed' : money(e.a)) + '</b><span>' + when + '</span></div>';
+  }).join('') + '</div>';
+}
+
 function planHomeHtml() {
   var P = planState(), cur = nowYM(), t = budgetTotals(cur), n = planDraftCount();
   var inc = 0, bm = bmap(cur);
@@ -2386,7 +2707,7 @@ function planHomeHtml() {
     (nextJan > cur + 1 ? '<button class="chip" data-act="pgo" data-v="year">' + ymY(nextJan) + '</button>' : '') + '</span></span></div>';
   h += '<button class="pchoice" data-act="pgo" data-v="whatif"><span class="pico">?</span><span><b>Try a what-if</b><small>What if I spent like my average, or made a different income? Nothing saves unless you choose.</small></span><em>›</em></button>';
   h += '</div>';
-  h += '<div style="margin-top:12px">' + goalsCardHtml(true) + '</div>';
+  h += '<div style="margin-top:12px">' + planRealityHtml() + planComingHtml() + planPayHtml() + goalsCardHtml(true) + planHistoryHtml() + '</div>';
   h += '<div class="hint" style="text-align:center;margin-top:14px">Made a typo in an old month? <button class="linkbtn" data-act="pgo" data-v="fix">Correct a past budget</button></div>';
   return h;
 }
@@ -2470,6 +2791,7 @@ function planCatHtml(c) {
     cols.push({ label: MON[ymM(k)].charAt(0), vals: [Math.max(0, v)], over: g !== 'inc' && g !== 'save' && amt > 0 && v > amt, info: '<b>' + planMonthName(k) + '</b> · ' + money(v, true) });
   }
   if (any) { UI.sel.pc = 5; h += '<div class="pchart" id="pc_chart">' + barChart('pc', cols, { line: amt, lineLabel: 'plan' }) + '</div>'; }
+  h += catHistoryHtml(c);
   h += '<div class="btns" style="margin-top:14px">' + (d && d.isNew ? '<button class="btn danger" data-act="pcrm">Remove</button>' :
     (d && d.rm ? '<button class="btn" data-act="pcrm">Keep it</button>' : '<button class="btn danger" data-act="pcrm" id="pc_rm">Remove category</button>')) +
     '<button class="btn pri" data-act="pcdone" id="pc_done">Done</button></div>';
@@ -4442,6 +4764,10 @@ function renderSheet() {
     h += recurEditHtml(SHEET.arg && SHEET.arg.name, SHEET.arg && SHEET.arg.preset);
   } else if (SHEET.kind === 'pcat') {
     h += planCatHtml(SHEET.arg);
+  } else if (SHEET.kind === 'bhist') {
+    h += bhistSheetHtml();
+  } else if (SHEET.kind === 'payset') {
+    h += paySetHtml(SHEET.arg);
   } else if (SHEET.kind === 'pnew') {
     h += planNewHtml();
   } else if (SHEET.kind === 'owed') {
@@ -5134,7 +5460,7 @@ var PREF_KEYS = ['pal', 'mode', 'style', 'corners', 'cards', 'density', 'icon', 
 function prefsObj() {
   var cfg = {};
   PREF_KEYS.forEach(function (k) { cfg[k] = S.cfg[k]; });
-  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, at: S.prefsAt || 0 };
+  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, pay: S.pay || null, at: S.prefsAt || 0 };
 }
 function prefsHash() { var p = prefsObj(); delete p.at; return JSON.stringify(p); }
 function queuePrefs() {
@@ -5163,6 +5489,7 @@ function adoptPrefs(p) {
   if (p.yearly && typeof p.yearly === 'object') S.yearly = p.yearly;
   if (p.roll && typeof p.roll === 'object') S.roll = p.roll;
   if (p.hideV && typeof p.hideV === 'object') S.hideV = p.hideV;
+  if (p.pay === null || (p.pay && typeof p.pay === 'object')) S.pay = p.pay;
   S.cfg.launchAdd = !!c.launchAdd;
   S.prefsAt = p.at || 0;
   S.prefsSent = prefsHash();
@@ -5230,6 +5557,7 @@ function applyPull(data) {
   if (data.prefs && !S.outbox.some(function (op) { return op.op === 'prefs'; }) && (+data.prefs.at || 0) > (S.prefsAt || 0)) adoptPrefs(data.prefs);
   // hidden suggestions saved from another device (or by an older version that didn't know about them)
   if (data.prefs && data.prefs.hideV && typeof data.prefs.hideV === 'object' && !S.hideV) S.hideV = data.prefs.hideV;
+  if (data.prefs && data.prefs.pay && typeof data.prefs.pay === 'object' && S.pay === undefined) S.pay = data.prefs.pay;
   if ((data.v || 0) >= 10) S.prefsPulled = 1;
   CACHE = {}; VER++;
   setTimeout(autoLogRecur, 0);
@@ -5501,9 +5829,37 @@ document.addEventListener('click', function (e) {
       }
       save(); render(); window.scrollTo(0, 0);
       break;
+    case 'preal':
+    case 'prealall':
+      var Pr0 = planState();
+      if (Pr0.mode === 'fix' && planDraftCount()) { toast('Finish or discard your correction first'); break; }
+      if (!planDraftCount()) { Pr0.mode = 'from'; Pr0.key = nowYM(); Pr0.step = 'home'; }
+      var snap = JSON.stringify(Pr0.vals);
+      var rlist = realityRows().filter(function (x) { return act === 'prealall' ? !realityInDraft(x) : x.c === v; });
+      if (!rlist.length) break;
+      if (act === 'preal' && realityInDraft(rlist[0])) { delete Pr0.vals[v]; save(); keepScroll(render); break; }
+      rlist.forEach(function (x) { planSet(x.c, x.sug); if (x.isNew && Pr0.vals[x.c]) Pr0.vals[x.c].isNew = 1; });
+      save(); keepScroll(render);
+      toast(act === 'prealall' ? rlist.length + ' budgets added to your changes' : rlist[0].c + ' → ' + money(rlist[0].sug) + ' added to your changes',
+        function () { planState().vals = JSON.parse(snap); save(); keepScroll(render); });
+      break;
+    case 'prealmore': UI.realAll = !UI.realAll; keepScroll(render); break;
+    case 'payquick': S.pay = { k: 'semi', d: v.split(',').map(Number) }; UI.payK = 0; payChanged(); keepScroll(render); break;
+    case 'payset': UI.payKind = v || (S.pay && S.pay.k) || 'semi'; openSheet('payset', UI.payKind); break;
+    case 'paykind': UI.payKind = v; SHEET.arg = v; renderSheet(); break;
+    case 'paysave':
+      if (UI.payKind === 'bi') { var pyA = $('py_a').value; if (!parseD(pyA)) { $('py_a').focus(); break; } S.pay = { k: 'bi', a: pyA }; }
+      else { var py1 = +$('py_d1').value, py2 = +$('py_d2').value; S.pay = { k: 'semi', d: py1 === py2 ? [py1] : [Math.min(py1, py2), Math.max(py1, py2)] }; }
+      payChanged(); closeSheet(); keepScroll(render); toast('Paydays saved'); break;
+    case 'payclear': S.pay = null; payChanged(); closeSheet(); keepScroll(render); break;
+    case 'payk': UI.payK = +v; keepScroll(render); break;
+    case 'bhist': openSheet('bhist'); break;
     case 'pback': planState().step = 'home'; save(); render(); window.scrollTo(0, 0); break;
     case 'pgrp': UI.popen = UI.popen || {}; var pgEl = el.getAttribute('aria-expanded') === 'true'; UI.popen[v] = !pgEl; keepScroll(render); break;
-    case 'pcat': openSheet('pcat', v); break;
+    case 'pcat':
+      var Pk = planState();
+      if (!planDraftCount() && Pk.step !== 'edit') { Pk.mode = 'from'; Pk.key = nowYM(); }   // opened from a Plan card
+      openSheet('pcat', v); break;
     case 'pcstep':
       var pi = $('pc_amt'), pv0 = parseAmt(pi.value || '0'); if (isNaN(pv0)) pv0 = 0;
       pi.value = fmtAmt(Math.max(0, r2(pv0 + (+v)))); planCatChart();
