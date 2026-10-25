@@ -166,6 +166,9 @@ main{padding:0 16px 72px}
 .field input,.field select,.field textarea{width:100%;min-width:0;min-height:44px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--p1);padding:10px 12px}
 .field textarea{min-height:64px;padding:10px 12px;resize:none}
 .row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.field input[type=month],.field input[type=date]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;text-align:left}
+.field input[type=month]::-webkit-date-and-time-value,.field input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
+#gl_by{min-height:60px}
 .amtin{font-family:var(--fdisp);font-size:34px !important;min-height:60px !important;font-weight:600;padding:4px 12px !important}
 .amtwrap{position:relative}
 .amtwrap .cur{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:var(--fdisp);font-size:30px;font-weight:600;color:var(--t2);pointer-events:none}
@@ -787,7 +790,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.11';
+var VERSION = '2.11.1';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -2814,7 +2817,7 @@ function planNewHtml() {
   h += '<div class="flabel">Group</div><div class="chips" id="pa_groups">' + ['daily', 'out', 'once', 'bills', 'give', 'save', 'inc'].map(function (g, i) {
     return '<button class="chip' + (i === 0 ? ' on' : '') + '" data-act="pagrp" data-v="' + g + '">' + groupLabel(g) + '</button>';
   }).join('') + '</div><input type="hidden" id="pa_group" value="daily">';
-  h += '<div class="field"><label for="pa_amt">Monthly amount</label><input id="pa_amt" class="amtin" inputmode="decimal" placeholder="$0"></div>';
+  h += '<div class="field"><label for="pa_amt">Monthly amount</label><div class="amtwrap"><span class="cur" aria-hidden="true">$</span><input id="pa_amt" class="amtin" inputmode="decimal" placeholder="0"></div></div>';
   h += '<div class="btns"><button class="btn pri" data-act="padd" id="pa_add">Add</button></div>';
   return h;
 }
@@ -2906,8 +2909,8 @@ function planWhatIfHtml() {
   } else {
     var t0 = planTotals(nowYM());
     if (!W.inc) W.inc = Math.round(pace.inc || t0.inc || 0);
-    h += '<div class="row2"><div class="field"><label for="wi_inc">Monthly income</label><input id="wi_inc" class="amtin" inputmode="decimal" value="' + fmtAmt(W.inc) + '"></div>' +
-      '<div class="field"><label for="wi_save">Savings a month</label><input id="wi_save" class="amtin" inputmode="decimal" value="' + fmtAmt(W.save === null ? t0.save : W.save) + '"></div></div>' +
+    h += '<div class="row2"><div class="field"><label for="wi_inc">Monthly income</label><div class="amtwrap"><span class="cur" aria-hidden="true">$</span><input id="wi_inc" class="amtin" inputmode="decimal" value="' + fmtAmt(W.inc) + '"></div></div>' +
+      '<div class="field"><label for="wi_save">Savings a month</label><div class="amtwrap"><span class="cur" aria-hidden="true">$</span><input id="wi_save" class="amtin" inputmode="decimal" value="' + fmtAmt(W.save === null ? t0.save : W.save) + '"></div></div></div>' +
       '<button class="chip' + (W.fit ? ' on' : '') + '" data-act="wifit" aria-pressed="' + !!W.fit + '">' + (W.fit ? '✓ ' : '') + 'Fit my spending to this income</button>' +
       '<details class="itip" style="margin-top:6px"><summary>ⓘ <span>What this means</span></summary><div class="hint">Bills stay the same; everything else grows or shrinks together.</div></details>';
   }
@@ -3190,13 +3193,13 @@ function goalEditHtml(name) {
   var h = '<div class="shead"><h2>' + (g ? 'Edit goal' : 'New goal') + '</h2><button data-act="close">Cancel</button></div>';
   h += '<form id="goalform" data-old="' + esc(g ? g.name : '') + '" autocomplete="off">';
   h += '<div class="field"><label for="gl_name">Goal</label><input id="gl_name" value="' + esc(g ? g.name : '') + '" placeholder="e.g. Japan fund"></div>';
-  h += '<div class="row2"><div class="field"><label for="gl_target">Target</label><input id="gl_target" class="amtin" inputmode="decimal" placeholder="$0" value="' + (g ? fmtAmt(g.target) : '') + '"></div>' +
+  h += '<div class="row2"><div class="field"><label for="gl_target">Target</label><div class="amtwrap"><span class="cur" aria-hidden="true">$</span><input id="gl_target" class="amtin" inputmode="decimal" placeholder="0" value="' + (g ? fmtAmt(g.target) : '') + '"></div></div>' +
     '<div class="field"><label for="gl_by">By</label><input id="gl_by" type="month" min="' + ymY(cur) + '-' + pad(ymM(cur) + 1) + '" value="' + ymY(byKey) + '-' + pad(ymM(byKey) + 1) + '"></div></div>';
   h += '<div class="field"><label for="gl_c">Savings category it grows from</label><select id="gl_c">' + cats.map(function (c) {
     return '<option value="' + esc(c) + '"' + (g && low(g.c) === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') +
     (g && cats.indexOf(low(g.c)) < 0 ? '<option value="' + esc(g.c) + '" selected>' + esc(g.c) + '</option>' : '') + '</select>' +
     '<div class="hint">Whatever you log to this category from now on counts toward the goal.</div></div>';
-  h += '<div class="field"><label for="gl_base">Saved so far</label><input id="gl_base" class="amtin" inputmode="decimal" placeholder="$0" value="' + (g ? fmtAmt(g.base) : '') + '"></div>';
+  h += '<div class="field"><label for="gl_base">Saved so far</label><div class="amtwrap"><span class="cur" aria-hidden="true">$</span><input id="gl_base" class="amtin" inputmode="decimal" placeholder="0" value="' + (g ? fmtAmt(g.base) : '') + '"></div></div>';
   h += '<div class="field"><label for="gl_notes">Notes</label><input id="gl_notes" value="' + esc(g ? g.notes : '') + '" placeholder="optional"></div>';
   h += '<div class="wiline" id="gl_need">' + goalNeedText() + '</div>';
   h += '<div class="hint" id="gl_err" role="alert"></div>';
