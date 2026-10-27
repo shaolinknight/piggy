@@ -799,7 +799,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.13';
+var VERSION = '2.14';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -5359,11 +5359,13 @@ function submitForm() {
       var id = f.getAttribute('data-id');
       var near = neighborOf(id);
       var before = editTx(id, v);
-      var top = UI.editTop;
+      var top = UI.editTop, typing = keyboardUp();
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
       UI.edit = null;
       render();
       // land on the entry (it may have moved to another month), or where it was if the filters now hide it
-      if (!anchorTx(id, top, true)) anchorTx(near, top, false);
+      if (anchorTx(id, top, true)) glideTo(id, 'saved', typing);
+      else if (anchorTx(near, top, false)) glideTo(near, 'saved', typing);
       if (before) toast('Saved', { type: 'edit', id: id, before: before, after: pick(v), top: top });
     }
     flushSoon();
@@ -5391,7 +5393,15 @@ function submitTrip() {
   });
 }
 
-function keepScroll(fn) { var y = window.scrollY; fn(); window.scrollTo(0, y); }
+var FLASHED = null;
+function keepScroll(fn) {
+  var y = window.scrollY; fn(); window.scrollTo(0, y);
+  if (FLASHED) {            // a redraw mid-flash: keep the highlight going on the new row
+    var age = performance.now() - FLASHED.t0, fe = age < 1600 && txEl(FLASHED.id);
+    if (fe) { fe.style.animationDelay = -Math.round(age) + 'ms'; fe.classList.add('flash'); } else if (age >= 1600) FLASHED = null;
+  }
+  if (GLIDING && Date.now() < GLIDING.until) glideNow(GLIDING);     // a sync redrew mid-glide: carry on to the same spot
+}
 
 // Put an Activity entry back on screen where it was (top = its old distance from the top of the screen).
 function txEl(id) {
@@ -5402,12 +5412,41 @@ function txEl(id) {
 function anchorTx(id, top, flash) {
   var el = id && txEl(id);
   if (!el) return false;
-  var head = document.querySelector('header.top'), minTop = (head ? head.getBoundingClientRect().bottom : 60) + 8;
+  var minTop = topClear() + 8;
   var want = top === null || top === undefined ? minTop + 60 : Math.max(minTop, Math.min(top, window.innerHeight * 0.5));
   window.scrollTo(0, Math.max(0, window.scrollY + el.getBoundingClientRect().top - want));
-  if (flash) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+  if (flash) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); FLASHED = { id: id, t0: performance.now() }; }
   return true;
 }
+// Glide an entry into view. 'open': its edit form starts near the top of the screen. 'saved': the entry sits about
+// a third of the way down so you can see it (waits for the keyboard to go away first, if it was up).
+var GLIDE_T = null;
+// how far down the screen is covered at the top (the header if it's showing, else just the status bar)
+function topClear() { var head = document.querySelector('header.top'); return Math.max(head ? head.getBoundingClientRect().bottom : 0, safeTopPx()); }
+function keyboardUp() {
+  var vv = window.visualViewport, a = document.activeElement;
+  return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || !!(vv && window.innerHeight - vv.height > 120);
+}
+var GLIDING = null;
+document.addEventListener('touchstart', function (e) { if (e.target.closest && e.target.closest('#txlist .tx, #txform button')) return; GLIDING = null; clearTimeout(GLIDE_T); }, { passive: true });
+function glideTo(id, mode, wasTyping) {
+  clearTimeout(GLIDE_T); GLIDING = null;
+  GLIDE_T = setTimeout(function () { GLIDING = { id: id, mode: mode, until: Date.now() + 900 }; glideNow(GLIDING); }, wasTyping ? 420 : 40);
+}
+function glideNow(g) {
+  var id = g.id, mode = g.mode;
+  var go = function () {
+    var el = id && txEl(id); if (!el) return;
+    var minTop = topClear() + 8;
+    var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    var want = mode === 'open' ? minTop + 4 : Math.max(minTop + 8, vh * 0.33 - el.offsetHeight / 2);
+    var y = Math.max(0, Math.min(document.documentElement.scrollHeight - window.innerHeight, window.scrollY + el.getBoundingClientRect().top - want));
+    if (Math.abs(y - window.scrollY) < 4) return;
+    try { window.scrollTo({ top: y, behavior: REDUCED ? 'auto' : 'smooth' }); } catch (e) { window.scrollTo(0, y); }
+  };
+  go();
+}
+
 // the entry to land on when one disappears: the next one down, or the one above
 function neighborOf(id) {
   var list = filteredTx().slice(0, UI.lim);
@@ -5420,10 +5459,12 @@ function sameTx(a, b) {
     low(a.fs) === low(b.fs) && Math.abs((+a.ow || 0) - (+b.ow || 0)) < 0.005 && (a.pb || '') === (b.pb || '');
 }
 function closeEdit(id, flash) {
-  var top = UI.editTop;
+  var top = UI.editTop, typing = keyboardUp();
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   UI.edit = null;
   render();
-  if (!anchorTx(id, top, flash)) window.scrollTo(0, Math.max(0, window.scrollY));
+  if (anchorTx(id, top, flash)) glideTo(id, 'saved', typing);
+  else window.scrollTo(0, Math.max(0, window.scrollY));
 }
 
 // ------------------------------------------------------------------ data mutations (local first, then queued for the sheet)
@@ -5519,7 +5560,7 @@ function doUndo() {
   if (u.type === 'add') { t = resolveTx(u.id, u.after); if (t) deleteTx(t.id); }
   else if (u.type === 'delete') { t = addTx(u.tx); land = t && t.id; }
   else if (u.type === 'edit') { t = resolveTx(u.id, u.after); if (t) { editTx(t.id, u.before); land = t.id; } }
-  if (land && UI.tab === 'activity') { render(); anchorTx(land, u.top, true); }
+  if (land && UI.tab === 'activity') { render(); if (anchorTx(land, u.top, true) && !UI.edit) glideTo(land, 'saved'); }
   else keepScroll(render);
   toast('Undone');
   flushSoon();
@@ -6336,6 +6377,7 @@ document.addEventListener('click', function (e) {
       if (UI.edit) UI.editTop = etop;
       $('txlist').innerHTML = txListHtml();
       anchorTx(v, etop, false);           // the tapped entry stays put even if another open form above closes
+      if (UI.edit) glideTo(v, 'open');    // …then slides up so the form is in view
       break;
     case 'fcancel':
       var cid0 = UI.edit, cur0 = formVals(), orig0 = findTx(cid0);
@@ -6395,11 +6437,12 @@ document.addEventListener('click', function (e) {
       UI.armed = null;
       lock('save', function () {
         var id = $('txform').getAttribute('data-id');
-        var near = neighborOf(id), dtop = UI.editTop;
+        var near = neighborOf(id), dtop = UI.editTop, dtyping = keyboardUp();
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
         var copy = deleteTx(id);
         UI.edit = null;
         render();
-        if (!anchorTx(near, dtop, false)) window.scrollTo(0, window.scrollY);
+        if (anchorTx(near, dtop, false)) glideTo(near, 'saved', dtyping); else window.scrollTo(0, window.scrollY);
         if (copy) toast('Deleted ' + money(copy.a, true) + ' · ' + copy.c, { type: 'delete', tx: copy, top: dtop });
         flushSoon();
       });
