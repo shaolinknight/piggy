@@ -523,6 +523,16 @@ table.tb tr.tot td{font-weight:700;border-top:2px solid var(--b2)}
 .tripcard .bar{margin-top:8px}
 .tchip{display:inline-flex;align-items:center}
 [hidden]{display:none!important}
+@keyframes vin{from{opacity:0}to{opacity:1}}
+#view.vin{animation:vin .22s ease-out}
+.rvcard{padding:12px 14px}.rvcard .ghead{margin-bottom:4px}
+.rvl{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:15px}.rvl small{display:block;font-size:12px;color:var(--t3)}.rvl b{font-weight:600;white-space:nowrap}
+.rvl.tot{border-top:1px solid var(--b1);margin-top:4px;padding-top:8px}.rvl.tot b.neg{color:var(--bad)}
+button.chrow{width:100%;background:none;border:0;border-top:1px solid var(--b1);text-align:left;font:inherit}
+button.chrow:first-child{border-top:0}button.chrow u{color:var(--ac);text-decoration:underline}
+.bar i.good,.col i.s1.good,.meter i.good{background:var(--ok)}
+.good,.mgright .good,.catpick .cn small.good,.pkitem small.good{color:var(--ok)}
+.scrow em.done{color:var(--ok);font-weight:600}
 .hucard{padding:4px 14px}.hucard .citem{border-top:1px solid var(--b1);padding:8px 0}.hucard .citem:first-child{border-top:0}
 #view.edging{box-shadow:-12px 0 24px -12px rgba(0,0,0,.35);will-change:transform}
 button.citem{width:100%;background:none;border:0;color:var(--t1);text-align:left;padding:6px 0;align-items:center}
@@ -799,7 +809,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.14';
+var VERSION = '2.15';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1107,6 +1117,8 @@ function budgetLatest() {
 }
 function bmap(key) { return budgetAt(key === undefined ? nowYM() : key); }
 // Your own choice in Settings → Categories wins; tithing and donations count as Giving, not bills.
+// Savings and giving: more than the budget is a good thing (green, never "over")
+function moreIsGood(c, key) { var g = groupOf(c, key); return g === 'save' || g === 'give'; }
 function catGroupFix(c, g) {
   var o = S.catGroup && S.catGroup[c];
   if (o && o !== 'inc' && g !== 'inc' && GROUP_NAME[o]) return o;
@@ -1512,7 +1524,7 @@ function statusSheetHtml() {
   row('Your sheet', SYNCING ? 'Syncing…' : S.syncErr ? 'Problem' : 'Connected', S.syncErr ? 'bad' : 'ok');
   row('Last synced', ago(S.lastSync), Date.now() - S.lastSync > 86400000 ? 'warn' : '');
   row('Waiting to send', n ? n + ' change' + (n === 1 ? '' : 's') : 'nothing', n ? 'warn' : '');
-  row('Script version', v + (v < 13 ? ' — update needed' : ' ✓'), v < 13 ? 'warn' : '');
+  row('Script version', v + (v < 14 ? ' — update needed' : ' ✓'), v < 14 ? 'warn' : '');
   h += '</div>';
   if (S.syncErr) h += '<div class="spendsum" style="color:var(--bad)">' + esc(S.syncErr) + '</div>';
   if (n) {
@@ -1520,7 +1532,7 @@ function statusSheetHtml() {
       var d = o.tx ? (o.op === 'delete' ? 'Delete ' : o.op === 'update' ? 'Change ' : 'Add ') + esc(o.tx.v || o.tx.c || '') + ' ' + money(o.tx.a, true) : o.op === 'delete' ? 'Delete an entry' : ({ budgets: 'Budget changes', budget: 'Budget change', trip: 'Trip', recur: 'Recurring bill', goal: 'Savings goal', prefs: 'Settings', regroup: 'Category group', tag: 'Trip tags' })[o.op] || o.op;
       return '<div class="strow"><span>' + d + '</span></div>'; }).join('') + (n > 6 ? '<div class="strow"><span>+ ' + (n - 6) + ' more</span></div>' : '') + '</div>';
   }
-  if (v && v < 13) h += '<div class="hint" style="margin-top:10px">Paste the newest Code.gs, then Deploy → Manage deployments → ✏️ → Version: New version → Deploy.</div>';
+  if (v && v < 14) h += '<div class="hint" style="margin-top:10px">Paste the newest Code.gs, then Deploy → Manage deployments → ✏️ → Version: New version → Deploy.</div>';
   h += '<button class="btn pri" style="width:100%;margin-top:14px" data-act="syncnow" id="st_sync"' + (SYNCING ? ' disabled' : '') + '>' + (SYNCING ? 'Syncing…' : 'Sync now') + '</button>';
   return h;
 }
@@ -1575,6 +1587,43 @@ var NUMS = {};
 // plays once the sheet closes — so after "Save & add another" ×3 you see the whole batch land.
 var BARS = {}, ANIM_WAIT = false, CLOSED_AT = 0;
 function fmtCount(el, v) { return el.hasAttribute('data-cents') ? money(v, true) : money(v); }
+// ---- smooth motion helpers
+// A new screen fades in instead of snapping.
+function viewIn() {
+  if (REDUCED) return;
+  var v = $('view'); if (!v) return;
+  v.classList.remove('vin'); void v.offsetWidth; v.classList.add('vin');
+  clearTimeout(viewIn.t); viewIn.t = setTimeout(function () { v.classList.remove('vin'); }, 260);
+}
+// A box that changed height grows/shrinks to its new size.
+function flipHeight(el, from) {
+  if (REDUCED || !el) return;
+  var to = el.offsetHeight; if (Math.abs(to - from) < 2) return;
+  el.style.height = from + 'px'; el.style.overflow = 'hidden'; void el.offsetHeight;
+  el.style.transition = 'height .26s ease'; el.style.height = to + 'px';
+  setTimeout(function () { el.style.height = ''; el.style.overflow = ''; el.style.transition = ''; }, 290);
+}
+// When the page is redrawn (a sync, a toggle…), keep what you're looking at in the same spot on screen.
+function anchorPick() {
+  if (window.scrollY < 4) return null;
+  var lim = topClear(), els = document.querySelectorAll('#view [id], #view [data-ck], #view .tx[data-v], #view [data-act][data-v], #view section.card');
+  for (var i = 0; i < els.length; i++) {
+    var r = els[i].getBoundingClientRect();
+    if (r.height && r.top >= lim - 1 && r.top < window.innerHeight) { var k = anchorKey(els[i]); if (k) return { k: k, top: r.top }; }
+  }
+  return null;
+}
+function anchorKey(el) {
+  if (el.id) return '#' + el.id;
+  if (el.getAttribute('data-ck')) return 'ck:' + el.getAttribute('data-ck');
+  if (el.getAttribute('data-v') !== null && el.getAttribute('data-act')) return el.getAttribute('data-act') + ':' + el.getAttribute('data-v');
+  return null;
+}
+function anchorFind(k) {
+  var els = document.querySelectorAll('#view [id], #view [data-ck], #view [data-act][data-v]');
+  for (var i = 0; i < els.length; i++) if (anchorKey(els[i]) === k) return els[i];
+  return null;
+}
 var ANIMS = {};
 // a chip like "−$35" next to a number; it stays for 2.2s even if the screen is redrawn meanwhile
 function makeChip(tone, text) {
@@ -1799,7 +1848,7 @@ function viewMonth() {
     '<button data-act="mnext" aria-label="Next month"' + (key >= cur ? ' disabled' : '') + '>' + svgChevron(false) + '</button></div>';
 
   if (isCur) h += todayLineHtml(key, s, bt, left, pct, pace, dim, day);
-  if (isCur) h += tripNowHtml() + billRemindHtml(key) + checkinCardHtml();
+  if (isCur) h += reviewLineHtml() + tripNowHtml() + billRemindHtml(key) + checkinCardHtml();
   h += '<section class="card hero"><div class="eyebrow">' + (left >= 0 ? 'Left in budget' : 'Over budget') + '</div>' +
     '<div class="bigrow"><div class="big' + (left < 0 ? ' neg' : '') + '" data-count="' + Math.abs(left) + '" data-ck="hero' + key + '" data-good="' + (left < 0 ? 'down' : 'up') + '" data-delta>' + money(Math.abs(left)) + '</div></div>' +
     '<div class="sub">Spent <span data-count="' + s.spentB + '" data-ck="spent' + key + '" data-good="down">' + money(s.spentB) + '</span> of ' + money(bt.spend) + ' budgeted' + (s.spentB !== s.spent ? ' <span class="yset">(yearly bills as set aside)</span>' : '') + (s.trip ? ' · plus <b class="tnum">' + money(s.trip) + '</b> on trips' : '') + '</div>' +
@@ -1870,7 +1919,7 @@ function viewMonth() {
 function groupOpen(gid, rows) {
   S.mopen = S.mopen || {};
   if (S.mopen[gid] !== undefined) return S.mopen[gid];
-  return rows.some(function (r) { return gid !== 'save' && !r.yr && r.bud > 0 && r.spent - r.bud > 0.5; });   // something over budget: show it
+  return rows.some(function (r) { return gid !== 'save' && gid !== 'give' && !r.yr && r.bud > 0 && r.spent - r.bud > 0.5; });   // something over budget: show it
 }
 function monthGroupHtml(g, rows, gs, gb, pace) {
   var open = groupOpen(g.id, rows), pct = gb > 0 ? gs / gb : (gs > 0 ? 1.01 : 0), over = rows.filter(function (r) { return !r.yr && r.bud > 0 && r.spent - r.bud > 0.5; }).length;
@@ -1878,13 +1927,14 @@ function monthGroupHtml(g, rows, gs, gb, pace) {
   if (g.id === 'bills') {
     var paid = rows.filter(function (r) { return r.spent > 0 || (r.yr && !r.yr.dueNow); }).length;
     right = paid + ' of ' + rows.length + ' paid';
-  } else if (g.id === 'save') right = money(gs) + ' of ' + money(gb);
+  } else if (g.id === 'save') right = gs >= gb && gb > 0 ? '<span class="good">' + money(gs) + ' of ' + money(gb) + ' ✓</span>' : money(gs) + ' of ' + money(gb);
+  else if (g.id === 'give' && gs - gb > 0.5) right = '<span class="good"><span data-count="' + (gs - gb) + '" data-ck="gover' + g.id + '" data-good="up">' + money(gs - gb) + '</span> extra ✓</span>';
   else right = gs - gb > 0.5 ? '<span class="over"><span data-count="' + (gs - gb) + '" data-ck="gover' + g.id + '" data-good="down">' + money(gs - gb) + '</span> over</span>'
     : '<span data-count="' + (gb - gs) + '" data-ck="gleft' + g.id + '" data-good="up">' + money(gb - gs) + '</span> left';
   var h = '<section class="card mgroup' + (open ? ' open' : '') + '"><button class="mghead" data-act="mgrp" data-v="' + g.id + '" aria-expanded="' + open + '">' +
-    '<span class="mgname"><b>' + g.name + '</b><small><span data-count="' + gs + '" data-ck="gs' + g.id + '">' + money(gs) + '</span> of ' + money(gb) + (over && g.id !== 'save' ? ' · <span class="over">' + over + ' over</span>' : '') + '</small></span>' +
+    '<span class="mgname"><b>' + g.name + '</b><small><span data-count="' + gs + '" data-ck="gs' + g.id + '">' + money(gs) + '</span> of ' + money(gb) + (over && g.id !== 'save' && g.id !== 'give' ? ' · <span class="over">' + over + ' over</span>' : '') + '</small></span>' +
     '<span class="mgright">' + right + '</span><i class="chev' + (open ? ' up' : '') + '"></i>' +
-    '<span class="bar mgbar"><i class="' + (pct > 1 && g.id !== 'save' ? 'over' : '') + '" data-bar="g' + g.id + '" style="width:' + Math.min(100, pct * 100).toFixed(1) + '%"></i>' +
+    '<span class="bar mgbar"><i class="' + (g.id === 'save' || g.id === 'give' ? (pct >= 1 && gb > 0 ? 'good' : '') : pct > 1 ? 'over' : '') + '" data-bar="g' + g.id + '" style="width:' + Math.min(100, pct * 100).toFixed(1) + '%"></i>' +
     (FLEX[g.id] && pace < 1 && gb > 0 ? '<b style="left:' + (pace * 100).toFixed(1) + '%"></b>' : '') + '</span></button>';
   h += '<div class="mgbody"><div class="mgin">';
   rows.forEach(function (row) { h += slimCatRow(row, g.id, pace); });
@@ -1902,12 +1952,13 @@ function slimCatRow(row, gid, pace) {
       '<span class="bar sbar"><i class="' + (over ? 'over' : '') + '" style="width:' + (pct * 100).toFixed(1) + '%"></i></span>' + right + '</button>';
   }
   if (gid === 'bills') right = row.spent > 0 ? (row.spent - row.bud > 0.5 ? '<em class="over">' + money(row.spent - row.bud) + ' over</em>' : '<em class="done">✓ paid</em>') : '<em>' + money(row.bud) + ' due</em>';
-  else if (gid === 'save') right = '<em' + (row.spent >= row.bud && row.bud > 0 ? ' class="done"' : '') + '>' + money(row.spent) + ' of ' + money(row.bud) + '</em>';
+  else if (gid === 'save') right = '<em' + (row.spent >= row.bud && row.bud > 0 ? ' class="done"' : '') + '>' + money(row.spent) + ' of ' + money(row.bud) + (row.spent >= row.bud && row.bud > 0 ? ' ✓' : '') + '</em>';
+  else if (gid === 'give' && row.bud > 0 && row.spent - row.bud > 0.5) right = '<em class="done"><span data-count="' + (row.spent - row.bud) + '" data-ck="co' + esc(row.c) + '" data-good="up">' + money(row.spent - row.bud) + '</span> extra ✓</em>';
   else if (!row.bud) right = '<em class="over"><span data-count="' + row.spent + '" data-ck="cs' + esc(row.c) + '" data-good="down">' + money(row.spent) + '</span> · no budget</em>';
   else right = row.spent - row.bud > 0.5 ? '<em class="over"><span data-count="' + (row.spent - row.bud) + '" data-ck="co' + esc(row.c) + '" data-good="down">' + money(row.spent - row.bud) + '</span> over</em>'
     : '<em><span data-count="' + (row.bud - row.spent) + '" data-ck="cl' + esc(row.c) + '" data-good="up">' + money(row.bud - row.spent) + '</span> left</em>';
   return '<button class="scrow" data-act="cat" data-v="' + esc(row.c) + '" data-k="e"><b>' + esc(row.c) + (row.carry ? '<small class="ytag">' + (row.carry > 0 ? '+' + money(row.carry) + ' carried over' : money(-row.carry) + ' less (last month over)') + '</small>' : '') + '</b>' +
-    '<span class="bar sbar"><i class="' + (over && gid !== 'save' ? 'over' : '') + '" data-bar="c' + esc(row.c) + '" style="width:' + Math.min(100, pct * 100).toFixed(1) + '%"></i></span>' + right + '</button>';
+    '<span class="bar sbar"><i class="' + (gid === 'save' || gid === 'give' ? (pct >= 1 && row.bud > 0 ? 'good' : '') : over ? 'over' : '') + '" data-bar="c' + esc(row.c) + '" style="width:' + Math.min(100, pct * 100).toFixed(1) + '%"></i></span>' + right + '</button>';
 }
 // Recurring bills on the Month tab: a slim reminder up top only when one is due soon or late
 function billRemindList(key) {
@@ -1957,6 +2008,8 @@ function catRow(row, gid, pace) {
     right = row.spent > 0 ? (over ? '<em class="over">' + money(row.spent - row.bud) + ' over</em>' : '<em class="done">✓ paid</em>') : '<em>' + money(row.bud) + ' due</em>';
   } else if (gid === 'save') {
     right = row.spent >= row.bud && row.bud > 0 ? '<em class="done">✓ ' + money(row.spent) + '</em>' : '<em>' + money(row.spent) + ' of ' + money(row.bud) + '</em>';
+  } else if (over && gid === 'give') {
+    right = '<em class="done">' + money(row.spent - row.bud) + ' extra ✓</em>';
   } else if (over) {
     right = '<em class="over">' + money(row.spent - row.bud) + ' over</em>';
   } else {
@@ -1964,7 +2017,7 @@ function catRow(row, gid, pace) {
   }
   var showPace = FLEX[gid] && pace < 1 && row.bud > 0;
   return '<button class="crow" data-act="cat" data-v="' + esc(row.c) + '" data-k="e"><div class="l1"><b>' + esc(row.c) + '</b>' + right + '</div>' +
-    '<div class="bar"><i class="' + (over && gid !== 'save' ? 'over' : '') + '" style="width:' + Math.min(100, pct * 100).toFixed(1) + '%"></i>' +
+    '<div class="bar"><i class="' + (gid === 'save' || gid === 'give' ? (pct >= 1 && row.bud > 0 ? 'good' : '') : over ? 'over' : '') + '" style="width:' + Math.min(100, pct * 100).toFixed(1) + '%"></i>' +
     (showPace ? '<b style="left:' + (pace * 100).toFixed(1) + '%"></b>' : '') + '</div>' +
     '<div class="l2">' + money(row.spent, true) + (row.bud ? ' of ' + money(row.bud) : ' · no budget set') +
     (row.prev !== null && row.prev !== undefined && row.prev !== row.bud ? ' · <span class="chg">' + (row.prev ? 'was ' + money(row.prev) : 'new') + ' this month</span>' : '') + '</div></button>';
@@ -2252,6 +2305,7 @@ function catStatus(c, kind, key) {
   }
   if (bud > 0) {
     var left = bud - spent;
+    if (left < 0 && moreIsGood(c, key)) return { t: money(-left) + ' extra in ' + MON[ymM(key)] + ' ✓', cls: 'good' };
     return left >= 0 ? { t: money(left) + ' left in ' + MON[ymM(key)], cls: '' } : { t: money(-left) + ' over in ' + MON[ymM(key)], cls: 'over' };
   }
   return { t: spent ? money(spent) + ' spent in ' + MON[ymM(key)] + ' · no budget' : 'no budget', cls: 'muted' };
@@ -2531,6 +2585,11 @@ function headsUpItems() {
   var mine = upList().filter(function (x) { return x.k <= cur; }).sort(function (a, b) { return a.k - b.k; }).map(function (x) { return upLine(x, x.k < cur); });
   return mine.concat(comingUpItems(cur).filter(function (x) { return !x.id; }));
 }
+// Start of a month: review (and confirm) the month's budget, plus the heads-up list. S.bc = last month confirmed (synced).
+function reviewDue() {
+  var cur = nowYM(), t = budgetTotals(cur);
+  return !!S && !S.demo && (S.bc || 0) < cur && t.spend + t.save > 0;
+}
 function maybeHeadsUp() {
   if (!S || S.demo) return;
   var cur = nowYM();
@@ -2540,15 +2599,48 @@ function maybeHeadsUp() {
   var it = headsUpItems();
   S.hu = cur;
   save(); if (S.cfg.url) { S.prefsSent = ''; queuePrefs(); flushSoon(); }
-  if (it.length) openSheet('headsup');
+  if (it.length || reviewDue()) openSheet('headsup');
+}
+function budgetReviewHtml(cur) {
+  var t = budgetTotals(cur), g = t.g, inc = t.inc, every = (g.daily || 0) + (g.out || 0) + (g.once || 0);
+  var left = inc - t.spend - t.save, last = monthStats(cur - 1), lb = budgetTotals(cur - 1);
+  var line = function (label, a, sub) { return '<div class="rvl"><span>' + label + (sub ? '<small>' + sub + '</small>' : '') + '</span><b>' + money(a) + '</b></div>'; };
+  var h = '<section class="card rvcard"><div class="ghead"><h3>Your budget for ' + MONTHS[ymM(cur)] + '</h3></div>';
+  if (inc) h += line('Income', inc, 'planned');
+  if (g.bills) h += line('Bills', g.bills);
+  if (g.give) h += line('Giving', g.give);
+  if (every) h += line('Everyday spending', every, 'daily living, going out, one-time');
+  if (t.save) h += line('Savings', t.save);
+  if (inc) h += '<div class="rvl tot"><span>' + (left >= 0 ? 'Not planned yet' : 'Planned beyond income') + '</span><b class="' + (left < 0 ? 'neg' : '') + '">' + money(Math.abs(left)) + '</b></div>';
+  if (last.n && lb.flex > 0) {
+    var spentFlex = 0, ms = last.cat;
+    Object.keys(ms).forEach(function (c) { if (FLEX[groupOf(c, cur - 1)]) spentFlex += ms[c]; });
+    h += '<div class="hint" style="margin-top:8px">In ' + MONTHS[ymM(cur - 1)] + ' you spent ' + money(spentFlex) + ' on everyday things against ' + money(lb.flex) + ' budgeted' + (spentFlex > lb.flex + 5 ? ' — worth a look if that’s become normal.' : '.') + '</div>';
+  }
+  return h + '</section>';
 }
 function headsUpHtml() {
-  var cur = nowYM(), it = headsUpItems(), tot = it.reduce(function (a, x) { return a + (x.a || 0); }, 0);
-  var h = '<div class="shead"><h2>Heads up for ' + MONTHS[ymM(cur)] + '</h2><button data-act="close">Got it</button></div>';
-  h += '<div class="sub" style="margin:-6px 0 12px">' + (it.length ? 'Here’s what’s coming up this month' + (tot ? ' — about <b>' + money(tot) + '</b> beyond your usual' : '') + '.' : 'Nothing out of the ordinary this month.') + '</div>';
+  var cur = nowYM(), it = headsUpItems(), tot = it.reduce(function (a, x) { return a + (x.a || 0); }, 0), rv = reviewDue();
+  var h = '<div class="shead"><h2>' + (rv ? 'Welcome to ' + MONTHS[ymM(cur)] : 'Heads up for ' + MONTHS[ymM(cur)]) + '</h2><button data-act="close">' + (rv ? 'Later' : 'Got it') + '</button></div>';
+  if (rv) {
+    h += '<div class="sub" style="margin:-6px 0 12px">A new month — take a quick look at the plan and confirm it.</div>' + budgetReviewHtml(cur);
+    if (it.length) h += '<div class="flabel" style="margin:14px 2px 6px">Heads up for ' + MONTHS[ymM(cur)] + (tot ? ' · about ' + money(tot) + ' extra' : '') + '</div>';
+  } else {
+    h += '<div class="sub" style="margin:-6px 0 12px">' + (it.length ? 'Here’s what’s coming up this month' + (tot ? ' — about <b>' + money(tot) + '</b> beyond your usual' : '') + '.' : 'Nothing out of the ordinary this month.') + '</div>';
+  }
   if (it.length) h += '<div class="card hucard">' + it.map(citemHtml).join('') + '</div>';
-  h += '<div class="btns" style="margin-top:12px"><button class="btn" data-act="hugo" id="hu_go">See Coming up</button><button class="btn pri" data-act="close" id="hu_ok">Got it</button></div>';
+  if (rv) h += '<div class="btns" style="margin-top:12px"><button class="btn" data-act="bchange" id="rv_change">Make changes</button><button class="btn pri" data-act="bconfirm" id="rv_ok">Looks good ✓</button></div>';
+  else h += '<div class="btns" style="margin-top:12px"><button class="btn" data-act="hugo" id="hu_go">See Coming up</button><button class="btn pri" data-act="close" id="hu_ok">Got it</button></div>';
   return h;
+}
+function confirmBudget(key) {
+  if ((S.bc || 0) >= key) return;
+  S.bc = key; save();
+  if (S.cfg.url && !S.demo) { S.prefsSent = ''; queuePrefs(); flushSoon(); }
+}
+function reviewLineHtml() {
+  if (!reviewDue() || (S.hu || 0) < nowYM()) return '';
+  return '<button class="card bline rvline" data-act="review"><span><b>Review ' + MONTHS[ymM(nowYM())] + '’s budget</b><small>Not confirmed yet · takes a minute</small></span><i class="chev rt"></i></button>';
 }
 
 function upSave() {
@@ -2586,7 +2678,7 @@ function comingUpItems(k) {
     var was = bmap(k - 1)[c], wa = was && !was.rm ? was.a : 0;
     if (bm[c].rm && !wa) return;
     if (!bm[c].rm && Math.abs(bm[c].a - wa) < 0.005) return;
-    items.push({ i: '✎', t: '<b>' + esc(c) + '</b> ' + (bm[c].g === 'inc' ? 'income' : 'budget'), a: 0, n: bm[c].rm ? 'removed' : (wa ? money(wa) + ' → ' + money(bm[c].a) : 'starts at ' + money(bm[c].a)) });
+    items.push({ bc: c + '|' + k, i: '✎', t: '<b>' + esc(c) + '</b> ' + (bm[c].g === 'inc' ? 'income' : 'budget'), a: 0, n: bm[c].rm ? 'removed' : (wa ? money(wa) + ' → ' + money(bm[c].a) : 'starts at ' + money(bm[c].a)) });
   });
   // what this month cost last year, beyond your usual
   var lm = monthStats(k - 12);
@@ -2602,6 +2694,7 @@ function comingUpItems(k) {
 }
 function citemHtml(x) {
   var inner = '<i>' + x.i + '</i><span>' + x.t + (x.a ? ' <em>' + money(x.a) + '</em>' : '') + '<small>' + x.n + '</small></span>';
+  if (x.bc) return '<button class="citem cup" data-act="bchg" data-v="' + esc(x.bc) + '">' + inner + '<b class="chev rt"></b></button>';
   return x.id ? '<button class="citem cup" data-act="upedit" data-v="' + esc(x.id) + '">' + inner + '<b class="chev rt"></b></button>' : '<div class="citem">' + inner + '</div>';
 }
 function planComingHtml() {
@@ -2817,9 +2910,52 @@ function allBudgetChanges() {
 }
 function budgetChangeLine(e) {
   var cur = nowYM();
-  return '<button class="bhrow" data-act="pcat" data-v="' + esc(e.c) + '"><span><b>' + esc(e.c) + '</b><small>' + (e.s > cur ? 'starts ' : 'from ') + MON[ymM(e.s)] + ' ' + ymY(e.s) + '</small></span>' +
+  return '<button class="bhrow" ' + (e.s > cur ? 'data-act="bchg" data-v="' + esc(e.c + '|' + e.s) + '"' : 'data-act="pcat" data-v="' + esc(e.c) + '"') + '><span><b>' + esc(e.c) + '</b><small>' + (e.s > cur ? 'starts ' : 'from ') + MON[ymM(e.s)] + ' ' + ymY(e.s) + '</small></span>' +
     '<em>' + (e.rm ? 'removed' : e.from === null || e.from === 0 ? 'added · ' + money(e.a) : money(e.from) + ' → ' + money(e.a)) + '</em></button>';
 }
+// ---- cancel a budget change that hasn't started yet
+function dropBudgetRows(c, k) {
+  var out = [];
+  for (var i = S.budget.length - 1; i >= 0; i--) { var b = S.budget[i]; if (low(b.c) === low(c) && b.s === +k) out.push(S.budget.splice(i, 1)[0]); }
+  return out;
+}
+function bchgInfo(v) {
+  var i = v.lastIndexOf('|'), c = v.slice(0, i), k = +v.slice(i + 1), row = budgetAt(k)[low(c)];
+  if (!row || row.s !== k) return null;
+  var was = bmap(k - 1)[low(c)], wa = was && !was.rm ? was.a : 0;
+  var back = S.budget.filter(function (b) { return low(b.c) === low(c) && b.s === k + 1 && /^back after/i.test(b.n || ''); })[0];
+  return { c: low(c), k: k, row: row, wa: wa, hadBefore: !!(was && !was.rm), back: back, inc: row.g === 'inc' };
+}
+function bchgHtml(v) {
+  var x = bchgInfo(v), h = '<div class="shead"><h2>Upcoming change</h2><button data-act="close">Done</button></div>';
+  if (!x) return h + '<div class="sub">This change has already been cancelled or has started.</div>';
+  var when = MONTHS[ymM(x.k)] + ' ' + ymY(x.k), what = x.row.rm ? 'removed' : !x.hadBefore ? 'added at ' + money(x.row.a) : money(x.wa) + ' → ' + money(x.row.a);
+  h += '<section class="card"><div class="l1" style="display:flex;justify-content:space-between;gap:10px"><b style="font-size:17px">' + esc(x.c) + '</b><b>' + what + '</b></div>' +
+    '<div class="l2" style="margin-top:4px">' + (x.inc ? 'Income · ' : '') + 'starts ' + when + (x.back ? ' · only for ' + MONTHS[ymM(x.k)] + ', back to ' + money(x.back.a) + ' after' : '') + '</div></section>';
+  h += '<div class="sub" style="margin:4px 2px 12px">It hasn’t started yet. Cancelling it ' +
+    (x.hadBefore ? 'keeps ' + esc(x.c) + ' at <b>' + money(x.wa) + '</b>, what it is now.' : 'takes ' + esc(x.c) + ' back out of the budget.') + ' You can undo right after.</div>';
+  if (!S.demo && S.cfg.url && (S.scriptV || 0) < 14) h += '<div class="banner warnb" style="margin-bottom:12px"><span>Update the script in your sheet (Code.gs version 14) to cancel changes.</span></div>';
+  h += '<div class="btns"><button class="btn danger" data-act="bchgcancel" data-v="' + esc(v) + '" id="bc_cancel"' + (!S.demo && S.cfg.url && (S.scriptV || 0) < 14 ? ' disabled' : '') + '>Cancel this change</button><button class="btn pri" data-act="close">Keep it</button></div>';
+  return h;
+}
+function cancelBudgetChange(v) {
+  var x = bchgInfo(v); if (!x) return;
+  var ks = [x.k].concat(x.back ? [x.k + 1] : []), removed = [];
+  ks.forEach(function (k) {
+    dropBudgetRows(x.c, k).forEach(function (r) { removed.push(r); });
+    if (!S.demo) S.outbox.push({ oid: nid('o'), op: 'budgetundo', c: x.c, s: k });
+  });
+  save(); closeSheet(); keepScroll(render);
+  toast('Cancelled · ' + x.c + (x.hadBefore ? ' stays ' + money(x.wa) : ' isn’t added'), function () {
+    removed.forEach(function (r) {
+      S.budget.push(r);
+      if (!S.demo) S.outbox.push({ oid: nid('o'), op: 'budget', b: { mode: 'from', s: r.s, g: r.g, c: r.c, a: +r.a || 0, remove: r.n === 'removed', note: r.n === 'removed' ? '' : (r.n || '') } });
+    });
+    save(); keepScroll(render); flushSoon();
+  });
+  flushSoon();
+}
+
 function planHistoryHtml() {
   var all = allBudgetChanges(); if (!all.length) return '';
   var cur = nowYM(), past = all.filter(function (e) { return e.s <= cur; }), up = all.filter(function (e) { return e.s > cur; });
@@ -2848,7 +2984,8 @@ function catHistoryHtml(c) {
     var nxt = i > 0 ? rows[i - 1] : null, endK = nxt ? nxt.s - 1 : null;
     var when = e.s > cur ? 'starts ' + MON[ymM(e.s)] + ' ' + ymY(e.s) : endK === null ? 'since ' + MON[ymM(e.s)] + ' ' + ymY(e.s) :
       MON[ymM(e.s)] + ' ' + ymY(e.s) + (endK > e.s ? ' – ' + MON[ymM(endK)] + ' ' + ymY(endK) : '');
-    return '<div class="chrow' + (endK === null || e.s > cur ? ' now' : '') + '"><b>' + (e.rm ? 'removed' : money(e.a)) + '</b><span>' + when + '</span></div>';
+    if (e.s > cur) return '<button class="chrow now" data-act="bchg" data-v="' + esc(e.c + '|' + e.s) + '"><b>' + (e.rm ? 'removed' : money(e.a)) + '</b><span>' + when + ' · <u>cancel?</u></span></button>';
+    return '<div class="chrow' + (endK === null ? ' now' : '') + '"><b>' + (e.rm ? 'removed' : money(e.a)) + '</b><span>' + when + '</span></div>';
   }).join('') + '</div>';
 }
 
@@ -2873,7 +3010,7 @@ function planHomeHtml() {
     (nextJan > cur + 1 ? '<button class="chip" data-act="pgo" data-v="year">' + ymY(nextJan) + '</button>' : '') + '</span></span></div>';
   h += '<button class="pchoice" data-act="pgo" data-v="whatif"><span class="pico">?</span><span><b>Try a what-if</b><small>What if I spent like my average, or made a different income? Nothing saves unless you choose.</small></span><em>›</em></button>';
   h += '</div>';
-  h += '<div style="margin-top:12px">' + planRealityHtml() + planComingHtml() + planPayHtml() + goalsCardHtml(true) + planHistoryHtml() + '</div>';
+  h += '<div style="margin-top:12px">' + planComingHtml() + planPayHtml() + goalsCardHtml(true) + planHistoryHtml() + '</div>';
   h += '<div class="hint" style="text-align:center;margin-top:14px">Made a typo in an old month? <button class="linkbtn" data-act="pgo" data-v="fix">Correct a past budget</button></div>';
   return h;
 }
@@ -2954,7 +3091,7 @@ function planCatHtml(c) {
   for (var k = cur - 6; k < cur; k++) {
     var ms = monthStats(k), v = g === 'inc' ? (ms.icat[c] || 0) : (ms.cat[c] || 0);
     if (v) any = true;
-    cols.push({ label: MON[ymM(k)].charAt(0), vals: [Math.max(0, v)], over: g !== 'inc' && g !== 'save' && amt > 0 && v > amt, info: '<b>' + planMonthName(k) + '</b> · ' + money(v, true) });
+    cols.push({ label: MON[ymM(k)].charAt(0), vals: [Math.max(0, v)], over: g !== 'inc' && g !== 'save' && g !== 'give' && amt > 0 && v > amt, good: (g === 'save' || g === 'give') && amt > 0 && v >= amt, info: '<b>' + planMonthName(k) + '</b> · ' + money(v, true) });
   }
   if (any) { UI.sel.pc = 5; h += '<div class="pchart" id="pc_chart">' + barChart('pc', cols, { line: amt, lineLabel: 'plan' }) + '</div>'; }
   h += catHistoryHtml(c);
@@ -2970,7 +3107,7 @@ function planCatChart() {
   var c = SHEET.arg, g = planGroup(c), cur = nowYM(), cols = [];
   for (var k = cur - 6; k < cur; k++) {
     var ms = monthStats(k), v = g === 'inc' ? (ms.icat[c] || 0) : (ms.cat[c] || 0);
-    cols.push({ label: MON[ymM(k)].charAt(0), vals: [Math.max(0, v)], over: g !== 'inc' && g !== 'save' && a > 0 && v > a, info: '<b>' + planMonthName(k) + '</b> · ' + money(v, true) });
+    cols.push({ label: MON[ymM(k)].charAt(0), vals: [Math.max(0, v)], over: g !== 'inc' && g !== 'save' && g !== 'give' && a > 0 && v > a, good: (g === 'save' || g === 'give') && a > 0 && v >= a, info: '<b>' + planMonthName(k) + '</b> · ' + money(v, true) });
   }
   box.innerHTML = barChart('pc', cols, { line: a, lineLabel: 'plan' });
 }
@@ -3287,6 +3424,7 @@ function savePlan(mode) {
   P.vals = {}; P.step = 'home'; UI.popen = {};
   if (P.mode === 'fix') { P.mode = 'from'; }
   var savedKey = P.key;
+  if (mode !== 'fix' && savedKey <= nowYM()) confirmBudget(nowYM());
   save();
   if (SHEET) closeSheet();
   render(); window.scrollTo(0, 0);
@@ -4442,8 +4580,8 @@ function barChart(id, cols, opts) {
     c.vals.forEach(function (v, j) {
       var hgt = Math.max(0, v / max * 100).toFixed(1);
       if (j === 0 && c.trip > 0 && v > 0) {
-        h += '<i class="s1 stk' + (c.over ? ' over' : '') + '" style="height:' + hgt + '%"><b class="trip" style="height:' + Math.min(100, c.trip / v * 100).toFixed(1) + '%"></b></i>';
-      } else h += '<i class="s' + (j + 1) + (j === 0 && c.over ? ' over' : '') + '" style="height:' + hgt + '%"></i>';
+        h += '<i class="s1 stk' + (c.over ? ' over' : c.good ? ' good' : '') + '" style="height:' + hgt + '%"><b class="trip" style="height:' + Math.min(100, c.trip / v * 100).toFixed(1) + '%"></b></i>';
+      } else h += '<i class="s' + (j + 1) + (j === 0 && c.over ? ' over' : j === 0 && c.good ? ' good' : '') + '" style="height:' + hgt + '%"></i>';
     });
     if (c.mark) h += '<b class="tick" style="bottom:' + (c.mark / max * 100).toFixed(1) + '%"></b>';
     h += '</button>';
@@ -4664,7 +4802,7 @@ function trendMonth() {
       '<table class="tb"><tr><th>Category</th><th>Avg</th><th>Budget</th><th>Gap</th></tr>';
     rows.forEach(function (x) {
       var gap = x.avg - x.bud;
-      h += '<tr data-act="cat" data-v="' + esc(x.c) + '" data-k="e"><td>' + esc(x.c) + '</td><td>' + money(x.avg) + '</td><td>' + (x.bud ? money(x.bud) : '—') + '</td><td class="' + (gap > 5 ? 'up' : (gap < -5 ? 'down' : '')) + '">' + (Math.abs(gap) < 5 ? 'on target' : (gap > 0 ? '▲ ' : '▼ ') + money(Math.abs(gap))) + '</td></tr>';
+      h += '<tr data-act="cat" data-v="' + esc(x.c) + '" data-k="e"><td>' + esc(x.c) + '</td><td>' + money(x.avg) + '</td><td>' + (x.bud ? money(x.bud) : '—') + '</td><td class="' + (moreIsGood(x.c) ? (gap > 5 ? 'down' : '') : gap > 5 ? 'up' : (gap < -5 ? 'down' : '')) + '">' + (Math.abs(gap) < 5 ? 'on target' : (gap > 0 ? '▲ ' : '▼ ') + money(Math.abs(gap))) + '</td></tr>';
     });
     h += '</table><details class="itip"><summary>ⓘ <span>What this means</span></summary><div class="hint">▲ = you usually spend more than budgeted. Trip spending is left out. Budgets are the ones in effect each month. Tap a row for its history.</div></details></section>';
   }
@@ -4784,7 +4922,7 @@ function trendYear() {
       '<table class="tb"><tr><th>Category</th><th>Actual</th><th>Budget</th><th>Gap</th></tr>';
     rows.forEach(function (x) {
       var gap = x.act - x.bud;
-      h += '<tr data-act="cat" data-v="' + esc(x.c) + '" data-k="e"><td>' + esc(x.c) + '</td><td>' + money(x.act) + '</td><td>' + (x.bud ? money(x.bud) : '—') + '</td><td class="' + (gap > 10 ? 'up' : (gap < -10 ? 'down' : '')) + '">' + (gap >= 0 ? '+' : '−') + money(Math.abs(gap)) + '</td></tr>';
+      h += '<tr data-act="cat" data-v="' + esc(x.c) + '" data-k="e"><td>' + esc(x.c) + '</td><td>' + money(x.act) + '</td><td>' + (x.bud ? money(x.bud) : '—') + '</td><td class="' + (moreIsGood(x.c) ? (gap > 10 ? 'down' : '') : gap > 10 ? 'up' : (gap < -10 ? 'down' : '')) + '">' + (gap >= 0 ? '+' : '−') + money(Math.abs(gap)) + '</td></tr>';
     });
     h += '</table><details class="itip"><summary>ⓘ <span>What this means</span></summary><div class="hint">Budget = each month’s budget added up, so mid-year changes count from when they started. Big one-off bills (like a 6-month insurance payment) even out here.</div></details></section>';
   }
@@ -4931,6 +5069,8 @@ function renderSheet() {
     h += recurEditHtml(SHEET.arg && SHEET.arg.name, SHEET.arg && SHEET.arg.preset);
   } else if (SHEET.kind === 'pcat') {
     h += planCatHtml(SHEET.arg);
+  } else if (SHEET.kind === 'bchg') {
+    h += bchgHtml(SHEET.arg);
   } else if (SHEET.kind === 'headsup') {
     h += headsUpHtml();
   } else if (SHEET.kind === 'upedit') {
@@ -4978,7 +5118,7 @@ function catSheetHtml(c, k) {
     var tv = k === 'i' ? 0 : (s.tripCat[c] || 0);
     if (bx) anyBud = true;
     if (x < cur && s.n) { sum += v; n++; }
-    cols.push({ label: MON[ymM(x)].charAt(0), vals: [v + tv], trip: tv, over: bx && v > bx && !isYearly(c), mark: bx,
+    cols.push({ label: MON[ymM(x)].charAt(0), vals: [v + tv], trip: tv, over: bx && v > bx && !isYearly(c) && !moreIsGood(c, x), good: bx && v >= bx && moreIsGood(c, x), mark: bx,
       info: '<b>' + MONTHS[ymM(x)] + ' ' + ymY(x) + '</b> · ' + money(v, true) + (bx ? ' of ' + money(bx) + ' budget' : '') + (tv ? ' · plus ' + money(tv) + ' on trips' : '') });
   }
   UI.sel.cat = Math.max(0, cols.length - 1 - (cur - key));
@@ -5395,7 +5535,8 @@ function submitTrip() {
 
 var FLASHED = null;
 function keepScroll(fn) {
-  var y = window.scrollY; fn(); window.scrollTo(0, y);
+  var y = window.scrollY, an = GLIDING ? null : anchorPick(); fn(); window.scrollTo(0, y);
+  if (an) { var ae = anchorFind(an.k); if (ae) { var d = ae.getBoundingClientRect().top - an.top; if (Math.abs(d) > 1) window.scrollTo(0, window.scrollY + d); } }
   if (FLASHED) {            // a redraw mid-flash: keep the highlight going on the new row
     var age = performance.now() - FLASHED.t0, fe = age < 1600 && txEl(FLASHED.id);
     if (fe) { fe.style.animationDelay = -Math.round(age) + 'ms'; fe.classList.add('flash'); } else if (age >= 1600) FLASHED = null;
@@ -5623,6 +5764,7 @@ function sync() {
       : op.op === 'goaldel' ? { action: 'goaldel', name: op.name }
       : op.op === 'yeartab' ? { action: 'yeartab', y: op.y }
       : op.op === 'prefs' ? { action: 'prefs', prefs: prefsObj() }
+      : op.op === 'budgetundo' ? { action: 'budgetundo', c: op.c, s: op.s }
       : { action: op.op, tx: op.tx, ref: op.ref };
     var sentPrefs = op.op === 'prefs' ? prefsHash() : '';
     return api(payload).then(function (res) {
@@ -5672,10 +5814,10 @@ var PREF_KEYS = ['pal', 'mode', 'style', 'corners', 'cards', 'density', 'icon', 
 function prefsObj() {
   var cfg = {};
   PREF_KEYS.forEach(function (k) { cfg[k] = S.cfg[k]; });
-  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, pay: S.pay || null, up: S.up || [], hu: S.hu || 0, at: S.prefsAt || 0 };
+  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, pay: S.pay || null, up: S.up || [], hu: S.hu || 0, bc: S.bc || 0, at: S.prefsAt || 0 };
 }
 // "heads up seen" doesn't count as a change by itself: a phone that hasn't caught up mustn't send an older month back
-function prefsHash() { var p = prefsObj(); delete p.at; delete p.hu; return JSON.stringify(p); }
+function prefsHash() { var p = prefsObj(); delete p.at; delete p.hu; delete p.bc; return JSON.stringify(p); }
 function queuePrefs() {
   if (S.demo || (S.scriptV || 0) < 10 || !S.prefsPulled) return;
   var ph = prefsHash();
@@ -5746,6 +5888,7 @@ function applyPull(data) {
     S.outbox.forEach(function (op) {
       if (op.op === 'budget') applyBudgetOp(S.budget, op.b);
       if (op.op === 'budgets') op.list.forEach(function (b) { applyBudgetOp(S.budget, b); });
+      if (op.op === 'budgetundo') dropBudgetRows(op.c, op.s);
     });
   }
   S.scriptV = data.v || 1;
@@ -5774,6 +5917,7 @@ function applyPull(data) {
   if (data.prefs && data.prefs.pay && typeof data.prefs.pay === 'object' && S.pay === undefined) S.pay = data.prefs.pay;
   if (data.prefs && Array.isArray(data.prefs.up) && S.up === undefined) S.up = data.prefs.up;
   if (data.prefs && +data.prefs.hu > (S.hu || 0)) S.hu = +data.prefs.hu;
+  if (data.prefs && +data.prefs.bc > (S.bc || 0)) S.bc = +data.prefs.bc;
   if ((data.v || 0) >= 10) S.prefsPulled = 1;
   CACHE = {}; VER++;
   setTimeout(autoLogRecur, 0);
@@ -5964,13 +6108,13 @@ document.addEventListener('click', function (e) {
     case 'tab':
       // Activity starts clean each time you come back to it
       if (v === 'activity' && UI.tab !== 'activity') { UI.q = ''; UI.am = ''; UI.asort = 'new'; UI.fk = 'all'; UI.lim = 120; }
-      UI.tab = v; UI.edit = null; if (SHEET) closeSheet(); render(); window.scrollTo(0, 0); break;
+      UI.tab = v; UI.edit = null; if (SHEET) closeSheet(); render(); window.scrollTo(0, 0); viewIn(); break;
     case 'goplan':
       if (SHEET) closeSheet();
       var gp = planState();
       if (v) { gp.mode = 'from'; gp.key = Math.max(nowYM(), +v); }
       gp.step = 'edit';
-      UI.tab = 'plan'; UI.edit = null; render(); window.scrollTo(0, 0);
+      UI.tab = 'plan'; UI.edit = null; render(); window.scrollTo(0, 0); viewIn();
       break;
     case 'pcatfrom':                                    // "Change budget" from a category's popup
       var pf = planState(), fk = UI.ym === null ? nowYM() : UI.ym;
@@ -6043,7 +6187,7 @@ document.addEventListener('click', function (e) {
         else { if (pg1.mode === 'fix') pg1.vals = {}; pg1.mode = 'from'; pg1.key = v === 'now' ? cur1 : v === 'next' ? cur1 + 1 : ymKey(ymY(cur1) + 1, 0); }
         pg1.step = 'edit'; UI.popen = {};
       }
-      save(); render(); window.scrollTo(0, 0);
+      save(); render(); window.scrollTo(0, 0); viewIn();
       break;
     case 'preal':
     case 'prealall':
@@ -6070,9 +6214,22 @@ document.addEventListener('click', function (e) {
     case 'payclear': S.pay = null; payChanged(); closeSheet(); keepScroll(render); break;
     case 'payk': UI.payK = +v; keepScroll(render); break;
     case 'bhist': openSheet('bhist'); break;
+    case 'bchg': openSheet('bchg', v); break;
+    case 'bchgcancel':
+      if (UI.armed !== 'bchgcancel') { arm('bchgcancel', el, 'Sure? Tap again'); break; }
+      UI.armed = null; cancelBudgetChange(v); break;
     case 'upedit': openSheet('upedit', v || ''); break;
+    case 'review': openSheet('headsup'); break;
+    case 'bconfirm':
+      confirmBudget(nowYM()); closeSheet(); keepScroll(render);
+      toast('✓ ' + MONTHS[ymM(nowYM())] + '’s budget is set'); break;
+    case 'bchange':
+      closeSheet(); UI.tab = 'plan';
+      var Pb = planState(); if (Pb.mode === 'fix' && planDraftCount()) Pb.vals = {};
+      Pb.mode = 'from'; Pb.key = nowYM(); Pb.step = 'edit'; UI.popen = {};
+      save(); render(); window.scrollTo(0, 0); viewIn(); break;
     case 'hugo':
-      closeSheet(); UI.tab = 'plan'; planState().step = 'home'; render();
+      closeSheet(); UI.tab = 'plan'; planState().step = 'home'; render(); viewIn();
       setTimeout(function () { var pc = $('p_coming'); if (pc) { pc.scrollIntoView({ block: 'start' }); window.scrollBy(0, -70); } }, 30);
       break;
     case 'updel':
@@ -6086,8 +6243,14 @@ document.addEventListener('click', function (e) {
       var ubd = newTxDraft('e'); ubd.v = ub.n; ubd.a = +ub.a || 0; ubd.c = ub.c || '';
       setTimeout(function () { openSheet('add', ubd); if (ub.c) UI.catTouched = true; }, 280);
       break;
-    case 'pback': planState().step = 'home'; save(); render(); window.scrollTo(0, 0); break;
-    case 'pgrp': UI.popen = UI.popen || {}; var pgEl = el.getAttribute('aria-expanded') === 'true'; UI.popen[v] = !pgEl; keepScroll(render); break;
+    case 'pback': planState().step = 'home'; save(); render(); window.scrollTo(0, 0); viewIn(); break;
+    case 'pgrp':
+      UI.popen = UI.popen || {}; var pgEl = el.getAttribute('aria-expanded') === 'true'; UI.popen[v] = !pgEl;
+      var pgSec = el.closest('section'), pgH = pgSec ? pgSec.offsetHeight : 0, pgTop = el.getBoundingClientRect().top;
+      render();
+      var pgNew = document.querySelector('.pgrp[data-v="' + v + '"]');
+      if (pgNew) { window.scrollTo(0, window.scrollY + pgNew.getBoundingClientRect().top - pgTop); flipHeight(pgNew.closest('section'), pgH); }
+      break;
     case 'pcat':
       var Pk = planState();
       if (!planDraftCount() && Pk.step !== 'edit') { Pk.mode = 'from'; Pk.key = nowYM(); }   // opened from a Plan card
@@ -6215,8 +6378,8 @@ document.addEventListener('click', function (e) {
       var stp = sync().then(function (ok) { if (SHEET && SHEET.kind === 'status') renderSheet(); if (ok && act === 'syncnow') toast('Up to date'); });
       if (SHEET && SHEET.kind === 'status') renderSheet();
       break;
-    case 'mprev': if (!el.disabled) { UI.ym--; render(); } break;
-    case 'mnext': if (!el.disabled) { UI.ym++; render(); } break;
+    case 'mprev': if (!el.disabled) { UI.ym--; render(); viewIn(); } break;
+    case 'mnext': if (!el.disabled) { UI.ym++; render(); viewIn(); } break;
     case 'cat': openSheet('cat', { c: v, k: el.getAttribute('data-k') || 'e' }); break;
     case 'fk': UI.fk = v; UI.lim = 120; $('txlist').innerHTML = txListHtml(); refreshChips(); refreshFilterBtn(); break;
     case 'afilter': openSheet('afilter'); break;
@@ -6656,6 +6819,20 @@ document.addEventListener('change', function (e) {
 });
 
 // Remember which settings sections are open so re-renders don't collapse them.
+document.addEventListener('click', function (e) {
+  var sm = e.target.closest ? e.target.closest('summary') : null;
+  if (!sm || REDUCED || e.defaultPrevented) return;
+  var d = sm.parentNode;
+  if (!d || d.tagName !== 'DETAILS' || d.getAttribute('data-anim') || !d.animate) return;
+  e.preventDefault();
+  var cs = getComputedStyle(d), shut = sm.offsetHeight + (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+  var from = d.offsetHeight, opening = !d.open;
+  if (opening) d.open = true;
+  var to = opening ? d.offsetHeight : shut;
+  d.setAttribute('data-anim', '1'); d.style.overflow = 'hidden';
+  var an = d.animate([{ height: from + 'px' }, { height: to + 'px' }], { duration: 240, easing: 'ease' });
+  an.onfinish = an.oncancel = function () { if (!opening) d.open = false; d.style.overflow = ''; d.removeAttribute('data-anim'); };
+}, true);
 document.addEventListener('toggle', function (e) {
   var d = e.target;
   if (d && d.getAttribute && d.getAttribute('data-sec')) UI.open[d.getAttribute('data-sec')] = d.open;
@@ -6835,7 +7012,7 @@ function edgeEnd() {
   var v = $('view'), fast = w.dx > 40 && w.dx / Math.max(1, Date.now() - w.t) > 0.5;
   v.classList.remove('edging');
   if (w.dx > Math.min(110, window.innerWidth * 0.3) || fast) {
-    var done = function () { v.style.transition = ''; v.style.transform = ''; planState().step = 'home'; save(); render(); window.scrollTo(0, 0); };
+    var done = function () { v.style.transition = ''; v.style.transform = ''; planState().step = 'home'; save(); render(); window.scrollTo(0, 0); viewIn(); };
     if (REDUCED) return done();
     v.style.transition = 'transform .16s ease-out'; v.style.transform = 'translateX(' + window.innerWidth + 'px)';
     setTimeout(done, 160);
