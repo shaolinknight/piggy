@@ -523,6 +523,34 @@ table.tb tr.tot td{font-weight:700;border-top:2px solid var(--b2)}
 .tripcard .bar{margin-top:8px}
 .tchip{display:inline-flex;align-items:center}
 [hidden]{display:none!important}
+.hnow .hstat{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:3px 10px 3px 8px;border-radius:999px;margin-bottom:10px;background:var(--p2);color:var(--t2)}
+.hnow .hstat i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.hnow .hstat.warn{color:var(--warn)}.hnow .hstat.warn i{background:var(--warn)}.hnow .hstat.bad{color:var(--bad)}.hnow .hstat.bad i{background:var(--bad)}
+.hnow .hstat.ok{color:var(--ok)}
+.hdet{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin-top:12px;padding:10px 12px;border-radius:var(--r2);border:0;background:var(--p2);color:var(--t2);font-size:14px;text-align:left}
+.hdet .hdmore{margin-left:auto;font-size:13px;color:var(--t3)}.hdet>span:first-child{flex:1;min-width:0}.hdet .hdmore{flex:none}
+.hdet b.bad{color:var(--bad)}.hdet b.ok{color:var(--ok)}
+.hdbody{padding:8px 2px 0}
+.hdrow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:14px;border-bottom:1px solid var(--b1)}.hdrow small{display:block;font-size:12px;color:var(--t3)}.hdrow b{white-space:nowrap}
+.ioline{font-size:14px;padding:8px 0 4px;color:var(--t2)}.ioline.bad b{color:var(--bad)}.ioline.warn b{color:var(--warn)}.ioline.ok b{color:var(--ok)}
+.attn{padding:4px 0}
+.attn .ai{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-top:1px solid var(--b1)}.attn .ai:first-child{border-top:0}
+.attn .ai.warn .aimain b{color:var(--warn)}
+.aico{flex:none;width:24px;text-align:center;font-size:16px}
+.aimain{flex:1;min-width:0;background:none;border:0;padding:2px 0;text-align:left;color:var(--t1)}
+.aimain b{display:block;font-size:15px;font-weight:600;overflow-wrap:anywhere}.aimain small{display:block;font-size:12px;color:var(--t3);margin-top:1px;overflow-wrap:anywhere}
+.aigo{flex:none;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--b2);background:var(--p1);color:var(--ac);font-weight:600;font-size:14px}
+.aix{flex:none;width:32px;height:32px;border:0;background:none;color:var(--t3);font-size:20px;line-height:1;border-radius:50%}
+.aimore{display:block;width:100%;border:0;border-top:1px solid var(--b1);background:none;color:var(--ac);font-weight:600;font-size:14px;padding:10px 0 8px}
+.moreopt{display:flex;align-items:center;gap:8px;width:100%;margin:2px 0 12px;padding:11px 12px;border-radius:var(--r2);border:1px dashed var(--b2);background:none;color:var(--t1);text-align:left}
+.moreopt span{font-weight:600;font-size:15px;flex:none}.moreopt small{flex:1;min-width:0;font-size:12px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fmore{padding-top:2px}
+.tripup{background:var(--acd);border-radius:var(--r2);padding:10px 12px 6px;margin-left:-2px;margin-right:-2px}
+.ppay,.pcoming{margin-top:12px}
+.psect{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin:18px 2px 8px}
+.sgrp{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin:18px 4px 8px}
+.sgrp:first-of-type{margin-top:4px}
+.lmcard p{margin:4px 0;font-size:15px}.lmcard .ok{color:var(--ok)}.lmcard .over{color:var(--bad)}
 @keyframes vin{from{opacity:0}to{opacity:1}}
 #view.vin{animation:vin .22s ease-out}
 .rvcard{padding:12px 14px}.rvcard .ghead{margin-bottom:4px}
@@ -809,7 +837,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.15';
+var VERSION = '2.16';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1565,9 +1593,7 @@ function celebrations() {
   var cur = nowYM(), msg = null;
   var last = cur - 1, tag = 'm' + last;
   if (!S.celebrated[tag] && monthStats(last).n) {
-    var L = budgetTotals(last).spend - monthStats(last).spentB;
     S.celebrated[tag] = 1;
-    if (L > 0 && NOW.getDate() <= 7) msg = '🎉 ' + MONTHS[ymM(last)] + ' closed ' + money(L) + ' under budget';
   }
   S.goals.forEach(function (g) {
     var st = goalStats(g), ms = st.done ? 100 : Math.floor(st.pct * 4) * 25, gt = 'g' + low(g.name);
@@ -1750,7 +1776,7 @@ function forecastHtml(key, s, bt, day, dim) {
     '<details class="itip"><summary>ⓘ</summary><div class="hint">Everyday spending at your pace so far this month (mixed with your usual pace while the month is young), plus bills and giving at their budgeted amounts unless they’ve already cost more. Savings aren’t counted.</div></details></div>';
 }
 // ---- the year so far, and where it's heading
-function yearSoFarHtml(key) {
+function yearSoFarHtml(key, inTrends) {
   var y = ymY(key), m = ymM(key), dim = daysIn(y, m), day = NOW.getDate();
   var spent = 0, bud = 0, inc = 0, saved = 0, full = 0, fullGap = 0, n = 0;
   for (var mm = 0; mm <= m; mm++) {
@@ -1763,10 +1789,94 @@ function yearSoFarHtml(key) {
   if (!n) return '';
   var gap = bud - spent, rate = inc > 0 ? saved / inc : 0;
   var rest = 11 - m + (1 - day / dim), proj = gap + (full ? fullGap / full : 0) * rest;
-  return '<button class="card ysf" data-act="ysf"><div class="ghead"><h3>' + y + ' so far</h3><i class="chev rt"></i></div>' +
+  return (inTrends ? '<section class="card ysf"><div class="ghead"><h3>' + y + ' so far</h3></div>' : '<button class="card ysf" data-act="ysf"><div class="ghead"><h3>' + y + ' so far</h3><i class="chev rt"></i></div>') +
     '<p><b class="' + (gap >= 0 ? 'ok' : 'bad') + '"><span data-count="' + Math.abs(gap) + '" data-ck="ysf' + y + '" data-good="' + (gap >= 0 ? 'up' : 'down') + '">' + money(Math.abs(gap)) + '</span> ' + (gap >= 0 ? 'under' : 'over') + '</b> budget' +
     (inc > 0 ? ' · <b>' + Math.round(rate * 100) + '%</b> of income saved' : '') + '</p>' +
-    (full ? '<p class="l2">On pace to finish ' + y + ' about ' + money(Math.abs(proj)) + ' ' + (proj >= 0 ? 'under' : 'over') + '.</p>' : '') + '</button>';
+    (full ? '<p class="l2">On pace to finish ' + y + ' about ' + money(Math.abs(proj)) + ' ' + (proj >= 0 ? 'under' : 'over') + '.</p>' : '') + (inTrends ? '</section>' : '</button>');
+}
+
+// ---- this month's main card: what's left for everyday spending, and how much a day. Everything else is one tap away.
+function heroNowHtml(key, s, bt, left, pct, pace, dim, day) {
+  var flexLeft = bt.flex - s.flex, daysLeft = dim - day + 1, perDay = flexLeft > 0 ? flexLeft / daysLeft : 0;
+  var flexPct = bt.flex > 0 ? s.flex / bt.flex : 0, st, cls;
+  if (flexLeft < 0) { st = 'Over the everyday budget'; cls = 'bad'; }
+  else if (flexPct > pace + 0.12 && flexPct > 0.2) { st = 'Spending a little fast'; cls = 'warn'; }
+  else { st = 'On track'; cls = 'ok'; }
+  var h = '<section class="card hero hnow"><div class="hstat ' + cls + '"><i></i>' + st + '</div>' +
+    '<div class="eyebrow">' + (flexLeft >= 0 ? 'Left for everyday spending' : 'Over the everyday budget') + '</div>' +
+    '<div class="bigrow"><div class="big' + (flexLeft < 0 ? ' neg' : '') + '" data-count="' + Math.abs(flexLeft) + '" data-ck="hero' + key + '" data-good="' + (flexLeft < 0 ? 'down' : 'up') + '" data-delta>' + money(Math.abs(flexLeft)) + '</div></div>' +
+    '<div class="sub">' + (flexLeft > 0 ? '<b data-count="' + perDay + '" data-ck="perday' + key + '" data-good="up">' + money(perDay) + '</b> a day for the next ' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's')
+      : 'Spent ' + money(s.flex) + ' of ' + money(bt.flex)) + '</div>' +
+    '<div class="meter"><i class="' + (flexPct > 1 ? 'over' : '') + '" data-bar="hero' + key + '" style="width:' + Math.min(100, flexPct * 100).toFixed(1) + '%"></i>' +
+    '<b style="left:' + (pace * 100).toFixed(1) + '%" title="Where you’d be if spending evenly"></b></div>' +
+    '<div class="mlab"><span><span data-count="' + s.flex + '" data-ck="flexsp' + key + '" data-good="down">' + money(s.flex) + '</span> of ' + money(bt.flex) + '</span><span>line = ' + Math.round(pace * 100) + '% of the month</span></div>';
+  var open = !!UI.heroOpen;
+  h += '<button class="hdet" data-act="heroexp" aria-expanded="' + open + '"><span>Whole month · <b class="' + (left < 0 ? 'bad' : 'ok') + '">' + money(Math.abs(left)) + ' ' + (left < 0 ? 'over' : 'left') + '</b></span><span class="hdmore">' + (open ? 'Hide' : 'Details') + '</span><i class="chev' + (open ? ' up' : '') + '"></i></button>';
+  h += '<div class="hdbody"' + (open ? '' : ' hidden') + '>' +
+    '<div class="hdrow"><span>Everything budgeted<small>bills, giving and everyday' + (s.spentB !== s.spent ? ' · yearly bills as set aside' : '') + '</small></span><b>' + money(s.spentB) + ' of ' + money(bt.spend) + '</b></div>' +
+    (s.trip ? '<div class="hdrow"><span>Trips<small>kept outside the budget</small></span><b class="tnum">' + money(s.trip) + '</b></div>' : '') +
+    forecastHtml(key, s, bt, day, dim) + inOutBody(key, s, bt, true) + '</div>';
+  return h + '</section>';
+}
+// money in vs out, as lines (inside the main card's details)
+function inOutBody(key, s, bt, isCur) {
+  var inc = s.inc, out = s.spentAll, saved = s.saved, net = inc - out - saved, exp = Math.max(expectedIncome(key), inc);
+  var h = '<div class="ioline ' + (net >= 0 ? 'ok' : exp - out - saved >= 0 ? 'warn' : 'bad') + '">' + (net >= 0 ? '<b>' + money(net) + ' ahead</b> — more came in than went out'
+    : exp - out - saved >= 0 ? '<b>' + money(-net) + ' more out than in</b> so far · more pay still to come'
+    : '<b>' + money(-net) + ' more out than in</b> · even with the rest of this month’s pay, about ' + money(out + saved - exp) + ' short') + '</div>';
+  h += '<div class="stats">' + stat('In', money(inc)) + stat('Out', money(out)) + stat('Saved', money(saved)) + stat('Net', signed(net)) + '</div>' +
+    '<div class="iohint">' + (isCur && exp > inc ? 'About ' + money(exp - inc) + ' more pay expected this month. ' : '') + '“Out” is everything you spent, trips included' + (saved ? '; money moved to savings is counted separately' : '') + '.' +
+    (s.fromSave ? ' ' + money(s.fromSave) + ' paid from savings isn’t counted.' : '') + '</div>';
+  return h;
+}
+
+// ---- "Needs your attention": at most two at a time, most urgent first, each one can be put away
+function attnItems(key) {
+  var out = [], cur = nowYM(), dis = S.dis || {}, today = todayStr();
+  if (reviewDue() && (S.hu || 0) >= cur && dis['review'] !== today)
+    out.push({ id: 'review', pri: 1, ico: '📋', t: 'Review ' + MONTHS[ymM(cur)] + '’s budget', sub: 'Not confirmed yet · takes a minute', act: 'review', go: 'Review' });
+  if (S.recur.length) {
+    var bl = billRemindList(key).sort(function (p, q) { return p.d - q.d; }), sig = bl.map(function (x) { return x.b.name; }).join('|');
+    if (bl.length && dis['bills'] !== key + ':' + sig) {
+      var late = bl.some(function (x) { return x.d < 0; }), tot = bl.reduce(function (a, x) { return a + (+x.b.a || 0); }, 0), x0 = bl[0];
+      out.push(bl.length === 1
+        ? { id: 'bills', sig: key + ':' + sig, pri: late ? 2 : 4, ico: '🧾', tone: late ? 'warn' : '', t: esc(x0.b.name) + ' · ' + money(x0.b.a, true),
+            sub: x0.d < 0 ? 'was due ' + shortDate(dueDate(x0.b, key)) + ' — not logged yet' : x0.d === 0 ? 'due today' : 'due in ' + x0.d + ' day' + (x0.d === 1 ? '' : 's'), act: 'recurlog', v: x0.b.name, k: key, go: 'Log' }
+        : { id: 'bills', sig: key + ':' + sig, pri: late ? 2 : 4, ico: '🧾', tone: late ? 'warn' : '', t: bl.length + ' bills ' + (late ? 'waiting' : 'due soon') + ' · ' + money(tot),
+            sub: esc(bl.map(function (y) { return y.b.name; }).slice(0, 3).join(', ')) + (bl.length > 3 ? ' +' + (bl.length - 3) : ''), act: 'recurmonth', v: key, go: 'Open' });
+    }
+  }
+  var tn = tripNowInfo();
+  if (tn && dis['trip'] !== (tn.now ? today : 'soon') + ':' + tn.t.name) {
+    var tst = tripStats(tn.t.name), tb = tripBudget(tn.t);
+    out.push({ id: 'trip', sig: (tn.now ? today : 'soon') + ':' + tn.t.name, pri: tn.now ? 3 : 6, ico: '✈️', t: (tn.now ? 'On a trip · ' : 'Trip in ' + tn.days + ' day' + (tn.days === 1 ? '' : 's') + ' · ') + esc(tn.t.name),
+      sub: tn.now ? 'Day ' + tn.dayN + ' of ' + tripDays(tn.t) + ' · ' + money(tst.total) + (tb ? ' of ' + money(tb) : ' spent') : (tb ? 'Budget ' + money(tb) : 'Starts ' + shortDate(tn.t.start)), act: 'tripview', v: tn.t.name, go: 'Open' });
+  }
+  var W = checkinWeek();
+  if (NOW.getDay() <= 2 && !(S.checkin || {})[W.key] && !(S.demo && !S.tx.length)) {
+    var D = checkinData();
+    if (D.tot || D.items.length) out.push({ id: 'checkin', pri: 5, ico: '📅', t: 'Weekly check-in · ' + D.W.label, sub: 'You spent ' + money(D.tot) + (D.items.length ? ' · ' + D.items.length + ' thing' + (D.items.length === 1 ? '' : 's') + ' to look at' : ' · nothing looks off'),
+      act: 'checkin', go: D.items.length ? 'Review' : 'See' });
+  }
+  var ow = owedOpen();
+  if (ow.length) {
+    var otot = ow.reduce(function (a, x) { return a + (+x.ow); }, 0);
+    if (dis['owed'] !== String(r2(otot))) out.push({ id: 'owed', sig: String(r2(otot)), pri: 7, ico: '↩︎', t: 'Owed to you · ' + money(otot), sub: ow.length + ' purchase' + (ow.length === 1 ? '' : 's') + (ow[0].d ? ' · oldest ' + shortDate(ow[0].d) : ''), act: 'owed', go: 'Open' });
+  }
+  return out.sort(function (a, b) { return a.pri - b.pri; });
+}
+function attnHtml(key) {
+  var it = attnItems(key); if (!it.length) return '';
+  var show = UI.attnAll ? it : it.slice(0, 2);
+  var h = '<section class="card attn" id="attn">' + show.map(function (x) {
+    var dv = x.v !== undefined ? ' data-v="' + esc(x.v) + '"' : '', dk = x.k !== undefined ? ' data-k="' + x.k + '"' : '';
+    return '<div class="ai' + (x.tone ? ' ' + x.tone : '') + '" data-ai="' + x.id + '"><span class="aico" aria-hidden="true">' + x.ico + '</span>' +
+      '<button class="aimain" data-act="' + x.act + '"' + dv + dk + '><b>' + x.t + '</b><small>' + x.sub + '</small></button>' +
+      '<button class="aigo" data-act="' + x.act + '"' + dv + dk + '>' + x.go + '</button>' +
+      '<button class="aix" data-act="attnx" data-v="' + x.id + '" data-s="' + esc(x.sig || '') + '" aria-label="Put away">×</button></div>';
+  }).join('');
+  if (it.length > 2) h += '<button class="aimore" data-act="attnmore">' + (UI.attnAll ? 'Show less' : '+' + (it.length - 2) + ' more') + '</button>';
+  return h + '</section>';
 }
 
 // ---- the one-sentence status at the top of this month
@@ -1847,9 +1957,9 @@ function viewMonth() {
     '<div class="mtitle">' + MONTHS[m] + ' ' + y + '<small>' + (isCur ? 'Day ' + day + ' of ' + dim : (isFuture ? 'Upcoming' : 'Closed month')) + '</small></div>' +
     '<button data-act="mnext" aria-label="Next month"' + (key >= cur ? ' disabled' : '') + '>' + svgChevron(false) + '</button></div>';
 
-  if (isCur) h += todayLineHtml(key, s, bt, left, pct, pace, dim, day);
-  if (isCur) h += reviewLineHtml() + tripNowHtml() + billRemindHtml(key) + checkinCardHtml();
-  h += '<section class="card hero"><div class="eyebrow">' + (left >= 0 ? 'Left in budget' : 'Over budget') + '</div>' +
+  if (isCur) h += attnHtml(key);
+  if (isCur && bt.flex > 0) h += heroNowHtml(key, s, bt, left, pct, pace, dim, day);
+  else h += '<section class="card hero"><div class="eyebrow">' + (left >= 0 ? 'Left in budget' : 'Over budget') + '</div>' +
     '<div class="bigrow"><div class="big' + (left < 0 ? ' neg' : '') + '" data-count="' + Math.abs(left) + '" data-ck="hero' + key + '" data-good="' + (left < 0 ? 'down' : 'up') + '" data-delta>' + money(Math.abs(left)) + '</div></div>' +
     '<div class="sub">Spent <span data-count="' + s.spentB + '" data-ck="spent' + key + '" data-good="down">' + money(s.spentB) + '</span> of ' + money(bt.spend) + ' budgeted' + (s.spentB !== s.spent ? ' <span class="yset">(yearly bills as set aside)</span>' : '') + (s.trip ? ' · plus <b class="tnum">' + money(s.trip) + '</b> on trips' : '') + '</div>' +
     '<div class="meter"><i class="' + (pct > 1 ? 'over' : '') + '" data-bar="hero' + key + '" style="width:' + Math.min(100, pct * 100).toFixed(1) + '%"></i>' +
@@ -1858,7 +1968,6 @@ function viewMonth() {
     (isCur ? forecastHtml(key, s, bt, day, dim) : '') +
     inOutHtml(key, s, bt, isCur) + '</section>';
 
-  if (isCur) h += recapCardHtml();
   if (!s.n && !isCur) {
     h += '<div class="card empty"><b>Nothing logged for ' + MONTHS[m] + '</b>Entries you add for this month will show up here.</div>';
     return h;
@@ -1881,7 +1990,6 @@ function viewMonth() {
     h += monthGroupHtml(g, rows, gs, gb, isCur ? pace : 1);
   });
   if (!isFuture) h += billsLineHtml(key);
-  if (isCur) h += owedLineHtml() + yearSoFarHtml(key);
   // trips whose dates touch this month, plus any with spending logged in it
   var mStart = y + '-' + pad(m + 1) + '-01', mEnd = y + '-' + pad(m + 1) + '-' + pad(dim), tnames = {};
   S.trips.forEach(function (t) { if (t.start && t.start <= mEnd && tripEnd(t) >= mStart) tnames[low(t.name)] = t.name; });
@@ -2113,6 +2221,7 @@ function viewActivity() {
     '<button class="fbtn' + (nf ? ' on' : '') + '" data-act="afilter" id="a_filter">Filter' + (nf ? ' · ' + nf : '') + '</button>' +
     '<button class="fbtn' + (UI.bulk ? ' on' : '') + '" data-act="bulk" id="a_select">' + (UI.bulk ? 'Done' : 'Select') + '</button></div>';
   if (!(S.tips && S.tips.swipe) && S.tx.length) h += '<div class="swtip">Tip: swipe an entry left to delete it, or right to change its category or trip.</div>';
+  if (!UI.bulk && !UI.q) h += owedLineHtml();
   h += '<div id="txlist">' + txListHtml() + '</div>';
   h += '<div id="bulk_bar">' + bulkBarHtml() + '</div>';
   return h;
@@ -2167,26 +2276,40 @@ function txItem(t) {
 }
 
 // The same form is used for adding (in the sheet) and inline editing (in the list).
+function activeTripNow() { var tn = tripNowInfo(); return tn && tn.now ? tn.t : null; }
 function txForm(t, isNew) {
   var kind = t.k;
   var refund = kind === 'e' && t.a < 0;
+  // a trip that's on now (or that this date falls in) sits right under the store, not in More options
+  var tripUp = kind === 'e' && !!(t.tr || tripFor(t.d) || (isNew && activeTripNow()));
+  var moreOpen = UI.fmore || window.__openMore === true || refund || !!t.n || !!(t.fs) || +t.ow > 0 || !!UI.split;
   var h = '<form class="form" id="txform" data-id="' + esc(t.id || '') + '" data-new="' + (isNew ? 1 : 0) + '" data-m="' + t.m + '" data-y="' + t.y + '" autocomplete="off">';
   h += '<div class="seg' + (isNew ? '' : ' kseg') + '" role="tablist"><button type="button" class="' + (kind === 'e' ? 'on' : '') + '" data-act="fkind" data-v="e">Expense</button><button type="button" class="' + (kind === 'i' ? 'on' : '') + '" data-act="fkind" data-v="i">Income</button></div>';
   h += '<div class="field"><label for="f_a">Amount</label><div class="amtwrap"><span class="cur" aria-hidden="true">$</span><input id="f_a" class="amtin" inputmode="decimal" placeholder="0.00" value="' + (t.a ? Math.abs(t.a).toFixed(2) : '') + '"></div></div>';
-  if (kind === 'e') h += '<div class="chips" style="margin:-4px 0 10px"><button type="button" class="chip' + (refund ? ' on' : '') + '" data-act="frefund" id="f_refund" aria-pressed="' + refund + '">Refund / return</button></div>';
   h += '<div class="field"><label for="f_v">' + (kind === 'i' ? 'From' : 'Store / vendor') + '</label><input id="f_v" name="piggy_v" autocomplete="off" enterkeyhint="next" value="' + esc(t.v) + '" placeholder="' + (kind === 'i' ? 'work' : 'costco') + '"><div class="sugg" id="f_sugg"></div></div>';
+  var tripField = kind === 'e' ? '<div class="field' + (tripUp ? ' tripup' : '') + '" id="f_tripf"><span class="flabel">' + (tripUp ? '✈️ Trip' : 'Trip') + '</span><div class="cchips" id="f_trips">' + tripChips(t, isNew) + '</div>' +
+    '<div class="tripnew" id="f_tripnew" hidden><input id="f_tripname" placeholder="Trip name, e.g. Moab" autocomplete="off"><button type="button" class="btn" data-act="ftripcreate">Create</button></div>' +
+    '<input type="hidden" id="f_tr" value="' + esc(t.tr || '') + '"></div>' : '';
+  if (tripUp) h += tripField;
   h += '<div class="field"><span class="flabel">Category</span>' +
     '<button type="button" class="catpick' + (t.c ? '' : ' empty') + '" id="f_csel" data-act="openpicker">' + catSelInner(low(t.c), kind, ymKey(t.y, t.m)) + '</button>' +
     '<div class="hint cauto" id="f_cauto"></div>' +
     '<div class="quick" id="f_quick">' + quickChips(kind, low(t.c)) + '</div>' +
-    '<input type="hidden" id="f_c" value="' + esc(low(t.c)) + '">' + (isNew && kind === 'e' ? splitHtml() : '') + '</div>';
+    '<input type="hidden" id="f_c" value="' + esc(low(t.c)) + '"></div>';
   h += '<div class="field"><label for="f_d">Date</label><input id="f_d" type="date" value="' + esc(t.d || '') + '">' +
     (!t.d && !isNew ? '<div class="hint" id="f_dhint">No exact date — logged for ' + MONTHS[t.m] + ' ' + t.y + '. Add one if you know it.</div>' : '') + '</div>';
-  if (kind === 'e') h += '<div class="field"><span class="flabel">Trip</span><div class="cchips" id="f_trips">' + tripChips(t, isNew) + '</div>' +
-    '<div class="tripnew" id="f_tripnew" hidden><input id="f_tripname" placeholder="Trip name, e.g. Moab" autocomplete="off"><button type="button" class="btn" data-act="ftripcreate">Create</button></div>' +
-    '<input type="hidden" id="f_tr" value="' + esc(t.tr || '') + '"></div>';
+  // the rest, one tap away
+  var extras = [];
+  if (kind === 'e') extras.push('refund'); if (kind === 'e' && !tripUp) extras.push('trip'); if (kind === 'e') extras.push('paid with', 'split the bill');
+  if (isNew && kind === 'e') extras.push('split'); extras.push('notes');
+  h += '<button type="button" class="moreopt" data-act="fmore" id="f_moreb" aria-expanded="' + moreOpen + '"><span>More options</span><small>' + (moreOpen ? '' : extras.join(' · ')) + '</small><i class="chev' + (moreOpen ? ' up' : '') + '"></i></button>';
+  h += '<div class="fmore" id="f_more"' + (moreOpen ? '' : ' hidden') + '>';
+  if (kind === 'e') h += '<div class="chips" style="margin:0 0 10px"><button type="button" class="chip' + (refund ? ' on' : '') + '" data-act="frefund" id="f_refund" aria-pressed="' + refund + '">Refund / return</button></div>';
+  if (!tripUp) h += tripField;
   if (kind === 'e') h += payWithHtml(t) + owedHtml(t);
+  if (isNew && kind === 'e') h += '<div class="field">' + splitHtml() + '</div>';
   h += '<div class="field"><label for="f_n">Notes</label><input id="f_n" value="' + esc(t.n) + '" placeholder="optional"></div>';
+  h += '</div>';
   h += '<div class="hint" id="f_err" role="alert"></div>';
   h += '<div class="btns' + (isNew ? ' stickybar' : '') + '">' + (isNew ? '<button type="button" class="btn" data-act="fsaveadd" id="f_saveadd">Save & add another</button>' : '<button type="button" class="btn danger" data-act="fdel" id="f_del">Delete</button>') +
     (isNew ? '' : '<button type="button" class="btn" data-act="fcancel">Cancel</button>') +
@@ -2596,10 +2719,14 @@ function maybeHeadsUp() {
   if ((S.hu || 0) >= cur) { HU_PENDING = false; return; }
   if (SHEET || PICK || UI.edit) { HU_PENDING = true; return; }
   HU_PENDING = false;
-  var it = headsUpItems();
+  var it = headsUpItems(), last = recapData(cur - 1), showLast = !!last.s.n && !(S.recapSeen || {})[cur - 1];
   S.hu = cur;
+  if (showLast) { S.recapShown = cur; S.recapSeen = S.recapSeen || {}; S.recapSeen[cur - 1] = 1; }
   save(); if (S.cfg.url) { S.prefsSent = ''; queuePrefs(); flushSoon(); }
-  if (it.length || reviewDue()) openSheet('headsup');
+  if (it.length || reviewDue() || showLast) {
+    openSheet('headsup');
+    if (showLast && last.left >= 0) setTimeout(confetti, 350);
+  }
 }
 function budgetReviewHtml(cur) {
   var t = budgetTotals(cur), g = t.g, inc = t.inc, every = (g.daily || 0) + (g.out || 0) + (g.once || 0);
@@ -2619,13 +2746,23 @@ function budgetReviewHtml(cur) {
   }
   return h + '</section>';
 }
+function lastMonthHtml(cur) {
+  var key = cur - 1, R = recapData(key); if (!R.s.n) return '';
+  var h = '<section class="card rvcard lmcard"><div class="ghead"><h3>How ' + MONTHS[ymM(key)] + ' went</h3>' + (R.left >= 0 ? '<span>🎉</span>' : '') + '</div>' +
+    '<p>You spent <b>' + money(R.s.spent) + '</b> of ' + money(R.bt.spend) + ' — ' + (R.left >= 0 ? '<b class="ok">' + money(R.left) + ' under</b>' : '<b class="over">' + money(-R.left) + ' over</b>') + '.' +
+    (R.s.saved ? ' Saved ' + money(R.s.saved) + '.' : '') + (R.chg !== null ? ' Spending was ' + (R.chg >= 0 ? 'up ' : 'down ') + Math.abs(Math.round(R.chg * 100)) + '% from ' + MONTHS[ymM(key - 1)] + '.' : '') + '</p>' +
+    (R.over.length ? '<p class="l2">Over: ' + R.over.slice(0, 3).map(function (o) { return esc(o.c) + ' (' + money(o.a) + ')'; }).join(', ') + '</p>' : '') +
+    '<button class="linkbtn" data-act="recap" data-v="' + key + '" style="margin-top:6px">Full recap</button></section>';
+  return h;
+}
 function headsUpHtml() {
-  var cur = nowYM(), it = headsUpItems(), tot = it.reduce(function (a, x) { return a + (x.a || 0); }, 0), rv = reviewDue();
+  var cur = nowYM(), it = headsUpItems(), tot = it.reduce(function (a, x) { return a + (x.a || 0); }, 0), rv = reviewDue(), lm = (S.recapShown || 0) === cur ? lastMonthHtml(cur) : '';
   var h = '<div class="shead"><h2>' + (rv ? 'Welcome to ' + MONTHS[ymM(cur)] : 'Heads up for ' + MONTHS[ymM(cur)]) + '</h2><button data-act="close">' + (rv ? 'Later' : 'Got it') + '</button></div>';
   if (rv) {
-    h += '<div class="sub" style="margin:-6px 0 12px">A new month — take a quick look at the plan and confirm it.</div>' + budgetReviewHtml(cur);
+    h += '<div class="sub" style="margin:-6px 0 12px">A new month — here’s how the last one went, then a quick look at this one’s plan.</div>' + lm + budgetReviewHtml(cur);
     if (it.length) h += '<div class="flabel" style="margin:14px 2px 6px">Heads up for ' + MONTHS[ymM(cur)] + (tot ? ' · about ' + money(tot) + ' extra' : '') + '</div>';
   } else {
+    h += lm;
     h += '<div class="sub" style="margin:-6px 0 12px">' + (it.length ? 'Here’s what’s coming up this month' + (tot ? ' — about <b>' + money(tot) + '</b> beyond your usual' : '') + '.' : 'Nothing out of the ordinary this month.') + '</div>';
   }
   if (it.length) h += '<div class="card hucard">' + it.map(citemHtml).join('') + '</div>';
@@ -3002,15 +3139,17 @@ function planHomeHtml() {
     h += '<section class="card pdraft"><div><b>' + n + ' unsaved change' + (n === 1 ? '' : 's') + '</b><span>' + (P.mode === 'fix' ? 'Correcting ' : 'For ') + planMonthName(P.key) + '</span></div>' +
       '<button class="btn pri" data-act="pgo" data-v="resume">Continue</button><button class="btn" data-act="pdiscard" id="p_discard">Discard</button></section>';
   }
-  h += '<div class="pchoices">';
-  h += '<button class="pchoice" data-act="pgo" data-v="now"><span class="pico">✎</span><span><b>Change a budget</b><small>Raise or lower a category for ' + MONTHS[ymM(cur)] + ', or from ' + MONTHS[ymM(cur)] + ' on.</small></span><em>›</em></button>';
   var nextJan = ymKey(ymY(cur) + 1, 0);
-  h += '<div class="pchoice"><span class="pico">→</span><span><b>Plan ahead</b><small>Set up a coming month or next year.</small>' +
+  h += '<div class="psect">This month</div>';
+  h += '<div class="pchoices"><button class="pchoice" data-act="pgo" data-v="now"><span class="pico">✎</span><span><b>Change a budget</b><small>Raise or lower a category for ' + MONTHS[ymM(cur)] + ', or from ' + MONTHS[ymM(cur)] + ' on.</small></span><em>›</em></button></div>';
+  h += planPayHtml();
+  h += '<div class="psect">Ahead</div>';
+  h += planComingHtml();
+  h += '<div class="pchoices"><div class="pchoice"><span class="pico">→</span><span><b>Plan ahead</b><small>Set up a coming month or next year.</small>' +
     '<span class="pchips"><button class="chip" data-act="pgo" data-v="next">' + MONTHS[ymM(cur + 1)] + (ymY(cur + 1) !== ymY(cur) ? ' ' + ymY(cur + 1) : '') + '</button>' +
     (nextJan > cur + 1 ? '<button class="chip" data-act="pgo" data-v="year">' + ymY(nextJan) + '</button>' : '') + '</span></span></div>';
-  h += '<button class="pchoice" data-act="pgo" data-v="whatif"><span class="pico">?</span><span><b>Try a what-if</b><small>What if I spent like my average, or made a different income? Nothing saves unless you choose.</small></span><em>›</em></button>';
-  h += '</div>';
-  h += '<div style="margin-top:12px">' + planComingHtml() + planPayHtml() + goalsCardHtml(true) + planHistoryHtml() + '</div>';
+  h += '<button class="pchoice" data-act="pgo" data-v="whatif"><span class="pico">?</span><span><b>Try a what-if</b><small>What if I spent like my average, or made a different income? Nothing saves unless you choose.</small></span><em>›</em></button></div>';
+  h += '<div style="margin-top:12px">' + goalsCardHtml(true) + planHistoryHtml() + '</div>';
   h += '<div class="hint" style="text-align:center;margin-top:14px">Made a typo in an old month? <button class="linkbtn" data-act="pgo" data-v="fix">Correct a past budget</button></div>';
   return h;
 }
@@ -3898,6 +4037,19 @@ function trendTrips() {
 }
 
 // On the Month tab: the trip you're on right now, or one starting within two weeks.
+function tripNowInfo() {
+  var today = todayStr(), now = null, soon = null, soonDays = 99;
+  S.trips.forEach(function (t) {
+    if (!t.start) return;
+    if (t.start <= today && today <= tripEnd(t)) { if (!now || t.start > now.start) now = t; }
+    else if (t.start > today) {
+      var d = Math.round((parseD(t.start) - parseD(today)) / 86400000);
+      if (d <= 14 && d < soonDays) { soon = t; soonDays = d; }
+    }
+  });
+  var t = now || soon; if (!t) return null;
+  return { t: t, now: !!now, days: soonDays, dayN: now ? Math.round((parseD(today) - parseD(t.start)) / 86400000) + 1 : 0 };
+}
 function tripNowHtml() {
   var today = todayStr(), now = null, soon = null, soonDays = 99;
   S.trips.forEach(function (t) {
@@ -4770,7 +4922,8 @@ function trendMonth() {
       aria: MONTHS[ymM(k)] + ' ' + ymY(k),
       info: '<b>' + MONTHS[ymM(k)] + ' ' + ymY(k) + (k === cur ? ' (so far)' : '') + '</b><br>Spent ' + money(s.spentAll) + (s.trip ? ' (' + money(s.trip) + ' on trips)' : '') + ' · Income ' + money(s.inc) + ' · Saved ' + money(s.saved) + ' · Net <b>' + signed(s.inc - s.spentAll - s.saved) + '</b>' });
   }
-  var h = calendarHtml() + '<section class="card"><div class="ghead"><h3>Spending vs income</h3><span>last 12 months</span></div>' +
+  var rk = nowYM() - 1, h = (monthStats(rk).n ? '<button class="card bline" data-act="recap" data-v="' + rk + '"><span><b>' + MONTHS[ymM(rk)] + ' recap</b><small>How last month went</small></span><i class="chev rt"></i></button>' : '') +
+    calendarHtml() + '<section class="card"><div class="ghead"><h3>Spending vs income</h3><span>last 12 months</span></div>' +
     barChart('m12', cols, { legend: ['Spent', 'Income'] }) + '</section>';
   h += whereItWentHtml();
 
@@ -4875,6 +5028,7 @@ function yearStats(y, upTo) {
   return s;
 }
 
+function y0Now() { return !UI.yr || UI.yr === NOW.getFullYear(); }
 function trendYear() {
   var r = dataRange(), cy = NOW.getFullYear(), cm = NOW.getMonth();
   var years = [];
@@ -4882,7 +5036,7 @@ function trendYear() {
   if (!UI.yr || years.indexOf(UI.yr) < 0) UI.yr = cy;
   var lastFull = cm > 0 ? cm - 1 : 0;
   var y0 = UI.yr, isCur = y0 === cy, upTo = isCur ? lastFull : 11;
-  var h = '<div class="ychips">' + years.slice().reverse().map(function (yy) {
+  var h = (y0Now() ? yearSoFarHtml(nowYM(), true) : '') + '<div class="ychips">' + years.slice().reverse().map(function (yy) {
     return '<button class="chip' + (yy === y0 ? ' on' : '') + '" data-act="yr" data-v="' + yy + '">' + yy + '</button>';
   }).join('') + '</div>';
   var a = yearStats(y0, upTo), b = yearStats(y0 - 1, upTo);
@@ -4945,7 +5099,7 @@ function openSheet(kind, arg) {
   SHEET = { kind: kind, arg: arg };
   UI.catTouched = false; UI.tripTouched = false; UI.catAuto = false;
   if (kind === 'settings') UI.open = {};      // every visit starts with the sections closed
-  if (kind === 'add') UI.split = null;
+  if (kind === 'add') { UI.split = null; UI.fmore = false; }
   if (kind === 'settings') UI.alertMsg = '';
   renderSheet();
   lockPage(true);
@@ -5163,6 +5317,14 @@ function catOptionsHtml(c, key) {
   return h + '</section>';
 }
 
+function backupHtml() {
+  var h = '';
+  h += '<details class="set" data-sec="backup"' + (isOpen('backup') ? ' open' : '') + '><summary>Backup<span>' + S.tx.length + ' entries on this device</span></summary><div class="inner">' +
+    '<div class="btns"><button class="btn" data-act="export">Export</button><button class="btn" data-act="import">Import</button></div>' +
+    '<input type="file" id="importFile" accept="application/json,.json" class="sr">' +
+    '<div class="hint">Your sheet is the real backup once connected. This file also keeps your settings and any unsynced changes.</div></div></details>';
+  return h;
+}
 function appearanceHtml() {
   var pal = PALETTES[S.cfg.pal] || PALETTES.coastline, sty = STYLES[S.cfg.style] || STYLES.classic;
   var dark = document.documentElement.style.colorScheme === 'dark';
@@ -5175,41 +5337,45 @@ function appearanceHtml() {
   function sub(id, title, val, body) {
     return '<details class="sub" data-sec="' + id + '"' + (isOpen(id) ? ' open' : '') + '><summary>' + title + '<span>' + val + '</span></summary><div class="subin">' + body + '</div></details>';
   }
-  var h = '<details class="set" data-sec="look"' + (isOpen('look') ? ' open' : '') + '><summary>Appearance<span>' + pal.name + ' · ' + sty.name + ' · ' +
+  var h = '<details class="set" data-sec="look"' + (isOpen('look') ? ' open' : '') + '><summary>Appearance<span>' + pal.name + ' · ' +
     ({ auto: 'Auto', light: 'Light', dark: 'Dark' })[S.cfg.mode] + '</span></summary><div class="inner">';
-  var openLook = isOpen('lk_combo'), b = '<div class="combos">', onCombo = '';
+  // up front: color, light/dark, text size
+  var b = '<div class="swatches">';
+  Object.keys(PALETTES).forEach(function (k) {
+    var v = PALETTES[k][dark ? 'dark' : 'light'];
+    b += '<button class="sw' + (S.cfg.pal === k ? ' on' : '') + '" data-act="pal" data-v="' + k + '" aria-label="' + PALETTES[k].name + '"><i style="background:' + v.bg + '"><b style="background:' + v.ac + '"></b><em style="background:' + v.s2 + '"></em></i>' + PALETTES[k].name + '</button>';
+  });
+  h += '<div class="flabel">Color · ' + pal.name + '</div>' + b + '</div>';
+  h += '<div class="flabel" style="margin-top:12px">Light / dark</div>' + seg('mode', { auto: 'Match device', light: 'Light', dark: 'Dark' }, S.cfg.mode);
+  h += '<div class="flabel" style="margin-top:12px">Text size</div>' + seg('fsize', FSIZE, S.cfg.fsize || 'm');
+  // everything else
+  var more = '';
+  var openLook = isOpen('lk_combo'), cb = '<div class="combos">', onCombo = '';
   Object.keys(COMBOS).forEach(function (k) {
     var c = COMBOS[k], pv = PALETTES[c.pal][dark ? 'dark' : 'light'], st = STYLES[c.style], rr = CORNERS[c.corners][2];
     if (openLook) loadFont(c.style);
     var on = S.cfg.pal === c.pal && S.cfg.style === c.style && S.cfg.corners === c.corners && S.cfg.cards === c.cards;
     if (on) onCombo = c.name;
-    b += '<button class="combo' + (on ? ' on' : '') + '" data-act="combo" data-v="' + k + '" aria-pressed="' + on + '" style="background:' + pv.bg + ';border-radius:' + rr + '">' +
+    cb += '<button class="combo' + (on ? ' on' : '') + '" data-act="combo" data-v="' + k + '" aria-pressed="' + on + '" style="background:' + pv.bg + ';border-radius:' + rr + '">' +
       '<span class="cmini" style="background:' + pv.p1 + ';border-radius:' + rr + ';' + (c.cards === 'outline' ? 'border:1px solid ' + pv.b1 + ';' : c.cards === 'raised' ? 'box-shadow:0 2px 6px rgba(0,0,0,.18);' : '') + '">' +
       '<b style="font-family:' + st.disp.replace(/"/g, '&quot;') + ';color:' + pv.t1 + '">$1,284</b>' +
       '<i style="background:' + pv.p2 + '"><em style="background:' + pv.s1 + '"></em></i></span>' +
       '<small style="font-family:' + st.body.replace(/"/g, '&quot;') + ';color:' + pv.t2 + '">' + c.name + '</small></button>';
   });
-  b += '</div><button class="btn" style="width:100%;margin:10px 0 0" data-act="shuffle">Surprise me</button>';
-  h += sub('lk_combo', 'Ready-made looks', onCombo || 'Your own mix', b);
-  b = '<div class="swatches">';
-  Object.keys(PALETTES).forEach(function (k) {
-    var v = PALETTES[k][dark ? 'dark' : 'light'];
-    b += '<button class="sw' + (S.cfg.pal === k ? ' on' : '') + '" data-act="pal" data-v="' + k + '" aria-label="' + PALETTES[k].name + '"><i style="background:' + v.bg + '"><b style="background:' + v.ac + '"></b><em style="background:' + v.s2 + '"></em></i>' + PALETTES[k].name + '</button>';
-  });
-  h += sub('lk_color', 'Color', pal.name, b + '</div>');
-  h += sub('lk_mode', 'Light / dark', ({ auto: 'Match device', light: 'Light', dark: 'Dark' })[S.cfg.mode], seg('mode', { auto: 'Match device', light: 'Light', dark: 'Dark' }, S.cfg.mode));
-  b = '<div class="stylegrid">';
+  cb += '</div><button class="btn" style="width:100%;margin:10px 0 0" data-act="shuffle">Surprise me</button>';
+  more += sub('lk_combo', 'Ready-made looks', onCombo || 'Your own mix', cb);
+  var sb = '<div class="stylegrid">';
   Object.keys(STYLES).forEach(function (k) {
     var st = STYLES[k];
-    b += '<button class="stylecard' + (S.cfg.style === k ? ' on' : '') + '" data-act="style" data-v="' + k + '"><b style="font-family:' + st.disp.replace(/"/g, '&quot;') + '">$1,284</b><span style="font-family:' + st.body.replace(/"/g, '&quot;') + '">Groceries · $238 left</span><small>' + st.name + '</small></button>';
+    sb += '<button class="stylecard' + (S.cfg.style === k ? ' on' : '') + '" data-act="style" data-v="' + k + '"><b style="font-family:' + st.disp.replace(/"/g, '&quot;') + '">$1,284</b><span style="font-family:' + st.body.replace(/"/g, '&quot;') + '">Groceries · $238 left</span><small>' + st.name + '</small></button>';
   });
-  h += sub('lk_style', 'Font style', sty.name, b + '</div>');
-  h += sub('lk_size', 'Text size', FSIZE[S.cfg.fsize || 'm'][0], seg('fsize', FSIZE, S.cfg.fsize || 'm') + '<div class="hint">Makes everything a little bigger, including buttons.</div>');
-  h += sub('lk_shape', 'Corners, cards & spacing', CORNERS[S.cfg.corners][0] + ' · ' + CARDS[S.cfg.cards] + ' · ' + DENSITY[S.cfg.density],
+  more += sub('lk_style', 'Font style', sty.name, sb + '</div>');
+  more += sub('lk_shape', 'Corners, cards & spacing', CORNERS[S.cfg.corners][0] + ' · ' + CARDS[S.cfg.cards] + ' · ' + DENSITY[S.cfg.density],
     '<div class="flabel">Corners</div>' + seg('corners', CORNERS, S.cfg.corners) +
     '<div class="flabel">Cards</div>' + seg('cards', CARDS, S.cfg.cards) +
     '<div class="flabel">Spacing</div>' + seg('density', DENSITY, S.cfg.density));
-  h += sub('lk_icon', 'App icon & name', esc(appName()) + ' · ' + ((ICONS[S.cfg.icon] || {}).name || ''), iconPickerHtml());
+  more += sub('lk_icon', 'App icon & name', esc(appName()) + ' · ' + ((ICONS[S.cfg.icon] || {}).name || ''), iconPickerHtml());
+  h += '<details class="sub lkmore" data-sec="lk_more"' + (isOpen('lk_more') ? ' open' : '') + '><summary>More looks<span>' + sty.name + ' · ' + CORNERS[S.cfg.corners][0] + '</span></summary><div class="subin">' + more + '</div></details>';
   return h + '</div></details>';
 }
 
@@ -5260,7 +5426,7 @@ function settingsHtml() {
   var conn = !S.demo && S.cfg.url;
   var h = '<div class="shead"><h2>Settings</h2><button data-act="close">Done</button></div>';
   if (SHEET.arg === 'conn') { UI.open.conn = true; SHEET.arg = null; }
-  h += '<details class="set" data-sec="conn"' + (isOpen('conn', !conn) ? ' open' : '') + '><summary>Google Sheet<span>' + (conn ? 'Connected · synced ' + ago(S.lastSync) : 'Not connected') + '</span></summary><div class="inner">';
+  h += '<div class="sgrp">Your sheet</div><details class="set" data-sec="conn"' + (isOpen('conn', !conn) ? ' open' : '') + '><summary>Google Sheet<span>' + (conn ? 'Connected · synced ' + ago(S.lastSync) : 'Not connected') + '</span></summary><div class="inner">';
   if (S.syncErr) h += '<div class="hint" style="color:var(--bad);margin-bottom:10px">' + esc(S.syncErr) + '</div>';
   h += '<div class="field"><label for="c_url">Web app URL</label><input id="c_url" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec" value="' + esc(S.cfg.url) + '"></div>';
   h += '<div class="field"><label for="c_pass">Passcode</label><input id="c_pass" type="password" value="' + esc(S.cfg.pass) + '" placeholder="same as PASSCODE in the script"></div>';
@@ -5280,20 +5446,16 @@ function settingsHtml() {
     '<li><b>Deploy → New deployment</b> → type <b>Web app</b>. Execute as <b>Me</b>, access <b>Anyone</b>. Approve the permission prompt.</li>' +
     '<li>Copy the web app URL, paste it above with your passcode, tap Connect.</li></ol></div></details>';
 
-  h += alertsHtml();
+  h += backupHtml() + '<div class="sgrp">Reminders &amp; shortcuts</div>' + alertsHtml();
   h += '<details class="set" data-sec="quick"' + (isOpen('quick') ? ' open' : '') + '><summary>Quick add<span>' + (S.cfg.launchAdd ? 'Opens to a new entry' : 'Off') + '</span></summary><div class="inner">' +
     '<button class="chip chipw' + (S.cfg.launchAdd ? ' on' : '') + '" data-act="qadd" aria-pressed="' + !!S.cfg.launchAdd + '" id="q_launch">' + (S.cfg.launchAdd ? '✓ ' : '') + 'Open to a new entry when I open the app</button>' +
     '<div class="hint" style="margin-bottom:12px">When you open ' + esc(appName()) + ' from the Home Screen (or come back after 5 minutes away), the add form is already up. Close it to see your month.</div>' +
     '<button class="btn" style="width:100%" data-act="qlink" id="q_link">Copy the quick-add link</button>' +
     '<details class="itip"><summary>ⓘ <span>Using the link with Siri or the Action button</span></summary><div class="hint">In the Shortcuts app make a shortcut with <b>Open URLs</b> and paste the link. It opens in Safari (iPhone opens links there, not in the Home Screen app), so connect your sheet once in Safari too — entries from either place land in the same sheet.</div></details></div></details>';
-  h += appearanceHtml();
-  h += catOrderHtml();
+  h += '<div class="sgrp">Look</div>' + appearanceHtml();
+  h += '<div class="sgrp">Categories &amp; names</div>' + catOrderHtml();
   h += hiddenSuggHtml();
 
-  h += '<details class="set" data-sec="backup"' + (isOpen('backup') ? ' open' : '') + '><summary>Backup<span>' + S.tx.length + ' entries on this device</span></summary><div class="inner">' +
-    '<div class="btns"><button class="btn" data-act="export">Export</button><button class="btn" data-act="import">Import</button></div>' +
-    '<input type="file" id="importFile" accept="application/json,.json" class="sr">' +
-    '<div class="hint">Your sheet is the real backup once connected. This file also keeps your settings and any unsynced changes.</div></div></details>';
   h += '<div class="hint" style="text-align:center;margin-top:14px">' + esc(appName()) + ' ' + VERSION + '</div>';
   return h;
 }
@@ -6126,7 +6288,17 @@ document.addEventListener('click', function (e) {
       break;
     case 'recur': openSheet('recur'); break;
     case 'recurmonth': openSheet('recurmonth', +v); break;
-    case 'heroexp': UI.heroOpen = !UI.heroOpen; keepScroll(render); break;
+    case 'heroexp':
+      UI.heroOpen = !UI.heroOpen;
+      var hb = el.parentNode.querySelector('.hdbody');
+      if (hb) {                                       // open/close in place, smoothly
+        var hcard = el.closest('section'), h0 = hcard.offsetHeight;
+        hb.hidden = !UI.heroOpen; el.setAttribute('aria-expanded', UI.heroOpen);
+        var hch = el.querySelector('.chev'); if (hch) hch.classList.toggle('up', UI.heroOpen);
+        var hdm = el.querySelector('.hdmore'); if (hdm) hdm.textContent = UI.heroOpen ? 'Hide' : 'Details';
+        flipHeight(hcard, h0);
+      } else keepScroll(render);
+      break;
     case 'gmove':
       var gids = userGroupIds(), gi2 = gids.indexOf(v), gd = +el.getAttribute('data-d');
       if (gi2 < 0 || gi2 + gd < 0 || gi2 + gd >= gids.length) break;
@@ -6220,6 +6392,17 @@ document.addEventListener('click', function (e) {
       UI.armed = null; cancelBudgetChange(v); break;
     case 'upedit': openSheet('upedit', v || ''); break;
     case 'review': openSheet('headsup'); break;
+    case 'attnmore': UI.attnAll = !UI.attnAll; keepScroll(render); break;
+    case 'attnx':
+      S.dis = S.dis || {};
+      if (v === 'review') S.dis.review = todayStr();
+      else if (v === 'checkin') { var Wx = checkinWeek(); S.checkin = S.checkin || {}; S.checkin[Wx.key] = 1; }
+      else S.dis[v] = el.getAttribute('data-s');
+      save();
+      var aiEl = el.closest('.ai');
+      if (aiEl && !REDUCED && aiEl.animate) { var aiH = aiEl.offsetHeight; aiEl.style.overflow = 'hidden'; var aiA = aiEl.animate([{ opacity: 1, height: aiH + 'px' }, { opacity: 0, height: '0px' }], { duration: 200, easing: 'ease' }); aiA.onfinish = function () { keepScroll(render); }; }
+      else keepScroll(render);
+      break;
     case 'bconfirm':
       confirmBudget(nowYM()); closeSheet(); keepScroll(render);
       toast('✓ ' + MONTHS[ymM(nowYM())] + '’s budget is set'); break;
@@ -6536,7 +6719,7 @@ document.addEventListener('click', function (e) {
     case 'more': UI.lim += 200; keepScroll(function () { $('txlist').innerHTML = txListHtml(); }); break;
     case 'edit':
       var etop = el.getBoundingClientRect().top;
-      UI.edit = UI.edit === v ? null : v; UI.catTouched = false; UI.tripTouched = true;
+      UI.edit = UI.edit === v ? null : v; UI.catTouched = false; UI.tripTouched = true; UI.fmore = false;
       if (UI.edit) UI.editTop = etop;
       $('txlist').innerHTML = txListHtml();
       anchorTx(v, etop, false);           // the tapped entry stays put even if another open form above closes
@@ -6546,6 +6729,14 @@ document.addEventListener('click', function (e) {
       var cid0 = UI.edit, cur0 = formVals(), orig0 = findTx(cid0);
       closeEdit(cid0, true);
       if (orig0 && cur0 && !sameTx(cur0, orig0)) toast('Changes discarded', { type: 'reedit', id: cid0, vals: cur0, top: UI.editTop });
+      break;
+    case 'fmore':
+      UI.fmore = el.getAttribute('aria-expanded') !== 'true';
+      var fm = $('f_more'), fmH = fm ? fm.offsetHeight : 0;
+      if (fm) fm.hidden = !UI.fmore;
+      el.setAttribute('aria-expanded', UI.fmore); el.querySelector('.chev').classList.toggle('up', UI.fmore);
+      var fms = el.querySelector('small'); if (fms) fms.style.display = UI.fmore ? 'none' : '';
+      if (UI.fmore && fm && !REDUCED && fm.animate) fm.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' });
       break;
     case 'fkind':
       e.preventDefault(); rerenderForm({ k: v, c: '' });
@@ -6815,6 +7006,7 @@ document.addEventListener('change', function (e) {
       $('f_tr').value = tp ? tp.name : '';
     }
     if ($('f_trips')) { var fv = formVals(); $('f_trips').innerHTML = tripChips({ tr: fv.tr, d: fv.d }); }
+    if ($('f_tr') && $('f_tr').value && $('f_more') && $('f_more').contains($('f_trips'))) rerenderForm();
   }
 });
 
