@@ -809,6 +809,115 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 #toast span{flex:1;min-width:0;overflow-wrap:anywhere}
 #toast button{font-weight:700;color:var(--bg);text-decoration:underline;padding:4px}
 .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+
+/* ===================== computers & big screens ===================== */
+.side-brand,.side-gap{display:none}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+@media (hover:hover) and (pointer:fine){
+  .tx:hover,.scrow:hover,.crow:hover,.mghead:hover,.bline:hover,.pchoice:hover,.bhrow:hover,.pcrow:hover,.aimain:hover,.citem.cup:hover{background:var(--p2)}
+  .chip:hover,.btn:hover,.aigo:hover,.hdet:hover,.moreopt:hover{filter:brightness(.97)}
+  .tab:hover{color:var(--t1)}
+  .swtip{display:none}
+  .grab{display:none}
+}
+@media (min-width:960px){
+  html,body{background:var(--bg)}
+  body{overflow-x:visible}
+  #app{max-width:none;margin:0 0 0 240px;overflow-x:visible}
+  .top{position:relative;max-width:1480px;margin:0 auto;padding:18px 32px 12px}
+  .top .brand{visibility:hidden}
+  main#view{max-width:1480px;margin:0 auto;padding:0 32px 56px}
+  main#view[data-v=trends]{max-width:1040px}
+  main#view[data-v=activity]{max-width:1760px}
+  #app:has(main#view[data-v=activity]) .top{max-width:1760px}
+  main#view[data-v=plan-edit],main#view[data-v=plan-whatif]{max-width:860px}
+  #app:has(main#view[data-v=trends]) .top{max-width:1040px}
+  #app:has(main#view[data-v=plan-edit]) .top,#app:has(main#view[data-v=plan-whatif]) .top{max-width:860px}
+  /* the bottom tab bar becomes a sidebar */
+  .tabs{top:0;bottom:0;right:auto;width:240px;display:block;border-top:0;border-right:1px solid var(--b1);padding:22px 16px}
+  .tabs .in{flex-direction:column;max-width:none;gap:4px}
+  .side-brand{display:flex;align-items:center;gap:10px;font-family:var(--fdisp);font-size:22px;font-weight:600;color:var(--t1);padding:0 8px 18px}
+  .side-ico{width:32px;height:32px;border-radius:9px;background-size:cover;background-position:center;flex:none}
+  .side-gap{display:block;height:64px}
+  .tab{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;padding:11px 12px;border-radius:12px;font-size:15px}
+  .tab svg{width:20px;height:20px}
+  .tab.on{background:var(--acd);color:var(--ac)}
+  /* "+" becomes the sidebar's Add entry button */
+  #fab{left:16px;top:74px;right:auto;bottom:auto;width:208px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+  #fab svg{width:20px;height:20px}
+  #fab::after{content:'Add entry'}
+  #fab.away{transform:none;opacity:1;pointer-events:auto}
+  body.on-bulk #fab{display:flex}
+  /* Month: summary on the left, categories on the right */
+  /* Plan: this month beside what's ahead */
+  /* panels slide in from the right instead of up from the bottom */
+  #sheet{left:auto;right:0;top:0;bottom:0;width:480px;max-width:calc(100vw - 240px);max-height:none;margin:0;border-radius:22px 0 0 22px;
+    padding:18px 24px 24px;transform:translateX(105%)}
+  #sheet.on{transform:none}
+  #sheet.hasbar{padding-bottom:0}
+  /* the category picker is a centered window */
+  #picker{inset:auto;left:50%;top:50%;width:560px;max-width:calc(100vw - 48px);height:min(720px,86vh);border-radius:22px;padding:0 20px 20px;
+    transform:translate(-50%,-47%) scale(.98);opacity:0;border:1px solid var(--b1);box-shadow:0 24px 64px rgba(0,0,0,.28);transition:transform .2s ease,opacity .2s ease,visibility 0s .2s}
+  #picker.on{transform:translate(-50%,-50%);opacity:1;transition:transform .2s ease,opacity .2s ease}
+  .pkhead{padding-top:16px}
+  #toast{left:272px;right:32px}
+  .kbd{display:inline-block}
+}
+.khint,.thead{display:none}
+@media (hover:hover) and (pointer:fine){
+  .btns .khint{display:block;flex-basis:100%;text-align:center;font-size:12px;color:var(--t3);margin-top:2px}
+  .btns:has(.khint){flex-wrap:wrap}
+  kbd{font:inherit;font-weight:700;font-size:11px;padding:1px 5px;border:1px solid var(--b2);border-bottom-width:2px;border-radius:5px;background:var(--p1);color:var(--t2)}
+}
+@media (min-width:960px){
+  /* Activity: a full-width table */
+  .wsearch{flex-wrap:nowrap;align-items:center;gap:10px}
+  .wsearch input{flex:1 1 280px}
+  .wseg{display:flex;gap:6px;flex:none}
+  .wseg .chip{min-height:40px}
+  .wafilt{margin:0;flex:0 0 auto;width:min(420px,36%)}
+  .thead{display:grid;position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 14px 6px;margin-top:6px;border-bottom:1px solid var(--b1)}
+  .thead,.trow{grid-template-columns:110px minmax(150px,1.2fr) minmax(130px,.9fr) minmax(0,2fr) 120px;column-gap:18px;align-items:center}
+  .thead.tsel,.trow.sel{grid-template-columns:24px 110px minmax(150px,1.2fr) minmax(130px,.9fr) minmax(0,2fr) 120px}
+  .th{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--t3);text-align:left;padding:4px 0}
+  button.th:hover{color:var(--t1)}
+  .th.on{color:var(--ac)}
+  .th-a{justify-content:flex-end}
+  .tar{font-style:normal;width:10px}
+  .tx.trow{display:grid;padding:10px 14px;min-height:46px}
+  .trow .td{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .trow .td-d{color:var(--t2);font-size:14px}
+  .trow .td-d small{color:var(--t3);font-size:12px}
+  .trow .td-v b{font-weight:500}
+  .trow .td-v .pend{margin-left:6px}
+  .trow .td-n{color:var(--t3);font-size:13px}
+  .trow .amt{text-align:right}
+  .cpill{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--p2);color:var(--t2)}
+  .cpill.in{color:var(--ok)}
+  .tx.trow.editing{background:var(--acd);box-shadow:inset 3px 0 0 var(--ac)}
+  #txlist .mhead{margin-top:18px}
+}
+@media (min-width:960px) and (max-width:1279px){
+  .wsearch{flex-wrap:wrap}
+  .wsearch input{flex:1 1 100%}
+  .wafilt{flex:1 1 0;width:auto}
+}
+@media (min-width:960px) and (max-width:1099px){
+  main#view .mcols,main#view .pcols{max-width:640px;margin:0 auto}
+}
+@media (min-width:1100px){
+  .mcols{display:grid;grid-template-columns:minmax(330px,400px) minmax(0,1fr);gap:24px;align-items:start}
+  .mcol1{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow-y:auto;scrollbar-width:thin;padding:2px;margin:-2px}
+  .pcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+  .pcols .psect:first-child{margin-top:4px}
+}
+@media (min-width:1280px){
+  .mcols{grid-template-columns:minmax(360px,420px) minmax(0,1fr)}
+}
+@media (min-width:1440px){
+  .mcols{grid-template-columns:minmax(400px,460px) minmax(0,1fr);gap:28px}
+  .pcols{gap:28px}
+}
 </style>
 </head>
 <body>
@@ -821,7 +930,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
   <main id="view"></main>
 </div>
 <button id="fab" data-act="add" aria-label="Add entry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
-<nav class="tabs"><div class="in">
+<nav class="tabs" aria-label="Sections"><div class="in"><div class="side-brand" aria-hidden="true"><span class="side-ico" id="sideIco"></span><span id="sideName">Piggy</span></div><div class="side-gap"></div>
   <button class="tab" data-act="tab" data-v="month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/></svg>Month</button>
   <button class="tab" data-act="tab" data-v="activity"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>Activity</button>
   <button class="tab" data-act="tab" data-v="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Plan</button>
@@ -837,7 +946,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.16';
+var VERSION = '2.18';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1388,10 +1497,13 @@ function render() {
   else if (UI.tab === 'plan') html = viewPlan();
   else html = viewTrends();
   $('view').innerHTML = html;
+  deskInit();
+  setTimeout(syncEditPanel, 0);
+  $('view').setAttribute('data-v', UI.tab === 'plan' ? 'plan-' + (planState().step || 'home') : UI.tab);
   if (UI.lastTab !== UI.tab && !REDUCED) { var vw = $('view'); vw.classList.remove('fade'); void vw.offsetWidth; vw.classList.add('fade'); }
   UI.lastTab = UI.tab;
   animateNumbers(false);
-  $('fab').style.display = UI.tab === 'plan' ? 'none' : '';
+  $('fab').style.display = UI.tab === 'plan' && !isWide() ? 'none' : '';
   document.body.classList.toggle('on-plan', UI.tab === 'plan' && planState().step === 'edit' && planDraftCount() > 0);
   document.body.classList.toggle('on-bulk', UI.tab === 'activity' && !!UI.bulk && !UI.bulkOne);
   if (UI.tab !== 'activity') UI.bulk = null;
@@ -1649,6 +1761,37 @@ function anchorFind(k) {
   var els = document.querySelectorAll('#view [id], #view [data-ck], #view [data-act][data-v]');
   for (var i = 0; i < els.length; i++) if (anchorKey(els[i]) === k) return els[i];
   return null;
+}
+// ---- computers: wide layout, mouse and keyboard
+var WIDE_MQ = window.matchMedia ? window.matchMedia('(min-width: 960px)') : null;
+var FINE_MQ = window.matchMedia ? window.matchMedia('(hover: hover) and (pointer: fine)') : null;
+function isWide() { return !!(WIDE_MQ && WIDE_MQ.matches); }
+function isMouse() { return !!(FINE_MQ && FINE_MQ.matches); }
+document.addEventListener('keydown', function (e) {
+  if (e.metaKey || e.ctrlKey || e.altKey || !S) return;
+  var t = e.target, typing = t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
+  if (typing || SHEET || PICK) return;
+  var tabs = ['month', 'activity', 'plan', 'trends'];
+  if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openSheet('add', newTxDraft('e')); }
+  else if (/^[1-4]$/.test(e.key)) { e.preventDefault(); var tb = document.querySelector('.tab[data-v=' + tabs[+e.key - 1] + ']'); if (tb) tb.click(); }
+  else if (e.key === '/') {
+    e.preventDefault();
+    if (UI.tab !== 'activity') { var ta = document.querySelector('.tab[data-v=activity]'); if (ta) ta.click(); }
+    setTimeout(function () { var q = $('q'); if (q) q.focus(); }, 30);
+  }
+  else if (UI.tab === 'month' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+    var mb = document.querySelector('[data-act=' + (e.key === 'ArrowLeft' ? 'mprev' : 'mnext') + ']');
+    if (mb && !mb.disabled) { e.preventDefault(); mb.click(); }
+  }
+});
+function deskInit() {
+  var names = { month: 'Month', activity: 'Activity', plan: 'Plan', trends: 'Trends' }, keys = { month: 1, activity: 2, plan: 3, trends: 4 };
+  var tb = document.querySelectorAll('.tab');
+  for (var i = 0; i < tb.length; i++) { var v = tb[i].getAttribute('data-v'); tb[i].title = names[v] + ' (' + keys[v] + ')'; }
+  $('fab').title = 'Add an entry (N)';
+  var nm = $('sideName'); if (nm) nm.textContent = appName();
+  var ic = $('sideIco'), src = document.querySelector('link[rel="apple-touch-icon"], link[rel="icon"]');
+  if (ic && src) ic.style.backgroundImage = 'url("' + src.href + '")';
 }
 var ANIMS = {};
 // a chip like "−$35" next to a number; it stays for 2.2s even if the screen is redrawn meanwhile
@@ -1957,6 +2100,7 @@ function viewMonth() {
     '<div class="mtitle">' + MONTHS[m] + ' ' + y + '<small>' + (isCur ? 'Day ' + day + ' of ' + dim : (isFuture ? 'Upcoming' : 'Closed month')) + '</small></div>' +
     '<button data-act="mnext" aria-label="Next month"' + (key >= cur ? ' disabled' : '') + '>' + svgChevron(false) + '</button></div>';
 
+  h += '<div class="mcols"><div class="mcol mcol1">';
   if (isCur) h += attnHtml(key);
   if (isCur && bt.flex > 0) h += heroNowHtml(key, s, bt, left, pct, pace, dim, day);
   else h += '<section class="card hero"><div class="eyebrow">' + (left >= 0 ? 'Left in budget' : 'Over budget') + '</div>' +
@@ -1967,10 +2111,11 @@ function viewMonth() {
     '<div class="mlab"><span>' + Math.round(pct * 100) + '% used</span><span>' + (isCur ? 'line = ' + Math.round(pace * 100) + '% of month gone' : '') + '</span></div>' +
     (isCur ? forecastHtml(key, s, bt, day, dim) : '') +
     inOutHtml(key, s, bt, isCur) + '</section>';
+  h += '</div><div class="mcol mcol2">';
 
   if (!s.n && !isCur) {
     h += '<div class="card empty"><b>Nothing logged for ' + MONTHS[m] + '</b>Entries you add for this month will show up here.</div>';
-    return h;
+    return h + '</div></div>';
   }
 
   monthGroupOrder(key).forEach(function (g) {
@@ -2020,7 +2165,7 @@ function viewMonth() {
     });
     h += '</section>';
   }
-  return h;
+  return h + '</div></div>';
 }
 
 // A group on the Month tab: one line (bar + what's left) that opens into its categories.
@@ -2163,9 +2308,11 @@ function filteredTx() {
     if (q && (low(t.v) + ' ' + low(t.c) + ' ' + low(t.n) + ' ' + low(t.tr) + ' ' + String(t.a)).indexOf(q) < 0) return false;
     return true;
   });
-  var dir = UI.asort === 'old' ? -1 : 1;
+  var dir = UI.asort === 'old' ? -1 : 1, so = UI.asort;
   list.sort(function (a, b) {
-    if (UI.asort === 'big') { if (b.a !== a.a) return b.a - a.a; }
+    if (so === 'big' || so === 'small') { if (b.a !== a.a) return so === 'big' ? b.a - a.a : a.a - b.a; }
+    if (so === 'store' || so === 'storez') { var sa = low(a.v || a.c), sb = low(b.v || b.c); if (sa !== sb) return (sa < sb ? -1 : 1) * (so === 'store' ? 1 : -1); }
+    if (so === 'cat' || so === 'catz') { var ca = low(a.c), cb = low(b.c); if (ca !== cb) return (ca < cb ? -1 : 1) * (so === 'cat' ? 1 : -1); }
     var ka = ymKey(a.y, a.m), kb = ymKey(b.y, b.m);
     if (ka !== kb) return (kb - ka) * dir;
     if ((a.p ? 1 : 0) !== (b.p ? 1 : 0)) return a.p ? -1 : 1;
@@ -2180,6 +2327,9 @@ function activityMonths() {
   S.tx.forEach(function (t) { var k = ymKey(t.y, t.m); cnt[k] = (cnt[k] || 0) + 1; });
   return Object.keys(cnt).map(Number).sort(function (a, b) { return b - a; }).map(function (k) { return [k, cnt[k]]; });
 }
+var SORTS = [['new', 'Newest first'], ['old', 'Oldest first'], ['big', 'Biggest first'], ['small', 'Smallest first'], ['store', 'Store A–Z'], ['storez', 'Store Z–A'], ['cat', 'Category A–Z'], ['catz', 'Category Z–A']];
+function flatSort() { return UI.asort !== 'new' && UI.asort !== 'old'; }
+function sortName() { for (var i = 0; i < SORTS.length; i++) if (SORTS[i][0] === UI.asort) return SORTS[i][1]; return ''; }
 function activeFilters() { return (UI.fk !== 'all' ? 1 : 0) + (UI.am !== '' ? 1 : 0) + (UI.asort !== 'new' ? 1 : 0); }
 function activityFilterSheet() {
   var h = '<div class="shead"><h2>Filter</h2><button data-act="close">Done</button></div>';
@@ -2196,7 +2346,7 @@ function activityFilterHtml() {
       return '<option value="' + x[0] + '"' + (String(x[0]) === String(UI.am) ? ' selected' : '') + '>' + MONTHS[ymM(x[0])] + ' ' + ymY(x[0]) + ' (' + x[1] + ')</option>';
     }).join('') + '</select></label>' +
     '<label class="selw"><span class="sr">Sort</span><select id="a_sort">' +
-    [['new', 'Newest first'], ['old', 'Oldest first'], ['big', 'Biggest first']].map(function (o) {
+    SORTS.map(function (o) {
       return '<option value="' + o[0] + '"' + (UI.asort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
     }).join('') + '</select></label></div>';
   return h;
@@ -2217,8 +2367,12 @@ function activitySummary(list) {
 function viewActivity() {
   var h = demoBanner();
   var nf = activeFilters();
-  h += '<div class="search"><input id="q" type="search" placeholder="Search stores, notes, months" value="' + esc(UI.q) + '" autocomplete="off">' +
-    '<button class="fbtn' + (nf ? ' on' : '') + '" data-act="afilter" id="a_filter">Filter' + (nf ? ' · ' + nf : '') + '</button>' +
+  var wide = isWide();
+  h += '<div class="search' + (wide ? ' wsearch' : '') + '"><input id="q" type="search" placeholder="Search stores, notes, months" value="' + esc(UI.q) + '" autocomplete="off">' +
+    (wide ? '<div class="wseg">' + [['all', 'Everything'], ['e', 'Spending'], ['i', 'Income']].concat(S.trips.length ? [['t', 'Trips']] : []).map(function (p) {
+      return '<button class="chip' + (UI.fk === p[0] ? ' on' : '') + '" data-act="fk" data-v="' + p[0] + '">' + p[1] + '</button>';
+    }).join('') + '</div>' + activityFilterHtml().replace('<div class="afilt">', '<div class="afilt wafilt">')
+    : '<button class="fbtn' + (nf ? ' on' : '') + '" data-act="afilter" id="a_filter">Filter' + (nf ? ' · ' + nf : '') + '</button>') +
     '<button class="fbtn' + (UI.bulk ? ' on' : '') + '" data-act="bulk" id="a_select">' + (UI.bulk ? 'Done' : 'Select') + '</button></div>';
   if (!(S.tips && S.tips.swipe) && S.tx.length) h += '<div class="swtip">Tip: swipe an entry left to delete it, or right to change its category or trip.</div>';
   if (!UI.bulk && !UI.q) h += owedLineHtml();
@@ -2231,9 +2385,13 @@ function txListHtml() {
   var list = filteredTx();
   var sum = activitySummary(list);
   if (!list.length) return sum + '<div class="card empty"><b>No entries' + (UI.q ? ' match “' + esc(UI.q) + '”' : UI.am !== '' ? ' that month' : '') + '</b>' + (UI.q || UI.am !== '' ? 'Try another month or word.' : 'Tap + to log one.') + '</div>';
-  var h = sum, curKey = null, open = false, shown = 0, flat = UI.asort === 'big', cnt = {};
+  var h = sum, curKey = null, open = false, shown = 0, flat = flatSort(), cnt = {}, wide = isWide();
   list.forEach(function (x) { var kk = ymKey(x.y, x.m); cnt[kk] = (cnt[kk] || 0) + 1; });
-  if (flat) { h += '<div class="mhead"><span>Biggest first</span></div><div class="list">'; open = true; }
+  if (wide) h += tableHeadHtml();
+  if (flat) {
+    var fsp = 0, fin = 0; list.forEach(function (x) { if (x.k === 'e') fsp += x.a; else fin += x.a; });
+    h += '<div class="mhead"><span>' + sortName() + ' <small>· ' + list.length + ' entries</small></span>' + (wide ? '<span class="num">spent ' + money(fsp) + (fin ? ' · in ' + money(fin) : '') + '</span>' : '') + '</div><div class="list">'; open = true;
+  }
   for (var i = 0; i < list.length; i++, shown++) {
     var t = list[i], k = ymKey(t.y, t.m);
     // stop at a month boundary, never halfway through a month
@@ -2245,19 +2403,53 @@ function txListHtml() {
       curKey = k; open = true;
     }
     h += txItem(t);
-    if (UI.edit === t.id) h += txForm(t, false);
+    if (UI.edit === t.id && !wide) h += txForm(t, false);
   }
   if (open) h += '</div>';
   if (shown < list.length) h += '<button class="more" data-act="more" id="a_more">Show more (' + (list.length - shown) + ' older)</button>';
   return h;
 }
 
+function tableHeadHtml() {
+  var so = UI.asort;
+  var col = function (key, label, on, up, next) {
+    return '<button class="th th-' + key + (on ? ' on' : '') + '" data-act="tsort" data-v="' + next + '" title="Sort by ' + label.toLowerCase() + '">' + label +
+      '<i class="tar">' + (on ? (up ? '↑' : '↓') : '') + '</i></button>';
+  };
+  return '<div class="thead' + (UI.bulk && !UI.bulkOne ? ' tsel' : '') + '" id="thead">' + (UI.bulk && !UI.bulkOne ? '<span></span>' : '') +
+    col('d', 'Date', so === 'new' || so === 'old', so === 'old', so === 'new' ? 'old' : 'new') +
+    col('v', 'Store', so === 'store' || so === 'storez', so === 'store', so === 'store' ? 'storez' : 'store') +
+    col('c', 'Category', so === 'cat' || so === 'catz', so === 'cat', so === 'cat' ? 'catz' : 'cat') +
+    '<span class="th th-n">Details</span>' +
+    col('a', 'Amount', so === 'big' || so === 'small', so === 'small', so === 'big' ? 'small' : 'big') + '</div>';
+}
+// one entry as a table row (computers)
+function txRowCells(t) {
+  var det = [];
+  if (t.n) det.push(esc(t.n));
+  if (t.fs) det.push('from ' + esc(t.fs));
+  if (+t.ow > 0) det.push(t.pb ? 'your share ' + money(share(t), true) + ' · paid back ✓' : 'your share ' + money(share(t), true) + ' · ' + money(+t.ow, true) + ' owed');
+  var date = t.d ? shortDate(t.d) : MON[t.m];
+  if (flatSort() || UI.q) date += ' <small>' + t.y + '</small>';
+  return '<span class="td td-d">' + date + '</span>' +
+    '<span class="td td-v"><b>' + esc(t.v || '—') + '</b>' + (t.p ? '<span class="pend" title="Waiting to reach your sheet">• waiting to sync</span>' : '') + '</span>' +
+    '<span class="td td-c"><span class="cpill' + (t.k === 'i' ? ' in' : '') + '">' + esc(t.c) + '</span></span>' +
+    '<span class="td td-n">' + (t.tr ? '<span class="tbadge"><i class="tdot"></i>' + esc(t.tr) + '</span> ' : '') + det.join(' · ') + '</span>' +
+    '<span class="amt' + (t.k === 'i' ? ' in' : '') + '">' + (t.k === 'i' ? '+' : '') + money(t.a, true) + '</span>';
+}
 function txItem(t) {
+  if (UI.tab === 'activity' && isWide()) {
+    if (UI.bulk && !UI.bulkOne) {
+      var son = !!UI.bulk[t.id];
+      return '<button class="tx trow sel' + (son ? ' on' : '') + '" data-act="bsel" data-v="' + esc(t.id) + '" aria-pressed="' + son + '"><i class="btick">' + (son ? '✓' : '') + '</i>' + txRowCells(t) + '</button>';
+    }
+    return '<button class="tx trow' + (UI.edit === t.id ? ' editing' : '') + '" data-act="edit" data-v="' + esc(t.id) + '" aria-expanded="' + (UI.edit === t.id) + '">' + txRowCells(t) + '</button>';
+  }
   var title = t.v || t.c;
   var bits = [];
   if (t.v) bits.push(t.c);
-  if (t.d) bits.push(shortDate(t.d) + (UI.asort === 'big' && UI.tab === 'activity' ? ' ' + t.y : ''));
-  else if (UI.asort === 'big' && UI.tab === 'activity') bits.push(MON[t.m] + ' ' + t.y);
+  if (t.d) bits.push(shortDate(t.d) + (flatSort() && UI.tab === 'activity' ? ' ' + t.y : ''));
+  else if (flatSort() && UI.tab === 'activity') bits.push(MON[t.m] + ' ' + t.y);
   if (t.n) bits.push(t.n);
   if (t.fs) bits.push('from ' + t.fs);
   if (+t.ow > 0) bits.push(t.pb ? 'your share ' + money(share(t), true) + ' · paid back ✓' : 'your share ' + money(share(t), true) + ' · ' + money(+t.ow, true) + ' owed');
@@ -2313,7 +2505,8 @@ function txForm(t, isNew) {
   h += '<div class="hint" id="f_err" role="alert"></div>';
   h += '<div class="btns' + (isNew ? ' stickybar' : '') + '">' + (isNew ? '<button type="button" class="btn" data-act="fsaveadd" id="f_saveadd">Save & add another</button>' : '<button type="button" class="btn danger" data-act="fdel" id="f_del">Delete</button>') +
     (isNew ? '' : '<button type="button" class="btn" data-act="fcancel">Cancel</button>') +
-    '<button type="submit" class="btn pri" id="f_save">' + (isNew ? 'Add' : 'Save') + '</button></div>';
+    '<button type="submit" class="btn pri" id="f_save">' + (isNew ? 'Add' : 'Save') + '</button>' +
+    (isMouse() ? '<div class="khint"><kbd>Enter</kbd> ' + (isNew ? 'add' : 'save') + (isNew ? ' · <kbd>Shift</kbd>+<kbd>Enter</kbd> add &amp; start the next one' : '') + ' · <kbd>Esc</kbd> ' + (isNew ? 'close' : 'cancel') + '</div>' : '') + '</div>';
   if (t.demo && !isNew) h += '<div class="hint">Preview data — changes here are just for trying things out and are cleared when you connect.</div>';
   return h + '</form>';
 }
@@ -3140,16 +3333,16 @@ function planHomeHtml() {
       '<button class="btn pri" data-act="pgo" data-v="resume">Continue</button><button class="btn" data-act="pdiscard" id="p_discard">Discard</button></section>';
   }
   var nextJan = ymKey(ymY(cur) + 1, 0);
-  h += '<div class="psect">This month</div>';
+  h = '<div class="pcols"><div class="pcol">' + h + '<div class="psect">This month</div>';
   h += '<div class="pchoices"><button class="pchoice" data-act="pgo" data-v="now"><span class="pico">✎</span><span><b>Change a budget</b><small>Raise or lower a category for ' + MONTHS[ymM(cur)] + ', or from ' + MONTHS[ymM(cur)] + ' on.</small></span><em>›</em></button></div>';
   h += planPayHtml();
-  h += '<div class="psect">Ahead</div>';
+  h += '</div><div class="pcol"><div class="psect">Ahead</div>';
   h += planComingHtml();
   h += '<div class="pchoices"><div class="pchoice"><span class="pico">→</span><span><b>Plan ahead</b><small>Set up a coming month or next year.</small>' +
     '<span class="pchips"><button class="chip" data-act="pgo" data-v="next">' + MONTHS[ymM(cur + 1)] + (ymY(cur + 1) !== ymY(cur) ? ' ' + ymY(cur + 1) : '') + '</button>' +
     (nextJan > cur + 1 ? '<button class="chip" data-act="pgo" data-v="year">' + ymY(nextJan) + '</button>' : '') + '</span></span></div>';
   h += '<button class="pchoice" data-act="pgo" data-v="whatif"><span class="pico">?</span><span><b>Try a what-if</b><small>What if I spent like my average, or made a different income? Nothing saves unless you choose.</small></span><em>›</em></button></div>';
-  h += '<div style="margin-top:12px">' + goalsCardHtml(true) + planHistoryHtml() + '</div>';
+  h += '<div style="margin-top:12px">' + goalsCardHtml(true) + planHistoryHtml() + '</div></div></div>';
   h += '<div class="hint" style="text-align:center;margin-top:14px">Made a typo in an old month? <button class="linkbtn" data-act="pgo" data-v="fix">Correct a past budget</button></div>';
   return h;
 }
@@ -5099,7 +5292,7 @@ function openSheet(kind, arg) {
   SHEET = { kind: kind, arg: arg };
   UI.catTouched = false; UI.tripTouched = false; UI.catAuto = false;
   if (kind === 'settings') UI.open = {};      // every visit starts with the sections closed
-  if (kind === 'add') { UI.split = null; UI.fmore = false; }
+  if (kind === 'add' || kind === 'edit') { UI.split = null; UI.fmore = false; }
   if (kind === 'settings') UI.alertMsg = '';
   renderSheet();
   lockPage(true);
@@ -5114,8 +5307,20 @@ function openSheet(kind, arg) {
   }
 }
 
+// on a computer the entry being edited opens in the side panel; the list row stays highlighted
+function syncEditPanel() {
+  var want = isWide() && UI.tab === 'activity' && UI.edit && findTx(UI.edit);
+  if (want) {
+    if (SHEET && SHEET.kind === 'edit' && SHEET.arg === UI.edit) return;
+    if (SHEET && SHEET.kind !== 'edit') return;
+    openSheet('edit', UI.edit);
+    setTimeout(function () { var a = $('f_a'); if (a && SHEET && SHEET.kind === 'edit') try { a.focus({ preventScroll: true }); a.select(); } catch (e) {} }, 60);
+  } else if (SHEET && SHEET.kind === 'edit') closeSheet();
+}
 function closeSheet() {
+  var wasEdit = SHEET && SHEET.kind === 'edit';
   SHEET = null;
+  if (wasEdit && UI.edit) { UI.edit = null; if ($('txlist')) $('txlist').innerHTML = txListHtml(); }
   if (HU_PENDING) setTimeout(maybeHeadsUp, 450);
   CLOSED_AT = Date.now();
   playPending();
@@ -5197,6 +5402,9 @@ function renderSheet() {
   var h = '<div class="grab"></div>';
   if (SHEET.kind === 'add') {
     h += '<div class="shead"><h2>New entry</h2><button data-act="close">Close</button></div>' + txForm(SHEET.arg, true);
+  } else if (SHEET.kind === 'edit') {
+    var et = findTx(SHEET.arg);
+    h += '<div class="shead"><h2>Edit entry</h2><button data-act="close">Close</button></div>' + (et ? txForm(et, false) : '<div class="hint">This entry is gone.</div>');
   } else if (SHEET.kind === 'settings') {
     h += settingsHtml();
   } else if (SHEET.kind === 'cat') {
@@ -5317,6 +5525,16 @@ function catOptionsHtml(c, key) {
   return h + '</section>';
 }
 
+function installHtml() {
+  var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone;
+  return '<details class="set" data-sec="install"' + (isOpen('install') ? ' open' : '') + '><summary>Install the app<span>' + (standalone ? 'Installed here ✓' : 'Phone & computer') + '</span></summary><div class="inner">' +
+    '<div class="hint" style="margin-bottom:10px">' + esc(appName()) + ' works the same everywhere and keeps everything in your sheet, so a phone and a computer stay in sync.</div>' +
+    '<div class="flabel">iPhone</div><div class="hint" style="margin-bottom:10px">In Safari tap <b>Share → Add to Home Screen</b>.</div>' +
+    '<div class="flabel">Mac</div><div class="hint" style="margin-bottom:10px">In Safari choose <b>File → Add to Dock</b>. In Chrome or Edge click the <b>install</b> icon at the right end of the address bar.</div>' +
+    '<div class="flabel">Windows</div><div class="hint" style="margin-bottom:10px">In Edge or Chrome click the <b>install</b> icon in the address bar (or <b>⋯ → Apps → Install</b>). It opens in its own window and can be pinned to the taskbar.</div>' +
+    '<div class="flabel">Shortcuts on a computer</div><div class="hint"><b>N</b> new entry · <b>Enter</b> save · <b>Shift+Enter</b> save &amp; add another · <b>1–4</b> switch tabs · <b>/</b> search Activity · <b>← →</b> change month · <b>Esc</b> close</div>' +
+    '</div></details>';
+}
 function backupHtml() {
   var h = '';
   h += '<details class="set" data-sec="backup"' + (isOpen('backup') ? ' open' : '') + '><summary>Backup<span>' + S.tx.length + ' entries on this device</span></summary><div class="inner">' +
@@ -5452,6 +5670,7 @@ function settingsHtml() {
     '<div class="hint" style="margin-bottom:12px">When you open ' + esc(appName()) + ' from the Home Screen (or come back after 5 minutes away), the add form is already up. Close it to see your month.</div>' +
     '<button class="btn" style="width:100%" data-act="qlink" id="q_link">Copy the quick-add link</button>' +
     '<details class="itip"><summary>ⓘ <span>Using the link with Siri or the Action button</span></summary><div class="hint">In the Shortcuts app make a shortcut with <b>Open URLs</b> and paste the link. It opens in Safari (iPhone opens links there, not in the Home Screen app), so connect your sheet once in Safari too — entries from either place land in the same sheet.</div></details></div></details>';
+  h += installHtml();
   h += '<div class="sgrp">Look</div>' + appearanceHtml();
   h += '<div class="sgrp">Categories &amp; names</div>' + catOrderHtml();
   h += hiddenSuggHtml();
@@ -6566,6 +6785,12 @@ document.addEventListener('click', function (e) {
     case 'cat': openSheet('cat', { c: v, k: el.getAttribute('data-k') || 'e' }); break;
     case 'fk': UI.fk = v; UI.lim = 120; $('txlist').innerHTML = txListHtml(); refreshChips(); refreshFilterBtn(); break;
     case 'afilter': openSheet('afilter'); break;
+    case 'tsort':
+      UI.asort = v; UI.lim = 120; UI.edit = null;
+      $('txlist').innerHTML = txListHtml(); syncEditPanel(); refreshFilterBtn();
+      var srt = $('a_sort'); if (srt) srt.value = v;
+      var thd = $('thead'); if (thd && thd.getBoundingClientRect().top < 0) window.scrollTo(0, window.scrollY + thd.getBoundingClientRect().top - 8);
+      break;
     case 'spendview':
       if (UI.armed !== 'svgo') { arm('svgo', el, 'Replace that tab? Tap again'); break; }
       UI.armed = null; UI.svTab = $('sv_tab').value.trim(); el.disabled = true; el.textContent = 'Checking your script…';
@@ -6718,6 +6943,11 @@ document.addEventListener('click', function (e) {
     case 'aclear': UI.q = ''; UI.am = ''; UI.fk = 'all'; UI.asort = 'new'; UI.lim = 120; render(); window.scrollTo(0, 0); break;
     case 'more': UI.lim += 200; keepScroll(function () { $('txlist').innerHTML = txListHtml(); }); break;
     case 'edit':
+      if (isWide() && UI.tab === 'activity') {
+        UI.edit = UI.edit === v ? null : v; UI.editTop = el.getBoundingClientRect().top; UI.catTouched = false; UI.tripTouched = true; UI.fmore = false;
+        $('txlist').innerHTML = txListHtml(); syncEditPanel();
+        break;
+      }
       var etop = el.getBoundingClientRect().top;
       UI.edit = UI.edit === v ? null : v; UI.catTouched = false; UI.tripTouched = true; UI.fmore = false;
       if (UI.edit) UI.editTop = etop;
@@ -6992,7 +7222,7 @@ document.addEventListener('change', function (e) {
   else if (t.id === 'a_m' || t.id === 'a_sort') {
     if (t.id === 'a_m') UI.am = t.value; else UI.asort = t.value;
     UI.lim = 120; UI.edit = null;
-    $('txlist').innerHTML = txListHtml();
+    $('txlist').innerHTML = txListHtml(); syncEditPanel();
     refreshFilterBtn();
     window.scrollTo(0, 0);
   }
@@ -7032,7 +7262,21 @@ document.addEventListener('toggle', function (e) {
 }, true);
 
 document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape') { if (PICK) closePicker(); else if (SHEET) closeSheet(); }
+  if (e.key === 'Escape') {
+    var fc = document.querySelector('#txform [data-act=fcancel]');
+    if (PICK) closePicker();
+    else if (SHEET && SHEET.kind === 'edit' && fc) fc.click();
+    else if (SHEET) closeSheet();
+    else if (UI.edit && fc && isMouse()) fc.click();
+  }
+  // in the entry form: Enter saves (from any box), Shift+Enter adds it and opens a fresh form for the next one
+  var tf = e.target && e.target.closest && e.target.closest('#txform');
+  if (e.key === 'Enter' && tf && !PICK && e.target.tagName !== 'TEXTAREA' && !e.isComposing) {
+    if (e.target.tagName === 'BUTTON' && !(e.shiftKey || e.metaKey || e.ctrlKey)) return;   // a focused button does its own thing
+    e.preventDefault();
+    if (e.shiftKey && $('f_saveadd')) $('f_saveadd').click(); else submitForm();
+    return;
+  }
   if (e.key === 'Enter' && e.target && e.target.id === 'pk_q' && PICK) {
     e.preventDefault();
     var q = low(PICK.q), hits = pickerCats().filter(function (c) { return c.indexOf(q) >= 0; });
@@ -7112,6 +7356,7 @@ function keepInView(sh) {
 function fitSheet(ensure) {
   var vv = window.visualViewport, sh = $('sheet');
   if (!vv || !sh) return;
+  if (isMouse()) { if (sh.classList.contains('kb')) unfitSheet(sh); return; }   // no on-screen keyboard on a computer
   var w = Math.round(vv.width * (vv.scale || 1));
   if (w !== FULLW) { FULLW = w; FULLH = 0; }                    // turned the phone: measure again
   var typing = SHEET && typingIn(sh);
