@@ -820,6 +820,27 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
   .swtip{display:none}
   .grab{display:none}
 }
+
+/* a smaller window on a computer (or a tablet): a slim side rail instead of the bottom bar */
+@media (min-width:700px) and (max-width:959px){
+  html,body{background:var(--bg)}
+  body{overflow-x:visible}
+  #app{max-width:none;margin:0 0 0 88px;overflow-x:visible}
+  .top{position:relative;max-width:760px;margin:0 auto;padding:16px 24px 10px}
+  main#view{max-width:760px;margin:0 auto;padding:0 24px 48px}
+  .tabs{top:0;bottom:0;right:auto;width:88px;display:block;border-top:0;border-right:1px solid var(--b1);padding:16px 8px}
+  .tabs .in{flex-direction:column;max-width:none;gap:6px}
+  .side-brand{display:flex;justify-content:center;padding:0 0 12px}
+  .side-brand #sideName{display:none}
+  .side-ico{width:36px;height:36px;border-radius:10px;background-size:cover;background-position:center}
+  .side-gap{display:block;height:70px}
+  .tab{flex:none;padding:8px 0;border-radius:12px;font-size:11.5px}
+  .tab.on{background:var(--acd)}
+  #fab{left:16px;top:66px;right:auto;bottom:auto;width:56px;height:56px}
+  #fab.away{transform:none;opacity:1;pointer-events:auto}
+  #toast{left:112px;right:24px}
+  .swtip{display:none}
+}
 @media (min-width:960px){
   html,body{background:var(--bg)}
   body{overflow-x:visible}
@@ -946,7 +967,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.18';
+var VERSION = '2.20';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1503,7 +1524,7 @@ function render() {
   if (UI.lastTab !== UI.tab && !REDUCED) { var vw = $('view'); vw.classList.remove('fade'); void vw.offsetWidth; vw.classList.add('fade'); }
   UI.lastTab = UI.tab;
   animateNumbers(false);
-  $('fab').style.display = UI.tab === 'plan' && !isWide() ? 'none' : '';
+  $('fab').style.display = UI.tab === 'plan' && !isRail() ? 'none' : '';
   document.body.classList.toggle('on-plan', UI.tab === 'plan' && planState().step === 'edit' && planDraftCount() > 0);
   document.body.classList.toggle('on-bulk', UI.tab === 'activity' && !!UI.bulk && !UI.bulkOne);
   if (UI.tab !== 'activity') UI.bulk = null;
@@ -1664,7 +1685,7 @@ function statusSheetHtml() {
   row('Your sheet', SYNCING ? 'Syncing…' : S.syncErr ? 'Problem' : 'Connected', S.syncErr ? 'bad' : 'ok');
   row('Last synced', ago(S.lastSync), Date.now() - S.lastSync > 86400000 ? 'warn' : '');
   row('Waiting to send', n ? n + ' change' + (n === 1 ? '' : 's') : 'nothing', n ? 'warn' : '');
-  row('Script version', v + (v < 14 ? ' — update needed' : ' ✓'), v < 14 ? 'warn' : '');
+  row('Script version', v + (v < 15 ? ' — update needed' : ' ✓'), v < 15 ? 'warn' : '');
   h += '</div>';
   if (S.syncErr) h += '<div class="spendsum" style="color:var(--bad)">' + esc(S.syncErr) + '</div>';
   if (n) {
@@ -1672,7 +1693,7 @@ function statusSheetHtml() {
       var d = o.tx ? (o.op === 'delete' ? 'Delete ' : o.op === 'update' ? 'Change ' : 'Add ') + esc(o.tx.v || o.tx.c || '') + ' ' + money(o.tx.a, true) : o.op === 'delete' ? 'Delete an entry' : ({ budgets: 'Budget changes', budget: 'Budget change', trip: 'Trip', recur: 'Recurring bill', goal: 'Savings goal', prefs: 'Settings', regroup: 'Category group', tag: 'Trip tags' })[o.op] || o.op;
       return '<div class="strow"><span>' + d + '</span></div>'; }).join('') + (n > 6 ? '<div class="strow"><span>+ ' + (n - 6) + ' more</span></div>' : '') + '</div>';
   }
-  if (v && v < 14) h += '<div class="hint" style="margin-top:10px">Paste the newest Code.gs, then Deploy → Manage deployments → ✏️ → Version: New version → Deploy.</div>';
+  if (v && v < 15) h += '<div class="hint" style="margin-top:10px">Version 15 stops a purchase from being saved twice when the connection drops mid-save. Paste the newest Code.gs, then Deploy → Manage deployments → ✏️ → Version: New version → Deploy.</div>';
   h += '<button class="btn pri" style="width:100%;margin-top:14px" data-act="syncnow" id="st_sync"' + (SYNCING ? ' disabled' : '') + '>' + (SYNCING ? 'Syncing…' : 'Sync now') + '</button>';
   return h;
 }
@@ -1765,7 +1786,15 @@ function anchorFind(k) {
 // ---- computers: wide layout, mouse and keyboard
 var WIDE_MQ = window.matchMedia ? window.matchMedia('(min-width: 960px)') : null;
 var FINE_MQ = window.matchMedia ? window.matchMedia('(hover: hover) and (pointer: fine)') : null;
+var RAIL_MQ = window.matchMedia ? window.matchMedia('(min-width: 700px)') : null;
 function isWide() { return !!(WIDE_MQ && WIDE_MQ.matches); }
+function isRail() { return !!(RAIL_MQ && RAIL_MQ.matches); }
+// resizing the window between phone, tablet and computer layouts redraws for the new size
+[WIDE_MQ, RAIL_MQ].forEach(function (mq) {
+  if (!mq) return;
+  var onSize = function () { if (typeof S !== 'undefined' && S) { if (SHEET && SHEET.kind === 'edit') closeSheet(); render(); } };
+  if (mq.addEventListener) mq.addEventListener('change', onSize); else if (mq.addListener) mq.addListener(onSize);
+});
 function isMouse() { return !!(FINE_MQ && FINE_MQ.matches); }
 document.addEventListener('keydown', function (e) {
   if (e.metaKey || e.ctrlKey || e.altKey || !S) return;
@@ -4180,9 +4209,9 @@ function tagEntries(name, addIds, removeIds) {
     var t = findTx(id); if (!t) return;
     t.tr = val;
     if (S.demo) return;
-    var op = opFor(id);
+    var op = openOp(id);
     if (op && (op.op === 'add' || op.op === 'update')) { op.tx.tr = val; return; }
-    bucket.push(refOf(t));
+    bucket.push(sentRef(opFor(id), t));
   }
   addIds.forEach(function (id) { one(id, name, refs); });
   removeIds.forEach(function (id) { one(id, '', untag); });
@@ -6010,10 +6039,10 @@ function editTx(id, v) {
   var t = findTx(id); if (!t) return null;
   var before = pick(t);
   if (!S.demo) {
-    var op = opFor(id);
+    var op = openOp(id);
     if (op && op.op === 'add') op.tx = pick(v);
     else if (op && op.op === 'update') op.tx = pick(v);
-    else S.outbox.push({ oid: nid('o'), op: 'update', tid: id, ref: refOf(t), tx: pick(v) });
+    else S.outbox.push({ oid: nid('o'), op: 'update', tid: id, ref: sentRef(opFor(id), t), tx: pick(v) });
     t.p = 1;
   }
   Object.keys(v).forEach(function (k) { t[k] = v[k]; });
@@ -6025,10 +6054,10 @@ function deleteTx(id) {
   var t = findTx(id); if (!t) return null;
   var copy = pick(t);
   if (!S.demo) {
-    var op = opFor(id);
+    var op = openOp(id);
     if (op && op.op === 'add') S.outbox.splice(S.outbox.indexOf(op), 1);
     else if (op && op.op === 'update') { op.op = 'delete'; delete op.tx; }
-    else S.outbox.push({ oid: nid('o'), op: 'delete', tid: id, ref: refOf(t) });
+    else S.outbox.push({ oid: nid('o'), op: 'delete', tid: id, ref: sentRef(opFor(id), t) });
   }
   S.tx.splice(S.tx.indexOf(t), 1);
   save();
@@ -6050,6 +6079,15 @@ function resolveTx(id, snap) {
 function opFor(tid) {
   for (var i = S.outbox.length - 1; i >= 0; i--) if (S.outbox[i].tid === tid) return S.outbox[i];
   return null;
+}
+// A change that has already been sent once may have reached the sheet even if the answer never came back
+// (the app was closed, the connection dropped). It is never changed in place after that: the retry carries the
+// same id, so the sheet skips it if it already did it, and any newer change goes as its own step.
+function openOp(tid) { var op = opFor(tid); return op && !op.sent ? op : null; }
+function sentRef(op, t) {
+  var x = op && op.sent && op.tx ? op.tx : null;
+  if (!x) return refOf(t);
+  return { k: x.k, y: x.y, m: x.m, r: op.op === 'update' && op.ref ? op.ref.r : 0, fp: { m: x.m, v: x.v, c: x.c, a: x.a } };
 }
 
 // ------------------------------------------------------------------ undo
@@ -6148,6 +6186,8 @@ function sync() {
       : op.op === 'budgetundo' ? { action: 'budgetundo', c: op.c, s: op.s }
       : { action: op.op, tx: op.tx, ref: op.ref };
     var sentPrefs = op.op === 'prefs' ? prefsHash() : '';
+    if (op.op !== 'prefs') payload.oid = op.oid;      // lets the sheet skip a change it already made
+    if (!op.sent) { op.sent = 1; save(); }
     return api(payload).then(function (res) {
       if (!res || !res.ok) {
         var e = (res && res.error) || 'unknown';
@@ -7409,10 +7449,15 @@ document.addEventListener('touchend', function (e) {
 document.addEventListener('focusout', function (e) { var sh = $('sheet'); if (SHEET && sh && sh.contains(e.target)) refitSoon(); });
 
 // Works offline and opens instantly: a service worker keeps a copy of the app on the phone.
+var BOOTED_AT = Date.now();
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
   navigator.serviceWorker.addEventListener('message', function (e) {
-    if (e.data && e.data.type === 'updated') toast('A new version of ' + appName() + ' is ready', function () { location.reload(); }, 'Reload');
+    if (e.data && e.data.type === 'updated') {
+      var busy = SHEET || PICK || UI.edit || (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));
+      if (Date.now() - BOOTED_AT < 15000 && !busy) { location.reload(); return; }
+      toast('A new version of ' + appName() + ' is ready', function () { location.reload(); }, 'Reload');
+    }
   });
   if (navigator.serviceWorker.startMessages) navigator.serviceWorker.startMessages();
 }

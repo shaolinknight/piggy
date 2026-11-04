@@ -2,7 +2,7 @@
 // The app page comes from the phone's copy first; a fresh copy is fetched in the background
 // and used next time (the app offers "Reload" when one arrives). Calls to your Google Sheet are
 // never cached — the app keeps its own queue and syncs when you're back online.
-var CACHE = 'piggy-shell-1';
+var CACHE = 'piggy-shell-2';
 var SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (e) {
