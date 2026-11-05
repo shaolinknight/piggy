@@ -940,6 +940,81 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
   .pcols{gap:28px}
 }
 
+
+
+/* ===================== 2.24: motion that feels native ===================== */
+.pressed{transform:scale(var(--press,.97));transition:transform .1s ease-out !important}
+:where(button,a[href],[role=button],.tx,.crow,.scrow){transition:transform .42s cubic-bezier(.34,1.45,.64,1)}
+@media (hover:hover) and (pointer:fine){
+  :where(button,a[href],[role=button]):not([disabled]):active{transform:scale(.97)}
+  :where(.tx,.crow,.scrow,.trow,.lrow,.ptr,.sxb):active{transform:scale(.995)}
+}
+#fab.pressed{transform:scale(.9)}
+.tabs .tab.pressed{transform:scale(.92)}
+@media (prefers-reduced-motion:no-preference){
+  #sheet{transition:transform .3s cubic-bezier(.32,.72,0,1),visibility 0s .3s}
+  #sheet.on{transition:transform .44s cubic-bezier(.32,.72,0,1)}
+  #toast{transition:transform .38s cubic-bezier(.32,.72,0,1),opacity .2s}
+}
+@media (max-width:699px) and (prefers-reduced-motion:no-preference){
+  body.sheetprep #app{clip-path:inset(var(--ly,0px) 0 calc(100% - var(--ly,0px) - var(--vh,100vh)) 0 round 0px);transform-origin:50% var(--ly,0px);
+    transition:transform .44s cubic-bezier(.32,.72,0,1),clip-path .44s cubic-bezier(.32,.72,0,1)}
+  body.sheeted #app{transform:translateY(calc(env(safe-area-inset-top) + 10px)) scale(.93);clip-path:inset(var(--ly,0px) 0 calc(100% - var(--ly,0px) - var(--vh,100vh)) 0 round 16px)}
+  html:has(body.sheetprep),body.sheetprep{background:#070b0b}
+  .tabs{transition:transform .36s cubic-bezier(.32,.72,0,1)}
+  body.sheeted .tabs{transform:translateY(110%)}
+  #fab{transition:transform .2s ease,opacity .2s}
+  body.sheeted #fab{opacity:0;pointer-events:none}
+}
+/* entries arriving */
+.freshhi{background:var(--acd) !important;transition:background 1s ease .35s}
+.swipe.freshhi .tx{background:var(--acd);transition:background 1s ease .35s}
+/* bills: a check that draws itself */
+.ck{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.ck path{stroke-dasharray:24;stroke-dashoffset:24;animation:ckdraw .32s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes ckdraw{to{stroke-dashoffset:0}}
+.btn.checked{background:var(--ok) !important;border-color:var(--ok) !important;color:#fff !important;display:grid;place-items:center}
+.brow.paidrow{background:color-mix(in srgb,var(--ok) 8%,transparent);transition:background .25s}
+.alldone{display:flex;flex-direction:column;align-items:center;gap:10px;padding:34px 0 26px;color:var(--ok);font-size:17px}
+.alldone b{color:var(--t1)}
+.alldone span{color:var(--t3);font-size:14px}
+.ck.big{width:64px;height:64px;padding:14px;box-sizing:border-box;border-radius:50%;background:color-mix(in srgb,var(--ok) 14%,transparent);stroke-width:2.4;animation:ckpop .45s cubic-bezier(.34,1.56,.64,1)}
+@keyframes ckpop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+/* 7. the slim title bar (phones) */
+#minibar{display:none}
+@media (max-width:699px){
+  #minibar{display:flex;position:fixed;left:0;right:0;top:0;z-index:25;height:calc(44px + env(safe-area-inset-top));padding-top:env(safe-area-inset-top);box-sizing:border-box;
+    align-items:center;justify-content:center;background:color-mix(in srgb,var(--bg) 82%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);
+    border-bottom:.5px solid transparent;opacity:0;pointer-events:none;transition:opacity .2s ease,border-color .2s}
+  #minibar span{font-weight:700;font-size:16px;transform:translateY(5px);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+  #minibar.on{opacity:1;border-bottom-color:var(--b1)}
+  #minibar.on span{transform:none}
+  .mtitle{font-family:var(--fdisp);font-size:24px;letter-spacing:-.01em;transform-origin:50% 100%;
+    transform:scale(calc(1 - .06 * var(--tp,0)));opacity:calc(1 - .75 * var(--tp,0))}
+}
+/* 9. placeholder shapes while the first sync runs */
+.skel .card{display:flex;flex-direction:column;gap:10px}
+.sk{display:block;border-radius:6px;background:linear-gradient(90deg,var(--p2) 25%,color-mix(in srgb,var(--p2) 50%,var(--p1)) 50%,var(--p2) 75%);background-size:200% 100%;animation:skm 1.3s ease-in-out infinite}
+@keyframes skm{from{background-position:100% 0}to{background-position:-100% 0}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}.ck path{animation:none;stroke-dashoffset:0}.pressed{transform:none}}
+/* bills to check off */
+.card.bills{padding:4px 14px}
+.brow{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:8px 10px;align-items:center;padding:12px 0;border-top:1px solid var(--b1)}
+.brow:first-child{border-top:0}
+.brow .bmain b{display:block;font-weight:600}
+.brow .bmain small{color:var(--t3);font-size:12.5px}
+.brow.late .bmain small{color:var(--warn);font-weight:600}
+.bamt{position:relative;display:block}
+.bamt .cur{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--t3);font-weight:600}
+.bamt input{width:100%;box-sizing:border-box;min-height:42px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--p1);padding:0 10px 0 22px;font-size:16px;font-weight:600;text-align:right}
+.bbtns{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.bbtns .btn{flex:1 1 90px;min-height:42px;width:auto}
+.bbtns .bskip{flex:1 0 100%;text-align:center;font-size:13px;color:var(--t3)}
+.rcfreq{display:flex;align-items:center;gap:8px}
+.rcfreq input{width:64px;min-height:44px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--p1);padding:0 10px;font-size:16px;text-align:center}
+.rcfreq .selw{flex:1}
+.rcpre{margin-top:8px}
+.rrow.none{opacity:.7}
 /* ===================== 2.22: computer layouts that use the whole screen ===================== */
 .sidex{display:none}
 @media (min-width:960px){
@@ -1075,6 +1150,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 <div id="scrim" data-act="close"></div>
 <div id="sheet" role="dialog" aria-modal="true"></div>
 <div id="picker" role="dialog" aria-modal="true" aria-label="Choose a category"></div>
+<div id="minibar" aria-hidden="true"><span id="miniT"></span></div>
 <div id="toast" role="status"><span id="toastTxt"></span><button id="toastBtn" data-act="undo">Undo</button></div>
 
 <script>
@@ -1082,7 +1158,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.22';
+var VERSION = '2.24';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1636,8 +1712,11 @@ function render() {
   deskInit();
   setTimeout(function () { syncEditPanel(false); sideExtra(); }, 0);
   $('view').setAttribute('data-v', UI.tab === 'plan' ? 'plan-' + (planState().step || 'home') : UI.tab);
-  if (UI.lastTab !== UI.tab && !REDUCED) { var vw = $('view'); vw.classList.remove('fade'); void vw.offsetWidth; vw.classList.add('fade'); }
+  var tabMoved = UI.lastTab !== UI.tab && UI.lastTab;
+  if (tabMoved) slideView(TAB_ORDER.indexOf(UI.tab) >= TAB_ORDER.indexOf(UI.lastTab) ? 1 : -1);
   UI.lastTab = UI.tab;
+  playFresh(tabMoved ? 240 : 30);
+  setTimeout(miniBar, 0);
   animateNumbers(false);
   $('fab').style.display = UI.tab === 'plan' && !isRail() ? 'none' : '';
   document.body.classList.toggle('on-plan', UI.tab === 'plan' && planState().step === 'edit' && planDraftCount() > 0);
@@ -1800,7 +1879,7 @@ function statusSheetHtml() {
   row('Your sheet', SYNCING ? 'Syncing…' : S.syncErr ? 'Problem' : 'Connected', S.syncErr ? 'bad' : 'ok');
   row('Last synced', ago(S.lastSync), Date.now() - S.lastSync > 86400000 ? 'warn' : '');
   row('Waiting to send', n ? n + ' change' + (n === 1 ? '' : 's') : 'nothing', n ? 'warn' : '');
-  row('Script version', v + (v < 15 ? ' — update needed' : ' ✓'), v < 15 ? 'warn' : '');
+  row('Script version', v + (v < 16 ? ' — update needed' : ' ✓'), v < 16 ? 'warn' : '');
   h += '</div>';
   if (S.syncErr) h += '<div class="spendsum" style="color:var(--bad)">' + esc(S.syncErr) + '</div>';
   if (n) {
@@ -1808,7 +1887,7 @@ function statusSheetHtml() {
       var d = o.tx ? (o.op === 'delete' ? 'Delete ' : o.op === 'update' ? 'Change ' : 'Add ') + esc(o.tx.v || o.tx.c || '') + ' ' + money(o.tx.a, true) : o.op === 'delete' ? 'Delete an entry' : ({ budgets: 'Budget changes', budget: 'Budget change', trip: 'Trip', recur: 'Recurring bill', goal: 'Savings goal', prefs: 'Settings', regroup: 'Category group', tag: 'Trip tags' })[o.op] || o.op;
       return '<div class="strow"><span>' + d + '</span></div>'; }).join('') + (n > 6 ? '<div class="strow"><span>+ ' + (n - 6) + ' more</span></div>' : '') + '</div>';
   }
-  if (v && v < 15) h += '<div class="hint" style="margin-top:10px">Version 15 stops a purchase from being saved twice when the connection drops mid-save. Paste the newest Code.gs, then Deploy → Manage deployments → ✏️ → Version: New version → Deploy.</div>';
+  if (v && v < 16) h += '<div class="hint" style="margin-top:10px">Version 16 keeps bills that repeat every few weeks, months or years. Paste the newest Code.gs, then Deploy → Manage deployments → ✏️ → Version: New version → Deploy.</div>';
   h += '<button class="btn pri" style="width:100%;margin-top:14px" data-act="syncnow" id="st_sync"' + (SYNCING ? ' disabled' : '') + '>' + (SYNCING ? 'Syncing…' : 'Sync now') + '</button>';
   return h;
 }
@@ -1862,6 +1941,162 @@ var NUMS = {};
 var BARS = {}, ANIM_WAIT = false, CLOSED_AT = 0;
 function fmtCount(el, v) { return el.hasAttribute('data-cents') ? money(v, true) : money(v); }
 // ---- smooth motion helpers
+var EASE_OUT = 'cubic-bezier(.2,.8,.2,1)', EASE_IOS = 'cubic-bezier(.32,.72,0,1)';
+function isPhone() { return !isRail(); }
+// 1. press feedback: whatever you touch dips a little, then springs back
+(function () {
+  var P = { el: null, t: 0, x: 0, y: 0, on: false };
+  function target(e) {
+    var el = e.target.closest && e.target.closest('button, a[href], [role=button], .tx, .crow, .scrow');
+    if (!el || el.disabled || el.closest('#scrim')) return null;
+    return el;
+  }
+  function depth(el) { var w = el.offsetWidth; return w > 300 ? '.985' : w > 140 ? '.97' : '.93'; }
+  function down(el) { el.style.setProperty('--press', depth(el)); el.classList.add('pressed'); P.on = true; }
+  function up() { if (P.el) P.el.classList.remove('pressed'); P.el = null; P.on = false; clearTimeout(P.t); }
+  document.addEventListener('touchstart', function (e) {
+    if (REDUCED) return;
+    up(); var el = target(e); if (!el) return;
+    P.el = el; P.x = e.touches[0].clientX; P.y = e.touches[0].clientY;
+    P.t = setTimeout(function () { if (P.el === el) down(el); }, 45);     // a quick scroll never dips anything
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) {
+    if (!P.el) return;
+    if (Math.abs(e.touches[0].clientX - P.x) > 8 || Math.abs(e.touches[0].clientY - P.y) > 8) up();
+  }, { passive: true });
+  document.addEventListener('touchend', function () {
+    if (!P.el) return;
+    var el = P.el;
+    if (!P.on) { clearTimeout(P.t); down(el); P.el = null; setTimeout(function () { el.classList.remove('pressed'); }, 90); return; }   // a quick tap still dips
+    up();
+  }, { passive: true });
+  document.addEventListener('touchcancel', up, { passive: true });
+})();
+// the element just tapped, so a sheet can grow out of it
+var LAST_TAP = { el: null, at: 0 };
+document.addEventListener('pointerdown', function (e) {
+  var el = e.target.closest && e.target.closest('#view button, #view [data-act]');
+  LAST_TAP = { el: el, at: Date.now() };
+}, true);
+// 5. rows that move: everything with data-fk glides from where it was to where it is now
+function flipRows(fn) {
+  if (REDUCED) return fn();
+  var vh = window.innerHeight, before = {};
+  var els = document.querySelectorAll('[data-fk]');
+  for (var i = 0; i < els.length; i++) {
+    var r = els[i].getBoundingClientRect(), k = els[i].getAttribute('data-fk');
+    if (!r.height || r.bottom < -80 || r.top > vh + 80 || before[k]) continue;
+    before[k] = r.top;
+  }
+  var res = fn();
+  var now = document.querySelectorAll('[data-fk]'), seen = {};
+  for (var j = 0; j < now.length; j++) {
+    var el = now[j], key = el.getAttribute('data-fk');
+    if (seen[key] || before[key] === undefined) continue; seen[key] = 1;
+    var dy = before[key] - el.getBoundingClientRect().top;
+    if (Math.abs(dy) > 1 && Math.abs(dy) < vh * 1.5 && el.animate) el.animate([{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], { duration: 340, easing: EASE_OUT });
+  }
+  return res;
+}
+// a row leaves (slides out and fades), then the rest close the gap smoothly
+function leaveThen(el, fn, dir) {
+  if (REDUCED || !el || !el.animate) { flipRows(fn); return; }
+  if (typeof SHEET_BUSY !== 'undefined') SHEET_BUSY = Math.max(SHEET_BUSY, Date.now() + 700);
+  var a = el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(' + (dir || -28) + 'px)' }], { duration: 200, easing: 'ease-in', fill: 'forwards' });
+  a.onfinish = function () { flipRows(fn); };
+}
+// entries you just added get a little entrance the first time you see them — on whichever screen that is
+var FRESH = [], FRESH_IO = null;
+function markFresh(t) { if (t && !REDUCED) FRESH.push({ id: t.id, after: pick(t), at: Date.now() }); }
+function freshEl(f) {
+  var t = resolveTx(f.id, f.after); if (!t) return null;
+  return document.querySelector('#view [data-fk="' + String(t.id).replace(/"/g, '\\"') + '"]');
+}
+function growIn(el) {
+  var h = el.offsetHeight; if (!h || !el.animate) return;
+  el.style.overflow = 'hidden';
+  var a = el.animate([{ height: '0px', opacity: 0 }, { height: h + 'px', opacity: 1 }], { duration: 380, easing: EASE_OUT });
+  a.onfinish = function () { el.style.overflow = ''; };
+  el.classList.add('freshhi'); setTimeout(function () { el.classList.remove('freshhi'); }, 1300);
+}
+function playFresh(delay) {
+  FRESH = FRESH.filter(function (f) { return Date.now() - f.at < 20 * 60000 && resolveTx(f.id, f.after); });
+  if (!FRESH.length || (SHEET && isPhone())) return;
+  setTimeout(function () {
+    if (SHEET && isPhone()) return;
+    if (FRESH_IO) FRESH_IO.disconnect();
+    FRESH_IO = window.IntersectionObserver ? new IntersectionObserver(function (ents) {
+      ents.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        FRESH_IO.unobserve(en.target);
+        var k = en.target.getAttribute('data-fk');
+        FRESH = FRESH.filter(function (f) { var t = resolveTx(f.id, f.after); return !(t && String(t.id) === k); });
+        growIn(en.target);
+      });
+    }, { threshold: 0.5 }) : null;
+    FRESH.forEach(function (f) { var el = freshEl(f); if (el && FRESH_IO) FRESH_IO.observe(el); });
+  }, delay || 0);
+}
+// 3. a new tab slides in from the side you're heading to
+var TAB_ORDER = ['month', 'activity', 'plan', 'trends'];
+function slideView(dir) {
+  if (REDUCED) return;
+  var v = $('view'); if (!v || !v.animate) return;
+  v.animate([{ opacity: 0, transform: 'translateX(' + (dir * 22) + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: EASE_OUT });
+}
+// 4. a sheet opened from a row grows out of that row
+function growSheetFrom(row) {
+  var s = $('sheet');
+  if (REDUCED || !s.animate || !row || !isPhone()) return false;
+  var r = row.getBoundingClientRect(), sr = s.getBoundingClientRect();
+  if (!r.height || !sr.height) return false;
+  var top = r.top - sr.top, ins = function (t, rgt, b, l, rad) { return 'inset(' + t + 'px ' + rgt + 'px ' + b + 'px ' + l + 'px round ' + rad + 'px)'; };
+  s.animate([
+    { transform: 'translateY(' + top + 'px)', clipPath: ins(0, Math.max(0, sr.width - r.right), Math.max(0, sr.height - r.height), Math.max(0, r.left - sr.left), 14), opacity: .6 },
+    { transform: 'none', clipPath: ins(0, 0, 0, 0, 22), opacity: 1 }
+  ], { duration: 420, easing: EASE_IOS });
+  return true;
+}
+// 7. on a phone: a slim bar with the page's name fades in once its big title scrolls away
+function miniBar() {
+  var mb = $('minibar'); if (!mb) return;
+  var show = false, title = '';
+  if (isPhone() && !document.body.classList.contains('locked')) {
+    if (UI.tab === 'month') {
+      var mt = document.querySelector('#view .mtitle');
+      if (mt) {
+        var r = mt.getBoundingClientRect(), lim = safeTopPx() + 44, p = Math.max(0, Math.min(1, (lim + 30 - r.top) / 60));
+        mt.style.setProperty('--tp', p.toFixed(3));
+        show = r.bottom < lim; title = (mt.firstChild && mt.firstChild.nodeValue) || '';
+      }
+    } else { show = window.scrollY > 36; title = { activity: 'Activity', plan: 'Plan', trends: 'Trends' }[UI.tab] || ''; }
+  }
+  if ($('miniT').textContent !== title) $('miniT').textContent = title;
+  mb.classList.toggle('on', show);
+}
+var MINI_RAF = 0;
+window.addEventListener('scroll', function () { if (!MINI_RAF) MINI_RAF = requestAnimationFrame(function () { MINI_RAF = 0; miniBar(); }); }, { passive: true });
+// 9. a message at the top can be flicked away
+(function () {
+  var x0 = 0, y0 = 0, dx = 0, dy = 0, on = false;
+  document.addEventListener('touchstart', function (e) {
+    var t = $('toast'); if (!t || !t.classList.contains('on') || !t.contains(e.target) || e.target.closest('button')) return;
+    on = true; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = dy = 0; clearTimeout(toastTimer);
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) {
+    if (!on) return;
+    dx = e.touches[0].clientX - x0; dy = Math.min(0, e.touches[0].clientY - y0);
+    var t = $('toast'); t.style.transition = 'none'; t.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; t.style.opacity = String(Math.max(0, 1 - (Math.abs(dx) + Math.abs(dy)) / 220));
+  }, { passive: true });
+  document.addEventListener('touchend', function () {
+    if (!on) return; on = false;
+    var t = $('toast'); t.style.transition = '';
+    if (Math.abs(dx) > 70 || dy < -28) {
+      t.style.transform = Math.abs(dx) > 70 ? 'translateX(' + (dx > 0 ? 120 : -120) + '%)' : 'translateY(-140%)'; t.style.opacity = '0';
+      setTimeout(function () { t.classList.remove('on'); t.style.transform = ''; t.style.opacity = ''; UNDO = null; }, 220);
+    } else { t.style.transform = ''; t.style.opacity = ''; toastTimer = setTimeout(function () { t.classList.remove('on'); UNDO = null; }, 2500); }
+  }, { passive: true });
+})();
 // A new screen fades in instead of snapping.
 function viewIn() {
   if (REDUCED) return;
@@ -2143,11 +2378,11 @@ function attnItems(key) {
     var bl = billRemindList(key).sort(function (p, q) { return p.d - q.d; }), sig = bl.map(function (x) { return x.b.name; }).join('|');
     if (bl.length && dis['bills'] !== key + ':' + sig) {
       var late = bl.some(function (x) { return x.d < 0; }), tot = bl.reduce(function (a, x) { return a + (+x.b.a || 0); }, 0), x0 = bl[0];
-      out.push(bl.length === 1
-        ? { id: 'bills', sig: key + ':' + sig, pri: late ? 2 : 4, ico: '🧾', tone: late ? 'warn' : '', t: esc(x0.b.name) + ' · ' + money(x0.b.a, true),
-            sub: x0.d < 0 ? 'was due ' + shortDate(dueDate(x0.b, key)) + ' — not logged yet' : x0.d === 0 ? 'due today' : 'due in ' + x0.d + ' day' + (x0.d === 1 ? '' : 's'), act: 'recurlog', v: x0.b.name, k: key, go: 'Log' }
-        : { id: 'bills', sig: key + ':' + sig, pri: late ? 2 : 4, ico: '🧾', tone: late ? 'warn' : '', t: bl.length + ' bills ' + (late ? 'waiting' : 'due soon') + ' · ' + money(tot),
-            sub: esc(bl.map(function (y) { return y.b.name; }).slice(0, 3).join(', ')) + (bl.length > 3 ? ' +' + (bl.length - 3) : ''), act: 'recurmonth', v: key, go: 'Open' });
+      out.push({ id: 'bills', sig: key + ':' + sig, pri: late ? 2 : 4, ico: '🧾', tone: late ? 'warn' : '',
+        t: bl.length === 1 ? esc(x0.b.name) + ' · ' + money(x0.b.a, true) : bl.length + ' bills to check off · ' + money(tot),
+        sub: bl.length === 1 ? (x0.d < 0 ? 'was due ' + shortDate(x0.due) + ' — paid yet?' : x0.d === 0 ? 'due today' : 'due in ' + x0.d + ' day' + (x0.d === 1 ? '' : 's'))
+          : esc(bl.map(function (y) { return y.b.name; }).slice(0, 3).join(', ')) + (bl.length > 3 ? ' +' + (bl.length - 3) : ''),
+        act: 'billsopen', v: '', go: 'Check off' });
     }
   }
   var tn = tripNowInfo();
@@ -2193,12 +2428,12 @@ function todayLineHtml(key, s, bt, left, pct, pace, dim, day) {
   var bits = [];
   bits.push(flexLeft > 0 ? '<b data-count="' + perDay + '" data-ck="perday' + key + '" data-good="up">' + money(perDay) + '</b> a day for everyday spending' : 'everyday budget used up');
   var next = null;
-  recurBills().forEach(function (b) {
-    if (recurStatus(b, key).s === 'paid') return;
-    var dd = Math.round((parseD(dueDate(b, key)) - parseD(todayStr())) / 86400000);
-    if (dd >= 0 && dd <= 7 && (!next || dd < next.d)) next = { b: b, d: dd };
+  billsInMonth(key).forEach(function (x) {
+    if (x.st.s === 'paid' || x.st.s === 'skip') return;
+    var dd = Math.round((parseD(x.d) - parseD(todayStr())) / 86400000);
+    if (dd >= 0 && dd <= 7 && (!next || dd < next.d)) next = { b: x.b, d: dd, due: x.d };
   });
-  if (next) bits.push(esc(next.b.name) + ' due ' + (next.d === 0 ? 'today' : next.d === 1 ? 'tomorrow' : DAYS[parseD(dueDate(next.b, key)).getDay()]));
+  if (next) bits.push(esc(next.b.name) + ' due ' + (next.d === 0 ? 'today' : next.d === 1 ? 'tomorrow' : DAYS[parseD(next.due).getDay()]));
   var sub = flexLeft > 0 ? money(flexLeft) + ' of ' + money(bt.flex) + ' left for the next ' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's')
     : money(-flexLeft) + ' over the everyday budget of ' + money(bt.flex);
   return '<div class="today ' + cls + '" id="today"><i class="tdot2"></i><div><b class="tst">' + st + '</b> · ' + bits.join(' · ') + '<small>' + sub + '</small></div></div>';
@@ -2245,7 +2480,15 @@ function demoBanner() {
 }
 
 // ------------------------------------------------------------------ month view
+function skeletonHtml() {
+  var bar = function (w, h) { return '<i class="sk" style="width:' + w + ';height:' + h + 'px"></i>'; };
+  return '<div class="skel" aria-label="Loading your sheet">' +
+    '<section class="card">' + bar('34%', 12) + bar('52%', 40) + bar('70%', 12) + bar('100%', 10) + '</section>' +
+    [1, 2, 3, 4].map(function () { return '<section class="card">' + bar('40%', 16) + bar('100%', 8) + '</section>'; }).join('') + '</div>';
+}
+function firstLoad() { return !S.demo && S.cfg.url && !S.lastSync && !S.tx.length; }
 function viewMonth() {
+  if (firstLoad()) return skeletonHtml();
   var cur = nowYM(), r = dataRange(), wide = isWide();
   if (UI.ym === null) UI.ym = cur;
   var key = UI.ym, y = ymY(key), m = ymM(key);
@@ -2358,7 +2601,7 @@ function latestHtml(key) {
   });
   var h = '<section class="card latest" aria-label="Latest entries"><div class="ghead"><h3>Latest entries</h3><button class="linkbtn" data-act="actmonth" data-v="' + key + '">All of ' + MONTHS[ymM(key)] + ' in Activity →</button></div>' +
     '<div class="thead lth" aria-hidden="true"><span class="th">Date</span><span class="th">Store</span><span class="th">Category</span><span class="th">Details</span><span class="th th-a">Amount</span></div><div class="list">';
-  list.slice(0, 5).forEach(function (t) { h += '<button class="tx trow" data-act="ciedit" data-v="' + esc(t.id) + '">' + txRowCells(t) + '</button>'; });
+  list.slice(0, 5).forEach(function (t) { h += '<button class="tx trow" data-fk="' + esc(t.id) + '" data-act="ciedit" data-v="' + esc(t.id) + '">' + txRowCells(t) + '</button>'; });
   return h + '</div></section>';
 }
 
@@ -2420,14 +2663,9 @@ function slimCatRow(row, gid, pace) {
 }
 // Recurring bills on the Month tab: a slim reminder up top only when one is due soon or late
 function billRemindList(key) {
-  var today = todayStr(), list = [];
-  if (key !== nowYM()) return list;
-  recurBills().forEach(function (b) {
-    var st = recurStatus(b, key); if (st.s === 'paid') return;
-    var d = Math.round((parseD(dueDate(b, key)) - parseD(today)) / 86400000);
-    if (d <= 3) list.push({ b: b, st: st, d: d });
-  });
-  return list;
+  var today = todayStr();
+  if (key !== nowYM()) return [];
+  return billsToCheck(false).map(function (x) { return { b: x.b, st: x.st, d: Math.round((parseD(x.d) - parseD(today)) / 86400000), due: x.d }; });
 }
 function billRemindHtml(key) {
   if (!S.recur.length || key !== nowYM()) return '';
@@ -2448,12 +2686,11 @@ function billsLineHtml(key) {
   }
   var paid = 0, due = 0, next = null;
   if (!recurBills().length) return '';
-  recurBills().forEach(function (b) {
-    var st = recurStatus(b, key);
-    if (st.s === 'paid') paid++; else { due++; if (!next || dueDay(b, key) < dueDay(next, key)) next = b; }
+  billsInMonth(key).forEach(function (x) {
+    if (x.st.s === 'paid' || x.st.s === 'skip') paid++; else { due++; if (!next) next = x; }
   });
-  return '<button class="card bline" data-act="recurmonth" data-v="' + key + '"><span><b>Bills</b><small>' + paid + ' paid · ' + due + ' due' +
-    (next ? ' · next: ' + esc(next.name) + ' ' + shortDate(dueDate(next, key)) : ' · all paid ✓') + '</small></span><i class="chev rt"></i></button>';
+  return '<button class="card bline" data-act="recurmonth" data-v="' + key + '"><span><b>Bills</b><small>' + paid + ' paid · ' + due + ' to check off' +
+    (next ? ' · next: ' + esc(next.b.name) + ' ' + shortDate(next.d) : ' · all paid ✓') + '</small></span><i class="chev rt"></i></button>';
 }
 
 function stat(label, val) { return '<div class="stat"><span>' + label + '</span><b>' + val + '</b></div>'; }
@@ -2570,6 +2807,7 @@ function activitySummary(list) {
 }
 
 function viewActivity() {
+  if (firstLoad()) return skeletonHtml();
   var h = demoBanner();
   var nf = activeFilters();
   var wide = isWide();
@@ -2653,7 +2891,7 @@ function txItem(t) {
       var son = !!UI.bulk[t.id];
       return '<button class="tx trow sel' + (son ? ' on' : '') + '" data-act="bsel" data-v="' + esc(t.id) + '" aria-pressed="' + son + '"><i class="btick">' + (son ? '✓' : '') + '</i>' + txRowCells(t) + '</button>';
     }
-    return '<button class="tx trow' + (UI.edit === t.id ? ' editing' : '') + '" data-act="edit" data-v="' + esc(t.id) + '" aria-expanded="' + (UI.edit === t.id) + '">' + txRowCells(t) + '</button>';
+    return '<button class="tx trow' + (UI.edit === t.id ? ' editing' : '') + '" data-fk="' + esc(t.id) + '" data-act="edit" data-v="' + esc(t.id) + '" aria-expanded="' + (UI.edit === t.id) + '">' + txRowCells(t) + '</button>';
   }
   var title = t.v || t.c;
   var bits = [];
@@ -2672,9 +2910,9 @@ function txItem(t) {
   var btn = '<button class="tx" data-act="edit" data-v="' + esc(t.id) + '" aria-expanded="' + (UI.edit === t.id) + '">' +
     '<div class="tl"><b>' + esc(title) + (t.p ? '<span class="pend" title="Waiting to reach your sheet">• waiting to sync</span>' : '') + '</b><small>' + (t.tr ? '<span class="tbadge"><i class="tdot"></i>' + esc(t.tr) + '</span> ' : '') + esc(bits.join(' · ')) + '</small></div>' +
     '<div class="amt' + (t.k === 'i' ? ' in' : '') + '">' + (t.k === 'i' ? '+' : '') + money(t.a, true) + '</div></button>';
-  if (UI.tab !== 'activity') return btn;
+  if (UI.tab !== 'activity') return btn.replace('<button class="tx"', '<button data-fk="' + esc(t.id) + '" class="tx"');
   // swipe left to delete, right to change (Activity only)
-  return '<div class="swipe" data-id="' + esc(t.id) + '"><span class="swa swl">Change</span><span class="swa swr">Delete</span>' + btn + '</div>';
+  return '<div class="swipe" data-fk="' + esc(t.id) + '" data-id="' + esc(t.id) + '"><span class="swa swl">Change</span><span class="swa swr">Delete</span>' + btn + '</div>';
 }
 
 // The same form is used for adding (in the sheet) and inline editing (in the list).
@@ -3106,6 +3344,69 @@ function upEditHtml(id) {
 }
 // ---- "Heads up": the first time you open the app in a month, what's coming this month. S.hu = last month key shown (synced).
 var HU_PENDING = false;
+// ---- bills to check off: asked when you open the app (at the start of a month: the whole month), until each is marked
+var BILLS_PENDING = false, BILLS_CHECK = true, BILL_LATER = {}, HIDDEN_AT = 0;
+function maybeBills() {
+  if (!S || S.demo || !S.cfg.url || !recurBills().length || !BILLS_CHECK || window.__noBillPrompt) { BILLS_PENDING = false; return; }
+  if (SHEET || PICK || UI.edit) { BILLS_PENDING = true; return; }
+  BILLS_PENDING = false; BILLS_CHECK = false;
+  var cur = nowYM(), monthStart = (S.bmo || 0) < cur;
+  var list = billsToCheck(monthStart).filter(function (x) { return !BILL_LATER[billKey(x.b, x.d)]; });
+  if (monthStart) { S.bmo = cur; save(); if (S.cfg.url) { S.prefsSent = ''; queuePrefs(); flushSoon(); } }
+  if (list.length) openSheet('bills', { start: monthStart });
+}
+function billsSheetHtml() {
+  var start = SHEET.arg && SHEET.arg.start, cur = nowYM();
+  var list = billsToCheck(start).filter(function (x) { return !BILL_LATER[billKey(x.b, x.d)]; });
+  var h = '<div class="shead"><h2>' + (start ? MONTHS[ymM(cur)] + '’s bills' : 'Bills to check off') + '</h2><button data-act="close">Done</button></div>';
+  h += '<div class="sub" style="margin:-6px 0 12px">' + (start ? 'Here’s what’s due this month. Mark each one as paid when it goes out — Piggy will keep asking until it’s checked off.' : 'These are due soon or past due. Mark each one when it’s paid.') + '</div>';
+  if (!list.length) return h + ALLDONE;
+  h += '<section class="card bills">';
+  list.forEach(function (x, i) {
+    var k = billKey(x.b, x.d);
+    h += '<div class="brow ' + x.st.s + '" data-fk="b:' + esc(k) + '" data-k="' + esc(k) + '"><div class="bmain"><b>' + esc(x.b.name) + '</b><small>' + x.st.txt + (billMonthly(x.b) ? '' : ' · ' + billHow(x.b).split(' · ')[0]) + '</small></div>' +
+      '<label class="bamt"><span class="sr">Amount for ' + esc(x.b.name) + '</span><span class="cur" aria-hidden="true">$</span><input inputmode="decimal" id="bp_' + i + '" value="' + fmtAmt(x.b.a) + '"></label>' +
+      '<div class="bbtns"><button class="btn pri" data-act="billpaid" data-v="' + esc(x.b.name) + '" data-d="' + x.d + '" data-i="' + i + '">Paid</button>' +
+      '<button class="btn" data-act="billlater" data-v="' + esc(k) + '">Not yet</button>' +
+      '<button class="linkbtn bskip" data-act="billskip" data-v="' + esc(x.b.name) + '" data-d="' + x.d + '">Didn’t need to pay</button></div></div>';
+  });
+  h += '</section>';
+  if (list.length > 1) h += '<button class="btn" style="width:100%;margin-top:4px" data-act="billall">Mark all ' + list.length + ' as paid</button>';
+  h += '<div class="hint" style="text-align:center;margin-top:10px">“Paid” adds the bill to your entries. <button class="linkbtn" data-act="recur">Add or change bills</button></div>';
+  return h;
+}
+// the Paid button turns into a check that draws itself, then the row slides away and the rest move up
+function drawCheck(btn) {
+  if (!btn) return;
+  btn.classList.add('checked'); btn.disabled = true;
+  btn.innerHTML = '<svg class="ck" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  var row = btn.closest('.brow'); if (row) row.classList.add('paidrow');
+}
+var SHEET_BUSY = 0;          // while a row is animating out, a sync doesn't redraw the sheet under it
+function checkThen(btn, fn) {
+  if (REDUCED || !btn || !btn.closest('.brow')) { fn(); return; }
+  SHEET_BUSY = Date.now() + 1200;
+  drawCheck(btn);
+  var row = btn.closest('.brow');
+  setTimeout(function () { leaveThen(row, fn, 32); }, 380);
+}
+var ALLDONE = '<div class="alldone"><svg class="ck big" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><b>All checked off</b><span>Nothing left to mark right now.</span></div>';
+function afterBillMark() {
+  var left = billsToCheck(SHEET && SHEET.arg && SHEET.arg.start).filter(function (x) { return !BILL_LATER[billKey(x.b, x.d)]; });
+  keepScroll(render);
+  if (SHEET && SHEET.kind === 'bills') {
+    if (left.length) flipRows(renderSheet);
+    else if (REDUCED) { closeSheet(); toast('All bills checked off ✓'); }
+    else {                                   // a small "done" moment before it closes
+      var bc = document.querySelector('#sheet .card.bills');
+      if (bc) bc.outerHTML = ALLDONE; else if (!document.querySelector('#sheet .alldone')) renderSheet();
+      var ma = document.querySelector('#sheet [data-act=billall]'); if (ma) ma.remove();
+      setTimeout(function () { if (SHEET && SHEET.kind === 'bills') closeSheet(); toast('All bills checked off ✓'); }, 1000);
+    }
+  }
+  else if (SHEET && SHEET.kind === 'recurmonth') renderSheet();
+  flushSoon();
+}
 function headsUpItems() {
   var cur = nowYM();
   var mine = upList().filter(function (x) { return x.k <= cur; }).sort(function (a, b) { return a.k - b.k; }).map(function (x) { return upLine(x, x.k < cur); });
@@ -3119,7 +3420,7 @@ function reviewDue() {
 function maybeHeadsUp() {
   if (!S || S.demo) return;
   var cur = nowYM();
-  if ((S.hu || 0) >= cur) { HU_PENDING = false; return; }
+  if ((S.hu || 0) >= cur) { HU_PENDING = false; if (!SHEET) maybeBills(); return; }
   if (SHEET || PICK || UI.edit) { HU_PENDING = true; return; }
   HU_PENDING = false;
   var it = headsUpItems(), last = recapData(cur - 1), showLast = !!last.s.n && !(S.recapSeen || {})[cur - 1];
@@ -4192,9 +4493,91 @@ function alertsChanged() { save(); renderSheet(); if (!S.demo && S.cfg.url) { qu
 var AUTH_MSG = 'One more step: on a computer, open your sheet → <b>Extensions → Apps Script</b>, pick <b>runwaySetUpAlerts</b> in the function menu, tap <b>Run</b> and allow it.';
 
 // ------------------------------------------------------------------ recurring bills
-// S.recur = [{ name, c, a, day, auto, notes }]. Saved in the sheet's "recurring" tab.
+// S.recur = [{ name, c, a, day, notes, every, unit ('w'|'m'|'y'), start ('YYYY-MM-DD', a due date the schedule counts from) }].
+// Saved in the sheet's "recurring" tab. Nothing is logged by itself: Piggy asks you to check each bill off.
 function recurByName(n) { var w = low(n); for (var i = 0; i < S.recur.length; i++) if (low(S.recur[i].name) === w) return S.recur[i]; return null; }
 function dueDay(b, key) { return Math.min(b.day || 1, daysIn(ymY(key), ymM(key))); }
+function dstr(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function addDaysStr(ds, n) { var d = parseD(ds); d.setDate(d.getDate() + n); return dstr(d); }
+function billUnit(b) { return b.unit === 'w' || b.unit === 'y' ? b.unit : 'm'; }
+function billEvery(b) { return Math.max(1, Math.round(+b.every || 1)); }
+function billMonthly(b) { return billUnit(b) === 'm' && billEvery(b) === 1; }
+function billPeriodDays(b) { var u = billUnit(b), e = billEvery(b); return u === 'w' ? 7 * e : u === 'y' ? 365 * e : 30 * e; }
+function billHow(b) {
+  var u = billUnit(b), e = billEvery(b), nx = billNext(b);
+  if (billMonthly(b)) return 'every month on the ' + ordinal(b.day || 1);
+  var w = { w: ['week', 'weeks'], m: ['month', 'months'], y: ['year', 'years'] }[u];
+  return 'every ' + (e === 1 ? w[0] : e + ' ' + w[1]) + (nx ? ' · next ' + shortDate(nx) + (nx.slice(0, 4) !== String(NOW.getFullYear()) ? ' ' + nx.slice(0, 4) : '') : '');
+}
+// due dates ('YYYY-MM-DD') of a bill between two days, inclusive; never before the date its schedule starts from
+function billDates(b, from, to, strict) {
+  var out = [], u = billUnit(b), e = billEvery(b);
+  // a monthly bill shows every month; asking about it starts from its next-due date (strict)
+  if (b.start && from < b.start && (strict || !billMonthly(b))) from = b.start;
+  if (from > to) return out;
+  if (u === 'w') {
+    var a = b.start || from, step = 7 * e, diff = Math.round((parseD(from) - parseD(a)) / 86400000), k = Math.ceil(diff / step);
+    for (var d = addDaysStr(a, k * step), guard = 0; d <= to && guard < 400; d = addDaysStr(d, step), guard++) if (d >= from) out.push(d);
+    return out;
+  }
+  var per = u === 'y' ? 12 * e : e, aKey = b.start ? ymKey(+b.start.slice(0, 4), +b.start.slice(5, 7) - 1) : null, day = b.start ? +b.start.slice(8, 10) : (b.day || 1);
+  var k0 = ymKey(+from.slice(0, 4), +from.slice(5, 7) - 1), k1 = ymKey(+to.slice(0, 4), +to.slice(5, 7) - 1);
+  for (var mk = k0; mk <= k1; mk++) {
+    if (aKey !== null && ((mk - aKey) % per + per) % per !== 0) continue;
+    var dd = ymY(mk) + '-' + pad(ymM(mk) + 1) + '-' + pad(Math.min(day, daysIn(ymY(mk), ymM(mk))));
+    if (dd >= from && dd <= to) out.push(dd);
+  }
+  return out;
+}
+function billNext(b) { var t = todayStr(), l = billDates(b, t, addDaysStr(t, 366 * Math.max(1, billUnit(b) === 'y' ? billEvery(b) : 1) + 31)); return l[0] || ''; }
+function billKey(b, d) { return low(b.name) + '|' + d; }
+// the entry that paid one due date: same category, the name or amount matches, dated close to it
+function billMatch(b, d) {
+  if (billMonthly(b)) return recurPaid(b, ymKey(+d.slice(0, 4), +d.slice(5, 7) - 1));
+  var span = billUnit(b) === 'w' ? 3 : Math.min(20, Math.floor(billPeriodDays(b) / 2)), lo = addDaysStr(d, -span), hi = addDaysStr(d, span), w = low(b.name), best = null;
+  S.tx.forEach(function (t) {
+    if (t.k !== 'e' || low(t.c) !== low(b.c)) return;
+    var td = t.d || (t.y + '-' + pad(t.m + 1) + '-15');
+    if (td < lo || td > hi) return;
+    var nameHit = w && t.v && (low(t.v).indexOf(w) >= 0 || w.indexOf(low(t.v)) >= 0);
+    var amtHit = b.a > 0 && Math.abs(t.a - b.a) <= Math.max(2, b.a * 0.15);
+    if (nameHit || amtHit) { if (!best || nameHit) best = t; }
+  });
+  return best;
+}
+// where one due date stands: paid, skipped, late, due today, or coming up
+function billState(b, d) {
+  var mk = (S.bmark || {})[billKey(b, d)], t = billMatch(b, d), today = todayStr();
+  if (t) return { s: 'paid', t: t, txt: '✓ paid' + (t.d ? ' ' + shortDate(t.d) : '') };
+  if (mk === 'skip') return { s: 'skip', txt: 'skipped this time' };
+  if (mk === 'paid') return { s: 'paid', t: null, txt: '✓ paid' };
+  if (d < today) { var late = Math.round((parseD(today) - parseD(d)) / 86400000); return { s: 'late', txt: 'was due ' + shortDate(d) + ' · ' + late + ' day' + (late === 1 ? '' : 's') + ' ago' }; }
+  if (d === today) return { s: 'today', txt: 'due today' };
+  var days = Math.round((parseD(d) - parseD(today)) / 86400000);
+  return { s: 'soon', txt: 'due ' + shortDate(d) + ' · in ' + days + ' day' + (days === 1 ? '' : 's') };
+}
+// every due date in a month, with where it stands
+function billsInMonth(key) {
+  var from = ymY(key) + '-' + pad(ymM(key) + 1) + '-01', to = ymY(key) + '-' + pad(ymM(key) + 1) + '-' + pad(daysIn(ymY(key), ymM(key))), out = [];
+  recurBills().forEach(function (b) { billDates(b, from, to).forEach(function (d) { out.push({ b: b, d: d, st: billState(b, d) }); }); });
+  return out.sort(function (p, q) { return p.d < q.d ? -1 : p.d > q.d ? 1 : (low(p.b.name) < low(q.b.name) ? -1 : 1); });
+}
+// bills still to check off: anything past due (last 6 weeks) or due within 3 days; at the start of a month, the whole month
+function billsToCheck(wholeMonth) {
+  var today = todayStr(), from = addDaysStr(today, -42), cur = nowYM();
+  var to = wholeMonth ? ymY(cur) + '-' + pad(ymM(cur) + 1) + '-' + pad(daysIn(ymY(cur), ymM(cur))) : addDaysStr(today, 3), out = [];
+  if (to < addDaysStr(today, 3)) to = addDaysStr(today, 3);
+  var first = ymY(cur) + '-' + pad(ymM(cur) + 1) + '-01';
+  recurBills().forEach(function (b) {
+    // a bill with no start date on record (set up before 2.23) is only asked about from this month on
+    billDates(b, (b.start || from >= first) ? from : first, to, true).forEach(function (d) {
+      var st = billState(b, d);
+      if (st.s === 'paid' || st.s === 'skip') return;
+      out.push({ b: b, d: d, st: st });
+    });
+  });
+  return out.sort(function (p, q) { return p.d < q.d ? -1 : p.d > q.d ? 1 : 0; });
+}
 function dueDate(b, key) { return ymY(key) + '-' + pad(ymM(key) + 1) + '-' + pad(dueDay(b, key)); }
 // The entry that paid this bill in a month: same category, and the store name matches or the amount is close.
 function recurPaid(b, key) {
@@ -4208,6 +4591,12 @@ function recurPaid(b, key) {
   return best;
 }
 function recurStatus(b, key) {
+  if (!billMonthly(b)) {
+    var ds = billsInMonth(key).filter(function (x) { return x.b === b; });
+    if (ds.length) return ds[0].st;
+    var nx = billNext(b);
+    return { s: 'none', txt: nx ? 'next ' + shortDate(nx) : 'not due' };
+  }
   var paid = recurPaid(b, key), today = todayStr(), due = dueDate(b, key);
   if (paid) return { s: 'paid', t: paid, txt: '✓ paid' + (paid.d ? ' ' + shortDate(paid.d) : '') };
   if (key < nowYM() || due < today) return { s: 'late', txt: 'due ' + shortDate(due) + ' · not logged' };
@@ -4240,8 +4629,8 @@ function recurSuggestions() {
 }
 function recurOp(bill, old) {
   var o = old ? recurByName(old) : recurByName(bill.name);
-  if (o) { o.name = bill.name; o.c = bill.c; o.a = +bill.a || 0; o.day = +bill.day || 1; o.auto = !!bill.auto; o.notes = bill.notes || ''; }
-  else S.recur.push({ name: bill.name, c: bill.c, a: +bill.a || 0, day: +bill.day || 1, auto: !!bill.auto, notes: bill.notes || '' });
+  var v = { name: bill.name, c: bill.c, a: +bill.a || 0, day: +bill.day || 1, auto: false, notes: bill.notes || '', every: Math.max(1, +bill.every || 1), unit: bill.unit || 'm', start: bill.start || '' };
+  if (o) Object.keys(v).forEach(function (k) { o[k] = v[k]; }); else S.recur.push(v);
 }
 function saveRecurLocal(bill, old) {
   recurOp(bill, old);
@@ -4257,8 +4646,21 @@ function logRecur(b, key, auto) {
   var d = key === nowYM() && dueDate(b, key) > todayStr() ? todayStr() : dueDate(b, key);
   return addTx({ k: 'e', y: ymY(key), m: ymM(key), v: b.name, c: b.c, a: b.a, n: auto ? 'logged automatically' : '', d: d, tr: '' });
 }
+// check off one due date as paid: logs the entry (paid early: today; otherwise on its due date)
+function payBill(b, d, amt) {
+  var day = d > todayStr() ? todayStr() : d, pd = parseD(day);
+  var t = addTx({ k: 'e', y: pd.getFullYear(), m: pd.getMonth(), v: b.name, c: b.c, a: isNaN(amt) || amt <= 0 ? b.a : amt, n: '', d: day, tr: '' });
+  markFresh(t);
+  S.bmark = S.bmark || {}; S.bmark[billKey(b, d)] = 'paid'; pruneMarks(); save(); queuePrefs();
+  return t;
+}
+function pruneMarks() {
+  var cut = addDaysStr(todayStr(), -400);
+  Object.keys(S.bmark || {}).forEach(function (k) { if (k.split('|').pop() < cut) delete S.bmark[k]; });
+}
 // Bills set to "log automatically" are added on their day, once per month.
 function autoLogRecur() {
+  return 0;                                  // 2.23: bills are checked off by you, never logged by themselves
   if (S.demo || !S.recur.length) return 0;
   var key = nowYM(), today = todayStr(), n = 0;
   S.recurDone = S.recurDone || {};
@@ -4280,16 +4682,17 @@ function recurCardHtml(key) {
       esc(sug.slice(0, 3).map(function (x) { return x.name; }).join(', ')) + (sug.length > 3 ? '…' : '') + '). Track them to see what’s due.</div>' +
       '<button class="btn" style="width:100%;margin-top:10px" data-act="recur">Set up recurring bills</button></section>';
   }
-  var list = S.recur.slice().sort(function (a, b) { return dueDay(a, key) - dueDay(b, key); });
-  var paid = 0, due = 0;
-  list.forEach(function (b) { var st = recurStatus(b, key); if (st.s === 'paid') paid += st.t.a; else due += b.a; });
+  var list = billsInMonth(key), paid = 0, due = 0;
+  list.forEach(function (x) { if (x.st.s === 'paid') paid += x.st.t ? x.st.t.a : x.b.a; else if (x.st.s !== 'skip') due += x.b.a; });
   var h = '<section class="card"><div class="ghead"><h3>' + (SHEET && SHEET.kind === 'recurmonth' ? 'This month' : 'Recurring bills') + '</h3><span class="num">' + money(paid) + ' paid · ' + money(due) + ' to go</span></div>';
-  list.forEach(function (b) {
-    var st = recurStatus(b, key);
-    h += '<div class="rrow ' + st.s + '"><span class="rday">' + dueDay(b, key) + '</span><div class="rmain"><b>' + esc(b.name) + '</b><small>' + esc(b.c) + ' · ' + st.txt + (b.auto ? ' · auto' : '') + '</small></div>' +
-      '<em>' + money(st.s === 'paid' ? st.t.a : b.a, true) + '</em>' +
-      (st.s !== 'paid' ? '<button class="rlog" data-act="recurlog" data-v="' + esc(b.name) + '" data-k="' + key + '">Log</button>' : '') + '</div>';
+  list.forEach(function (x) {
+    var st = x.st, b = x.b;
+    h += '<div class="rrow ' + st.s + '"><span class="rday">' + (+x.d.slice(8, 10)) + '</span><div class="rmain"><b>' + esc(b.name) + '</b><small>' + esc(b.c) + ' · ' + st.txt + (billMonthly(b) ? '' : ' · ' + billHow(b).split(' · ')[0]) + '</small></div>' +
+      '<em>' + money(st.s === 'paid' && st.t ? st.t.a : b.a, true) + '</em>' +
+      (st.s !== 'paid' && st.s !== 'skip' ? '<button class="rlog" data-act="billpay" data-v="' + esc(b.name) + '" data-d="' + x.d + '">Paid</button>' : '') + '</div>';
   });
+  var later = recurBills().filter(function (b) { return !list.some(function (x) { return x.b === b; }); });
+  if (later.length) h += '<div class="l2" style="margin-top:8px">Not due this month: ' + later.map(function (b) { var nx = billNext(b); return esc(b.name) + (nx ? ' (' + shortDate(nx) + ')' : ''); }).join(', ') + '</div>';
   h += '<button class="linkbtn" style="margin-top:10px" data-act="recur">Add or change bills</button></section>';
   return h;
 }
@@ -4297,11 +4700,11 @@ function recurCardHtml(key) {
 // Manage sheet
 function recurListHtml() {
   var h = '<div class="shead"><h2>Recurring bills</h2><button data-act="close">Done</button></div>';
-  h += '<div class="sub" style="margin:-6px 0 12px">Bills you pay every month. You’ll see what’s due on the Month tab, and can log each with one tap — or let Runway log it on its day.</div>';
+  h += '<div class="sub" style="margin:-6px 0 12px">Bills you pay on a schedule — every few weeks, every month, every 6 months, once a year. Piggy asks you to check each one off when it’s due.</div>';
   if (S.recur.length) {
     h += '<section class="card" style="padding:4px 14px">';
     S.recur.slice().sort(function (a, b) { return a.day - b.day; }).forEach(function (b) {
-      h += '<button class="rrow rbtn" data-act="recuredit" data-v="' + esc(b.name) + '"><span class="rday">' + b.day + '</span><div class="rmain"><b>' + esc(b.name) + '</b><small>' + esc(b.c) + ' · every month on the ' + ordinal(b.day) + (b.auto ? ' · logs automatically' : '') + '</small></div><em>' + money(b.a, true) + '</em></button>';
+      h += '<button class="rrow rbtn" data-act="recuredit" data-v="' + esc(b.name) + '"><span class="rday">' + b.day + '</span><div class="rmain"><b>' + esc(b.name) + '</b><small>' + esc(b.c) + ' · ' + billHow(b) + '</small></div><em>' + money(b.a, true) + '</em></button>';
     });
     h += '</section>';
   }
@@ -4319,22 +4722,29 @@ function recurListHtml() {
 }
 function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 function recurEditHtml(name, preset) {
-  var b = name ? recurByName(name) : null, v = b || preset || { name: '', c: '', a: '', day: 1, auto: false };
+  var b = name ? recurByName(name) : null, v = b || preset || { name: '', c: '', a: '', day: NOW.getDate(), auto: false };
+  var u = billUnit(v), ev = billEvery(v), nx = b ? billNext(b) : '';
+  if (!nx) { var td = todayStr(), dd = Math.min(v.day || NOW.getDate(), daysIn(NOW.getFullYear(), NOW.getMonth())); nx = td.slice(0, 8) + pad(dd); if (nx < td) { var nm = nowYM() + 1; nx = ymY(nm) + '-' + pad(ymM(nm) + 1) + '-' + pad(Math.min(v.day || 1, daysIn(ymY(nm), ymM(nm)))); } }
   var h = '<div class="shead"><h2>' + (b ? 'Edit bill' : 'New bill') + '</h2><button data-act="recur">Cancel</button></div>';
   h += '<form class="form" id="recurform" data-old="' + esc(b ? b.name : '') + '" autocomplete="off" style="border:0;background:none;padding:0">' +
     '<div class="field"><label for="rc_name">Name</label><input id="rc_name" value="' + esc(v.name) + '" placeholder="e.g. rent"></div>' +
     '<div class="field"><label for="rc_c">Category</label><select id="rc_c">' + catList('e').map(function (c) { return '<option' + (low(v.c) === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div>' +
     '<div class="row2"><div class="field"><label for="rc_a">Amount</label><input id="rc_a" inputmode="decimal" value="' + (v.a ? fmtAmt(v.a) : '') + '" placeholder="$0"></div>' +
-    '<div class="field"><label for="rc_day">Day of the month</label><input id="rc_day" inputmode="numeric" value="' + (v.day || 1) + '"></div></div>' +
-    '<button type="button" class="chip' + (v.auto ? ' on' : '') + '" id="rc_auto" data-act="rcauto" aria-pressed="' + !!v.auto + '">' + (v.auto ? '✓ ' : '') + 'Log it automatically on its day</button>' +
-    '<details class="itip" style="margin-top:6px"><summary>ⓘ <span>What this means</span></summary><div class="hint">Leave this off if the amount changes from month to month — you’ll get a one-tap Log button instead.</div></details>' +
+    '<div class="field"><label for="rc_next">Next due</label><input id="rc_next" type="date" value="' + nx + '"></div></div>' +
+    '<div class="field"><span class="flabel">Repeats</span><div class="rcfreq"><span>Every</span><input id="rc_every" inputmode="numeric" aria-label="How many" value="' + ev + '">' +
+    '<label class="selw"><span class="sr">Unit</span><select id="rc_unit">' + [['w', 'week(s)'], ['m', 'month(s)'], ['y', 'year(s)']].map(function (o) { return '<option value="' + o[0] + '"' + (u === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label></div>' +
+    '<div class="chips rcpre">' + [[1, 'm', 'Monthly'], [2, 'w', 'Every 2 weeks'], [6, 'm', 'Every 6 months'], [1, 'y', 'Yearly']].map(function (p) {
+      return '<button type="button" class="chip' + (ev === p[0] && u === p[1] ? ' on' : '') + '" data-act="rcpre" data-v="' + p[0] + '" data-u="' + p[1] + '">' + p[2] + '</button>'; }).join('') + '</div></div>' +
+    '<div class="hint" style="margin-top:4px">Piggy asks you to check it off when it’s due — at the start of the month and each time you open the app until it’s marked paid.</div>' +
     '<div class="hint" id="rc_err" role="alert"></div>' +
     '<div class="btns">' + (b ? '<button type="button" class="btn danger" data-act="recurdel" id="rc_del">Delete</button>' : '') + '<button type="submit" class="btn pri" id="rc_save">' + (b ? 'Save' : 'Add bill') + '</button></div></form>';
   return h;
 }
 function submitRecur() {
   var f = $('recurform'), old = f.getAttribute('data-old'), err = $('rc_err');
-  var bill = { name: $('rc_name').value.trim(), c: low($('rc_c').value), a: parseAmt($('rc_a').value || '0'), day: Math.max(1, Math.min(31, parseInt($('rc_day').value, 10) || 1)), auto: $('rc_auto').classList.contains('on'), notes: '' };
+  var nxv = $('rc_next').value, unit = $('rc_unit').value, every = Math.max(1, Math.min(99, parseInt($('rc_every').value, 10) || 1));
+  var bill = { name: $('rc_name').value.trim(), c: low($('rc_c').value), a: parseAmt($('rc_a').value || '0'), day: nxv ? +nxv.slice(8, 10) : 1, auto: false, notes: '', every: every, unit: unit, start: nxv };
+  if (!parseD(nxv)) { err.textContent = 'Pick the next due date.'; err.style.color = 'var(--bad)'; return; }
   if (!bill.name) { err.textContent = 'Give the bill a name.'; err.style.color = 'var(--bad)'; return; }
   if (recurByName(bill.name) && low(bill.name) !== low(old)) { err.textContent = 'You already have a bill with that name.'; err.style.color = 'var(--bad)'; return; }
   if (isNaN(bill.a) || bill.a <= 0) { err.textContent = 'Enter the amount.'; err.style.color = 'var(--bad)'; return; }
@@ -5547,10 +5957,20 @@ function openSheet(kind, arg) {
   if (kind === 'add' || kind === 'edit') { UI.split = null; UI.fmore = false; }
   if (kind === 'settings') UI.alertMsg = '';
   renderSheet();
+  var wasOpen = $('sheet').classList.contains('on');
   lockPage(true);
   $('sheet').style.transform = '';
   $('scrim').classList.add('on');
   $('sheet').classList.add('on');
+  if (!wasOpen) {
+    if (isPhone() && !REDUCED) {
+      var ap = $('app'); clearTimeout(SHEETPREP);
+      ap.style.setProperty('--ly', LOCKY + 'px'); ap.style.setProperty('--vh', window.innerHeight + 'px');
+      document.body.classList.add('sheetprep'); void ap.offsetWidth; document.body.classList.add('sheeted');
+    }
+    var lt = LAST_TAP.el;
+    if (lt && Date.now() - LAST_TAP.at < 700 && lt.isConnected && kind !== 'add' && kind !== 'settings' && lt.offsetWidth > 200) growSheetFrom(lt);
+  }
   $('sheet').scrollTop = 0;
   if (kind === 'add') {
     var fa = $('f_a');
@@ -5587,11 +6007,19 @@ function sideExtra() {
   });
   sx.innerHTML = h;
 }
+var SHEETPREP = 0;
 function closeSheet() {
-  var wasEdit = SHEET && SHEET.kind === 'edit';
+  var wasEdit = SHEET && SHEET.kind === 'edit', was = SHEET && SHEET.kind;
+  if (document.body.classList.contains('sheeted')) {
+    document.body.classList.remove('sheeted'); clearTimeout(SHEETPREP);
+    SHEETPREP = setTimeout(function () { if (!SHEET) document.body.classList.remove('sheetprep'); }, 460);
+  }
+  $('app').style.transform = '';
+  setTimeout(function () { playFresh(60); miniBar(); }, 320);
   SHEET = null;
   if (wasEdit && UI.edit) { UI.edit = null; if ($('txlist')) $('txlist').innerHTML = txListHtml(); }
   if (HU_PENDING) setTimeout(maybeHeadsUp, 450);
+  else if (BILLS_PENDING || ((was === 'headsup' || was === 'settings') && BILLS_CHECK)) setTimeout(maybeBills, 450);
   CLOSED_AT = Date.now();
   playPending();
   unfitSheet();
@@ -5616,9 +6044,11 @@ function closeSheet() {
   document.addEventListener('touchmove', function (e) {
     if (y0 === null) return;
     var d = e.touches[0].clientY - y0;
-    if (d < 0 || window.scrollY > 0) { y0 = null; el().className = ''; return; }
+    if (d < 0 || window.scrollY > 0) { y0 = null; el().className = ''; $('app').style.transform = ''; return; }
     var p = el(); p.className = 'show' + (d > 80 ? ' ready' : '');
-    p.style.transform = 'translate(-50%,' + Math.min(70, d / 2) + 'px)';
+    var rub = 74 * (1 - Math.exp(-d / 150));                 // resists more the further you pull
+    p.style.transform = 'translate(-50%,' + rub.toFixed(1) + 'px)';
+    if (!REDUCED) { var ap0 = $('app'); ap0.style.transition = 'none'; ap0.style.transform = 'translateY(' + (rub * 0.7).toFixed(1) + 'px)'; }
     p.firstChild.textContent = d > 80 ? 'Release to sync' : 'Pull to sync';
     armed = d > 80;
   }, { passive: true });
@@ -5626,20 +6056,21 @@ function closeSheet() {
     if (y0 === null) return;
     y0 = null;
     var p = el(); p.className = ''; p.style.transform = '';
+    var ap1 = $('app'); ap1.style.transition = 'transform .45s ' + EASE_IOS; ap1.style.transform = ''; setTimeout(function () { ap1.style.transition = ''; }, 460);
     if (armed) { armed = false; if (S.demo) toast('Connect your sheet in Settings to sync'); else { sync(); toast('Syncing…'); } }
   });
 })();
 
 // Swipe a sheet down to close it: drag from the handle, or anywhere once it's scrolled to the top.
 (function () {
-  var sh = null, y0 = 0, x0 = 0, t0 = 0, dy = 0, active = false, decided = false;
+  var sh = null, y0 = 0, x0 = 0, t0 = 0, dy = 0, active = false, decided = false, vel = 0, lastY = 0, lastT = 0;
   function el() { return sh || (sh = $('sheet')); }
   document.addEventListener('touchstart', function (e) {
     var s = el();
     if (!SHEET || !s.contains(e.target) || e.touches.length !== 1) return;
     var tag = e.target.tagName;
     if (/INPUT|SELECT|TEXTAREA/.test(tag) && !e.target.closest('.grab')) return;
-    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; t0 = Date.now(); dy = 0;
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; t0 = Date.now(); dy = 0; vel = 0; lastY = 0; lastT = t0;
     active = s.scrollTop <= 0 || !!e.target.closest('.grab, .shead');
     decided = false;
   }, { passive: true });
@@ -5651,19 +6082,26 @@ function closeSheet() {
       decided = true;
       if (d <= 0 || dx > Math.abs(d)) { active = false; return; }   // scrolling up or sideways: let it scroll
     }
+    var now = Date.now(); vel = (d - lastY) / Math.max(1, now - lastT); lastY = d; lastT = now;
     dy = Math.max(0, d);
     e.preventDefault();
     s.style.transition = 'none';
     s.style.transform = 'translateY(' + dy + 'px)';
     $('scrim').style.opacity = String(Math.max(0, 1 - dy / 400));
+    // the page behind grows back toward full size as the sheet is pulled down
+    if (document.body.classList.contains('sheeted')) {
+      var p = Math.min(1, dy / Math.max(200, s.offsetHeight)), ap = $('app');
+      ap.style.transition = 'none';
+      ap.style.transform = 'translateY(calc((env(safe-area-inset-top) + 10px) * ' + (1 - p).toFixed(3) + ')) scale(' + (0.93 + 0.07 * p).toFixed(4) + ')';
+    }
   }, { passive: false });
   document.addEventListener('touchend', function () {
     if (!active) return;
     active = false;
-    var s = el(), fast = dy > 40 && dy / Math.max(1, Date.now() - t0) > 0.5;
-    s.style.transition = '';
+    var s = el(), fast = dy > 40 && vel > 0.45;             // a quick flick closes it even from a short drag
+    s.style.transition = ''; $('app').style.transition = '';
     if (dy > 110 || fast) closeSheet();
-    else { s.style.transform = ''; $('scrim').style.opacity = ''; }
+    else { s.style.transform = ''; $('scrim').style.opacity = ''; $('app').style.transform = ''; }
   });
 })();
 
@@ -5693,6 +6131,8 @@ function renderSheet() {
     h += activityFilterSheet();
   } else if (SHEET.kind === 'insights') {
     h += '<div class="shead"><h2>Insights</h2><button data-act="close">Done</button></div>' + trendInsights();
+  } else if (SHEET.kind === 'bills') {
+    h += billsSheetHtml();
   } else if (SHEET.kind === 'recurmonth') {
     h += '<div class="shead"><h2>Bills · ' + MONTHS[ymM(SHEET.arg)] + '</h2><button data-act="close">Done</button></div>' + recurCardHtml(SHEET.arg);
   } else if (SHEET.kind === 'recur') {
@@ -6122,7 +6562,7 @@ function submitForm() {
       var made = [rest].concat(parts.map(function (p) { return p.a; })).map(function (a, i) {
         var pv = {}; Object.keys(v).forEach(function (k) { pv[k] = v[k]; });
         pv.a = a; pv.c = i ? parts[i - 1].c : v.c; pv.n = note;
-        var nt = addTx(pv); return { id: nt.id, after: pick(nt) };
+        var nt = addTx(pv); markFresh(nt); return { id: nt.id, after: pick(nt) };
       });
       UI.split = null;
       var again2 = UI.addAnother; UI.addAnother = false;
@@ -6135,7 +6575,7 @@ function submitForm() {
       flushSoon(); return;
     }
     if (isNew) {
-      var t = addTx(v), again = UI.addAnother; UI.addAnother = false;
+      var t = addTx(v), again = UI.addAnother; UI.addAnother = false; markFresh(t);
       if (again) {
         var nd = newTxDraft(v.k); nd.d = v.d; nd.y = v.y; nd.m = v.m;
         openSheet('add', nd); render();
@@ -6153,10 +6593,10 @@ function submitForm() {
       var top = UI.editTop, typing = keyboardUp();
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
       UI.edit = null;
-      render();
-      // land on the entry (it may have moved to another month), or where it was if the filters now hide it
-      if (anchorTx(id, top, true)) glideTo(id, 'saved', typing);
-      else if (anchorTx(near, top, false)) glideTo(near, 'saved', typing);
+      // land on the entry (it may have moved to another month), or where it was if the filters now hide it; the rest glide into place
+      var landed = null;
+      flipRows(function () { render(); landed = anchorTx(id, top, true) ? id : anchorTx(near, top, false) ? near : null; });
+      if (landed) glideTo(landed, 'saved', typing);
       if (before) toast('Saved', { type: 'edit', id: id, before: before, after: pick(v), top: top });
     }
     flushSoon();
@@ -6214,7 +6654,7 @@ function anchorTx(id, top, flash) {
 // a third of the way down so you can see it (waits for the keyboard to go away first, if it was up).
 var GLIDE_T = null;
 // how far down the screen is covered at the top (the header if it's showing, else just the status bar)
-function topClear() { var head = document.querySelector('header.top'); return Math.max(head ? head.getBoundingClientRect().bottom : 0, safeTopPx()); }
+function topClear() { var head = document.querySelector('header.top'), mb = $('minibar'); return Math.max(head ? head.getBoundingClientRect().bottom : 0, safeTopPx(), mb && mb.classList.contains('on') ? mb.getBoundingClientRect().bottom : 0); }
 function keyboardUp() {
   var vv = window.visualViewport, a = document.activeElement;
   return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || !!(vv && window.innerHeight - vv.height > 120);
@@ -6476,10 +6916,10 @@ var PREF_KEYS = ['pal', 'mode', 'style', 'corners', 'cards', 'density', 'icon', 
 function prefsObj() {
   var cfg = {};
   PREF_KEYS.forEach(function (k) { cfg[k] = S.cfg[k]; });
-  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, pay: S.pay || null, up: S.up || [], hu: S.hu || 0, bc: S.bc || 0, at: S.prefsAt || 0 };
+  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, pay: S.pay || null, up: S.up || [], hu: S.hu || 0, bc: S.bc || 0, bm: S.bmark || {}, bmo: S.bmo || 0, at: S.prefsAt || 0 };
 }
 // "heads up seen" doesn't count as a change by itself: a phone that hasn't caught up mustn't send an older month back
-function prefsHash() { var p = prefsObj(); delete p.at; delete p.hu; delete p.bc; return JSON.stringify(p); }
+function prefsHash() { var p = prefsObj(); delete p.at; delete p.hu; delete p.bc; delete p.bmo; return JSON.stringify(p); }
 function queuePrefs() {
   if (S.demo || (S.scriptV || 0) < 10 || !S.prefsPulled) return;
   var ph = prefsHash();
@@ -6521,8 +6961,20 @@ function applyPull(data) {
       fs: a[10] || '', ow: +a[11] || 0, pb: a[12] || '',
       o: { k: a[0], y: a[1], m: a[2], v: a[4], c: a[5], a: a[6] } };
   });
-  S.outbox.forEach(function (op) {
-    if (op.op === 'add') { var t = pick(op.tx); t.id = op.tid; t.r = 0; t.p = 1; tx.push(t); return; }
+  // an entry added and then deleted again before both reached the sheet: don't bring the local copy back
+  var gone = function (ai) {
+    var a0 = S.outbox[ai];
+    for (var j = ai + 1; j < S.outbox.length; j++) {
+      var d0 = S.outbox[j];
+      if (d0.op !== 'delete') continue;
+      if (d0.tid === a0.tid) return true;
+      var f = d0.ref && d0.ref.fp;
+      if (f && !d0.ref.r && +f.m === +a0.tx.m && String(f.v || '') === String(a0.tx.v || '') && String(f.c || '') === String(a0.tx.c || '') && Math.abs(+f.a - +a0.tx.a) < 0.005) return true;
+    }
+    return false;
+  };
+  S.outbox.forEach(function (op, oi) {
+    if (op.op === 'add') { if (gone(oi)) return; var t = pick(op.tx); t.id = op.tid; t.r = 0; t.p = 1; tx.push(t); return; }
     if (op.op === 'tag') {
       (op.refs || []).forEach(function (r) { var h1 = matchRef(tx, r); if (h1) h1.tr = op.trip; });
       (op.untag || []).forEach(function (r) { var h2 = matchRef(tx, r); if (h2) h2.tr = ''; });
@@ -6560,7 +7012,7 @@ function applyPull(data) {
     S.outbox.forEach(function (op) { if (op.op === 'trip') applyTripOp(op); if (op.op === 'tripdel') removeTripLocal(op.name); });
   }
   if (data.recur) {
-    S.recur = data.recur.map(function (b) { return { name: b[0], c: b[1], a: +b[2] || 0, day: +b[3] || 1, auto: !!b[4], notes: b[5] || '' }; });
+    S.recur = data.recur.map(function (b) { return { name: b[0], c: b[1], a: +b[2] || 0, day: +b[3] || 1, auto: false, notes: b[5] || '', every: +b[7] || 1, unit: b[8] || 'm', start: b[9] || '' }; });
     S.outbox.forEach(function (op) {
       if (op.op === 'recur') recurOp(op.bill, op.old);
       if (op.op === 'recurdel') S.recur = S.recur.filter(function (b) { return low(b.name) !== low(op.name); });
@@ -6580,6 +7032,8 @@ function applyPull(data) {
   if (data.prefs && Array.isArray(data.prefs.up) && S.up === undefined) S.up = data.prefs.up;
   if (data.prefs && +data.prefs.hu > (S.hu || 0)) S.hu = +data.prefs.hu;
   if (data.prefs && +data.prefs.bc > (S.bc || 0)) S.bc = +data.prefs.bc;
+  if (data.prefs && +data.prefs.bmo > (S.bmo || 0)) S.bmo = +data.prefs.bmo;
+  if (data.prefs && data.prefs.bm && typeof data.prefs.bm === 'object') { S.bmark = S.bmark || {}; Object.keys(data.prefs.bm).forEach(function (k) { if (!S.bmark[k]) S.bmark[k] = data.prefs.bm[k]; }); }
   if ((data.v || 0) >= 10) S.prefsPulled = 1;
   CACHE = {}; VER++;
   setTimeout(autoLogRecur, 0);
@@ -6593,7 +7047,7 @@ function safeRender() {
     $('txform').setAttribute('data-id', UI.edit);
     renderSync();
   } else keepScroll(render);
-  if (SHEET && SHEET.kind !== 'add' && !typingInSheet) renderSheet();
+  if (SHEET && SHEET.kind !== 'add' && !typingInSheet && Date.now() > SHEET_BUSY) renderSheet();
 }
 
 function matchRef(list, ref) {
@@ -6770,13 +7224,17 @@ document.addEventListener('click', function (e) {
     case 'tab':
       // Activity starts clean each time you come back to it
       if (v === 'activity' && UI.tab !== 'activity') { UI.q = ''; UI.am = ''; UI.asort = 'new'; UI.fk = 'all'; UI.lim = 120; }
-      UI.tab = v; UI.edit = null; if (SHEET) closeSheet(); render(); window.scrollTo(0, 0); viewIn(); break;
+      UI.scr = UI.scr || {};
+      if (UI.tab !== v) UI.scr[UI.tab] = window.scrollY;
+      var back = UI.tab === v ? 0 : (UI.scr[v] || 0);
+      if (v === 'activity' && FRESH.length) back = 0;               // something new to see: start at the top
+      UI.tab = v; UI.edit = null; if (SHEET) closeSheet(); render(); window.scrollTo(0, Math.min(back, document.documentElement.scrollHeight)); break;
     case 'goplan':
       if (SHEET) closeSheet();
       var gp = planState();
       if (v) { gp.mode = 'from'; gp.key = Math.max(nowYM(), +v); }
       gp.step = 'edit';
-      UI.tab = 'plan'; UI.edit = null; render(); window.scrollTo(0, 0); viewIn();
+      UI.tab = 'plan'; UI.edit = null; render(); window.scrollTo(0, 0);
       break;
     case 'pcatfrom':                                    // "Change budget" from a category's popup
       var pf = planState(), fk = UI.ym === null ? nowYM() : UI.ym;
@@ -6835,6 +7293,10 @@ document.addEventListener('click', function (e) {
       break;
     case 'recuredit': openSheet('recuredit', { name: v || '' }); break;
     case 'recursug': var sg = recurSuggestions()[+v]; if (sg) openSheet('recuredit', { name: '', preset: sg }); break;
+    case 'rcpre':
+      e.preventDefault(); $('rc_every').value = v; $('rc_unit').value = el.getAttribute('data-u');
+      var rps = document.querySelectorAll('[data-act=rcpre]'); for (var rpi = 0; rpi < rps.length; rpi++) rps[rpi].classList.toggle('on', rps[rpi] === el);
+      break;
     case 'rcauto': e.preventDefault(); el.classList.toggle('on'); var rco = el.classList.contains('on'); el.setAttribute('aria-pressed', rco); el.textContent = (rco ? '✓ ' : '') + 'Log it automatically on its day'; break;
     case 'recurdel':
       e.preventDefault();
@@ -6842,10 +7304,45 @@ document.addEventListener('click', function (e) {
       UI.armed = null; var rdn = $('recurform').getAttribute('data-old');
       deleteRecurLocal(rdn); openSheet('recur'); render(); flushSoon(); toast('Removed ' + rdn);
       break;
+    case 'billsopen': BILLS_CHECK = true; BILL_LATER = {}; openSheet('bills', { start: false }); break;
+    case 'billpay': case 'billpaid':
+      lock('billpay', function () {
+        var pb = recurByName(v); if (!pb) return;
+        var pd0 = el.getAttribute('data-d'), inp = el.getAttribute('data-i') !== null ? $('bp_' + el.getAttribute('data-i')) : null;
+        var amt = inp ? parseAmt(inp.value || '0') : pb.a;
+        var pt = payBill(pb, pd0, amt);
+        checkThen(el, function () { afterBillMark(); });
+        var ptAfter = pick(pt);
+        toast(pb.name + ' paid · ' + money(pt.a, true), function () { var ft = resolveTx(pt.id, ptAfter); if (ft) deleteTx(ft.id); S.bmark[billKey(pb, pd0)] = 'x'; save(); queuePrefs(); keepScroll(render); if (SHEET) renderSheet(); flushSoon(); toast('Undone'); });
+      });
+      break;
+    case 'billall':
+      lock('billpay', function () {
+        var all = billsToCheck(SHEET && SHEET.arg && SHEET.arg.start).filter(function (x) { return !BILL_LATER[billKey(x.b, x.d)]; }), made = [];
+        all.forEach(function (x, i) { var inp = $('bp_' + i); var mt = payBill(x.b, x.d, inp ? parseAmt(inp.value || '0') : x.b.a); made.push({ t: mt, after: pick(mt), k: billKey(x.b, x.d) }); });
+        var pbs = document.querySelectorAll('#sheet .brow [data-act=billpaid]');
+        if (pbs.length && !REDUCED) { SHEET_BUSY = Date.now() + 2600; for (var pi = 0; pi < pbs.length; pi++) (function (b0, i0) { setTimeout(function () { drawCheck(b0); }, i0 * 70); })(pbs[pi], pi); setTimeout(afterBillMark, 420 + pbs.length * 70); }
+        else afterBillMark();
+        toast(made.length + ' bills marked paid', function () { made.forEach(function (m) { var ft = resolveTx(m.t.id, m.after); if (ft) deleteTx(ft.id); S.bmark[m.k] = 'x'; }); save(); queuePrefs(); keepScroll(render); flushSoon(); toast('Undone'); });
+      });
+      break;
+    case 'billskip':
+      var sb = recurByName(v); if (!sb) break;
+      S.bmark = S.bmark || {}; S.bmark[billKey(sb, el.getAttribute('data-d'))] = 'skip'; save(); queuePrefs();
+      var skr = el.closest('.brow');
+      if (skr) leaveThen(skr, afterBillMark, 28); else afterBillMark();
+      toast(sb.name + ' skipped this time'); break;
+    case 'billlater':
+      BILL_LATER[v] = 1;
+      var lr = el.closest('.brow');
+      var laterDone = function () { if (billsToCheck(SHEET && SHEET.arg && SHEET.arg.start).filter(function (x) { return !BILL_LATER[billKey(x.b, x.d)]; }).length) renderSheet(); else closeSheet(); };
+      if (lr) leaveThen(lr, laterDone, 28); else laterDone();
+      break;
     case 'recurlog':
       lock('recurlog', function () {
         var rb = recurByName(v); if (!rb) return;
-        var rt = logRecur(rb, +el.getAttribute('data-k'), false);
+        var rk = +el.getAttribute('data-k'), rds = billsInMonth(rk).filter(function (x) { return x.b === rb && x.st.s !== 'paid'; });
+        var rt = rds.length ? payBill(rb, rds[0].d, rb.a) : logRecur(rb, rk, false);
         keepScroll(render); if (SHEET && SHEET.kind === 'recurmonth') renderSheet(); flushSoon();
         toast('Logged ' + money(rt.a, true) + ' · ' + rb.name, { type: 'add', id: rt.id, after: pick(rt) });
       });
@@ -7082,7 +7579,7 @@ document.addEventListener('click', function (e) {
     case 'afilter': openSheet('afilter'); break;
     case 'tsort':
       UI.asort = v; UI.lim = 120; UI.edit = null;
-      $('txlist').innerHTML = txListHtml(); syncEditPanel(); refreshFilterBtn();
+      flipRows(function () { $('txlist').innerHTML = txListHtml(); }); syncEditPanel(); refreshFilterBtn();
       var srt = $('a_sort'); if (srt) srt.value = v;
       var thd = $('thead'); if (thd && thd.getBoundingClientRect().top < 0) window.scrollTo(0, window.scrollY + thd.getBoundingClientRect().top - 8);
       break;
@@ -7247,13 +7744,15 @@ document.addEventListener('click', function (e) {
       var etop = el.getBoundingClientRect().top;
       UI.edit = UI.edit === v ? null : v; UI.catTouched = false; UI.tripTouched = true; UI.fmore = false;
       if (UI.edit) UI.editTop = etop;
-      $('txlist').innerHTML = txListHtml();
+      flipRows(function () { $('txlist').innerHTML = txListHtml(); });
+      var nf = UI.edit && $('txform');
+      if (nf && !REDUCED && nf.animate) { var fh = nf.offsetHeight; nf.style.overflow = 'hidden'; nf.animate([{ height: '0px', opacity: 0 }, { height: fh + 'px', opacity: 1 }], { duration: 300, easing: EASE_OUT }).onfinish = function () { nf.style.overflow = ''; }; }
       anchorTx(v, etop, false);           // the tapped entry stays put even if another open form above closes
       if (UI.edit) glideTo(v, 'open');    // …then slides up so the form is in view
       break;
     case 'fcancel':
       var cid0 = UI.edit, cur0 = formVals(), orig0 = findTx(cid0);
-      closeEdit(cid0, true);
+      flipRows(function () { closeEdit(cid0, true); });
       if (orig0 && cur0 && !sameTx(cur0, orig0)) toast('Changes discarded', { type: 'reedit', id: cid0, vals: cur0, top: UI.editTop });
       break;
     case 'fmore':
@@ -7319,12 +7818,18 @@ document.addEventListener('click', function (e) {
         var id = $('txform').getAttribute('data-id');
         var near = neighborOf(id), dtop = UI.editTop, dtyping = keyboardUp();
         if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-        var copy = deleteTx(id);
-        UI.edit = null;
-        render();
-        if (anchorTx(near, dtop, false)) glideTo(near, 'saved', dtyping); else window.scrollTo(0, window.scrollY);
-        if (copy) toast('Deleted ' + money(copy.a, true) + ' · ' + copy.c, { type: 'delete', tx: copy, top: dtop });
-        flushSoon();
+        var row0 = document.querySelector('#view [data-fk="' + id + '"]'), fm0 = $('txform'), copy;
+        var go = function () {
+          var land = false;
+          flipRows(function () { copy = deleteTx(id); UI.edit = null; render(); land = anchorTx(near, dtop, false); });
+          if (land) glideTo(near, 'saved', dtyping);
+          if (copy) toast('Deleted ' + money(copy.a, true) + ' · ' + copy.c, { type: 'delete', tx: copy, top: dtop });
+          flushSoon();
+        };
+        if (!REDUCED && row0 && row0.animate) {          // the entry slides away first, then the rest move up
+          [row0, fm0].forEach(function (x) { if (x && x.animate) x.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(-28px)' }], { duration: 200, easing: 'ease-in', fill: 'forwards' }); });
+          setTimeout(go, 200);
+        } else go();
       });
       break;
     case 'undo': lock('undo', doUndo); break;
@@ -7518,7 +8023,7 @@ document.addEventListener('change', function (e) {
   else if (t.id === 'a_m' || t.id === 'a_sort') {
     if (t.id === 'a_m') UI.am = t.value; else UI.asort = t.value;
     UI.lim = 120; UI.edit = null;
-    $('txlist').innerHTML = txListHtml(); syncEditPanel();
+    flipRows(function () { $('txlist').innerHTML = txListHtml(); }); syncEditPanel();
     refreshFilterBtn();
     window.scrollTo(0, 0);
   }
@@ -7589,6 +8094,8 @@ if (window.matchMedia) {
 }
 
 document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'hidden') { HIDDEN_AT = Date.now(); return; }
+  if (HIDDEN_AT && Date.now() - HIDDEN_AT > 5 * 60000) { BILLS_CHECK = true; BILL_LATER = {}; }
   if (document.visibilityState === 'visible' && S && !S.demo) {
     NOW = FIXED_NOW || new Date();
     if (S.outbox.length || Date.now() - S.lastSync > 60000) sync().then(function () { setTimeout(maybeHeadsUp, 600); }, function () {}); else { render(); setTimeout(maybeHeadsUp, 600); }
