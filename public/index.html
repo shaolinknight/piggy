@@ -61,6 +61,9 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .sync.quiet{width:36px;height:36px;padding:0;justify-content:center;background:none}
 .sync.quiet span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .sync.quiet .dot{width:9px;height:9px}
+.sync.quiet.busy .dot{animation:syncpulse 1s ease-in-out infinite}
+@keyframes syncpulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.45}}
+@media (prefers-reduced-motion:reduce){.sync.quiet.busy .dot{animation:none}}
 .sync{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--t2);padding:6px 10px;border-radius:999px;background:var(--p2)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--t3)}
 .dot.ok{background:var(--ok)}.dot.wait{background:var(--warn)}.dot.err{background:var(--bad)}
@@ -421,7 +424,6 @@ body.on-bulk main{padding-bottom:140px}
 .scrow em.nodue{color:var(--t3);font-weight:500}.scrow em.late{color:var(--warn)}
 .scrow.brw{grid-template-columns:16px minmax(0,1fr) auto}
 .lcells .scrow.brw{grid-template-columns:16px minmax(0,1fr) auto}
-.stalecard{border:1px solid color-mix(in srgb,var(--warn) 55%,transparent)}.stalecard .sub{margin:0 0 4px}.stalecard .stalelist{margin:6px 0 4px}.stalecard .l1{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-top:1px solid var(--b1)}.stalecard .l1 b{font-weight:600}.stalecard .l1 em{font-style:normal;font-weight:600}.stalecard .btns{margin-top:10px}
 .aptag{display:inline-block;font-size:11px;font-weight:700;color:var(--ac);background:var(--acd);border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:1px}
 .bmk{display:block;width:14px;height:14px;border-radius:50%;box-sizing:border-box;border:1.5px solid var(--t3);position:relative;flex:none}
 .bmk.paid,.bmk.over{border:0;background:var(--ok)}
@@ -584,7 +586,7 @@ table.tb tr.tot td{font-weight:700;border-top:2px solid var(--b2)}
 .moreopt span{font-weight:600;font-size:15px;flex:none}.moreopt small{flex:1;min-width:0;font-size:13px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fmore{padding-top:2px}
 .tripup{background:var(--acd);border-radius:var(--r2);padding:10px 12px 6px;margin-left:-2px;margin-right:-2px}
-.ppay,.pcoming{margin-top:12px}
+.ppay,.pcoming,.preal{margin-top:12px}
 .psect{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin:18px 2px 8px}
 .sgrp{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin:18px 4px 8px}
 .sgrp:first-of-type{margin-top:4px}
@@ -1226,7 +1228,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.28';
+var VERSION = '2.29';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1819,7 +1821,8 @@ function renderSync() {
   }
   dot.className = 'dot ' + cls;
   txt.textContent = label;
-  var sb = $('syncBtn'); if (sb) { sb.classList.toggle('quiet', cls === 'ok'); sb.setAttribute('aria-label', label); sb.title = label; }
+  // 2.29: on phones it's always just the dot (it pulses while syncing), so the month never gets squeezed; tap it for the details
+  var sb = $('syncBtn'); if (sb) { sb.classList.add('quiet'); sb.classList.toggle('busy', !!SYNCING); sb.setAttribute('aria-label', label); sb.title = label; }
 }
 
 // ---- weekly check-in: Sunday to Tuesday, a short look back at last week (Sun–Sat)
@@ -1961,7 +1964,7 @@ function statusSheetHtml() {
   row('Your sheet', SYNCING ? 'Syncing…' : S.syncErr ? 'Problem' : 'Connected', S.syncErr ? 'bad' : 'ok');
   row('Last synced', ago(S.lastSync), Date.now() - S.lastSync > 86400000 ? 'warn' : '');
   row('Waiting to send', n ? n + ' change' + (n === 1 ? '' : 's') : 'nothing', n ? 'warn' : '');
-  row('Script version', v + (v < 16 ? ' — update needed' : ' ✓'), v < 16 ? 'warn' : '');
+  row('Script version', v + (v < 17 ? ' — update needed' : ' ✓'), v < 17 ? 'warn' : '');
   h += '</div>';
   if (S.syncErr) h += '<div class="spendsum" style="color:var(--bad)">' + esc(S.syncErr) + '</div>';
   if (n) {
@@ -2697,6 +2700,8 @@ function monthGroupHtml(g, rows, gs, gb, pace) {
     var bkey = UI.ym === null ? nowYM() : UI.ym, dueRows = rows.filter(function (r) { var cb = r.yr ? null : catBill(r.c, bkey); return r.spent > 0 || !(r.yr && !r.yr.dueNow) && !(cb && cb.s === 'none'); });
     var paid = dueRows.filter(function (r) { var cb = r.yr ? null : catBill(r.c, bkey); return r.spent > 0 || (cb && (cb.s === 'paid' || cb.s === 'skip')); }).length;
     right = dueRows.length ? paid + ' of ' + dueRows.length + ' paid' : 'nothing due';
+    pct = dueRows.length ? paid / dueRows.length : 1;                       // 2.29: full when everything due is paid
+    gb = dueRows.reduce(function (a, r) { return a + (r.yr ? 0 : r.bud); }, 0); gs = dueRows.reduce(function (a, r) { return a + (r.yr ? 0 : r.spent); }, 0);
   } else if (g.id === 'save') right = gs >= gb && gb > 0 ? '<span class="good">' + money(gs) + ' of ' + money(gb) + ' ✓</span>' : money(gs) + ' of ' + money(gb);
   else if (g.id === 'give' && gs - gb > 0.5) right = '<span class="good"><span data-count="' + (gs - gb) + '" data-ck="gover' + g.id + '" data-good="up">' + money(gs - gb) + '</span> extra ✓</span>';
   else right = gs - gb > 0.5 ? '<span class="over"><span data-count="' + (gs - gb) + '" data-ck="gover' + g.id + '" data-good="down">' + money(gs - gb) + '</span> over</span>'
@@ -2706,7 +2711,7 @@ function monthGroupHtml(g, rows, gs, gb, pace) {
       '<span class="lname"><b>' + g.name + '</b>' + (over && g.id !== 'save' && g.id !== 'give' ? '<small class="over">' + over + ' over</small>' : '') + '</span>' +
       '<span class="lnum" data-count="' + gs + '" data-ck="gs' + g.id + '">' + money(gs) + '</span><span class="lnum lbud">' + money(gb) + '</span>' +
       '<span class="lnum lleft mgright">' + right + '</span>' +
-      '<span class="bar mgbar"><i class="' + (g.id === 'save' || g.id === 'give' ? (pct >= 1 && gb > 0 ? 'good' : '') : pct > 1 ? 'over' : '') + '" data-bar="g' + g.id + '" style="width:' + Math.min(100, pct * 100).toFixed(1) + '%"></i>' +
+      '<span class="bar mgbar"><i class="' + (g.id === 'save' || g.id === 'give' ? (pct >= 1 && gb > 0 ? 'good' : '') : g.id === 'bills' ? (pct >= 0.999 ? 'good' : '') : pct > 1 ? 'over' : '') + '" data-bar="g' + g.id + '" style="width:' + Math.min(100, pct * 100).toFixed(1) + '%"></i>' +
       (FLEX[g.id] && pace < 1 && gb > 0 ? '<b style="left:' + Math.min(99, pace * 100).toFixed(1) + '%"></b>' : '') + '</span><i class="chev' + (open ? ' up' : '') + '"></i></button>';
     lh += '<div class="mgbody"><div class="mgin"><div class="lcells">';
     rows.forEach(function (row) { lh += slimCatRow(row, g.id, pace); });
@@ -2715,7 +2720,7 @@ function monthGroupHtml(g, rows, gs, gb, pace) {
   var h = '<section class="card mgroup' + (open ? ' open' : '') + '"><button class="mghead" data-act="mgrp" data-v="' + g.id + '" aria-expanded="' + open + '">' +
     '<span class="mgname"><b>' + g.name + '</b><small><span data-count="' + gs + '" data-ck="gs' + g.id + '">' + money(gs) + '</span> of ' + money(gb) + (over && g.id !== 'save' && g.id !== 'give' ? ' · <span class="over">' + over + ' over</span>' : '') + '</small></span>' +
     '<span class="mgright">' + right + '</span><i class="chev' + (open ? ' up' : '') + '"></i>' +
-    '<span class="bar mgbar"><i class="' + (g.id === 'save' || g.id === 'give' ? (pct >= 1 && gb > 0 ? 'good' : '') : pct > 1 ? 'over' : '') + '" data-bar="g' + g.id + '" style="width:' + Math.min(100, pct * 100).toFixed(1) + '%"></i>' +
+    '<span class="bar mgbar"><i class="' + (g.id === 'save' || g.id === 'give' ? (pct >= 1 && gb > 0 ? 'good' : '') : g.id === 'bills' ? (pct >= 0.999 ? 'good' : '') : pct > 1 ? 'over' : '') + '" data-bar="g' + g.id + '" style="width:' + Math.min(100, pct * 100).toFixed(1) + '%"></i>' +
     (FLEX[g.id] && pace < 1 && gb > 0 ? '<b style="left:' + (pace * 100).toFixed(1) + '%"></b>' : '') + '</span></button>';
   h += '<div class="mgbody"><div class="mgin">';
   rows.forEach(function (row) { h += slimCatRow(row, g.id, pace); });
@@ -3777,18 +3782,14 @@ function payPlan(key) {
   var days = paydaysIn(key); if (!days.length) return null;
   var next = paydaysIn(key + 1)[0], bt = budgetTotals(key), amt = payAmount();
   var perYear = S.pay.k === 'bi' ? 26 : 24, perCheck = function (monthly) { return monthly * 12 / perYear; };
-  var bills = recurBills(), recurSum = bills.reduce(function (a, b) { return a + (+b.a || 0); }, 0);
-  var otherBills = Math.max(0, (bt.g.bills || 0) - recurSum);
+  // 2.29: a bill only lands in the paycheck it's actually due in (every 6 months = twice a year);
+  // bill budgets with no bill on the list are spread across paychecks as before
+  var bills = recurBills(), bmk = bmap(key), otherBills = 0;
+  Object.keys(bmk).forEach(function (c) { if (bmk[c].g === 'bills' && !bmk[c].rm && !S.recur.some(function (b) { return low(b.c) === c; })) otherBills += bmk[c].a; });
   return days.map(function (d, i) {
     var end = new Date(i + 1 < days.length ? days[i + 1] : next); end.setDate(end.getDate() - 1);
     var nd = Math.round((end - d) / 864e5) + 1, due = [];
-    bills.forEach(function (b) {
-      [new Date(d.getFullYear(), d.getMonth(), 1), new Date(end.getFullYear(), end.getMonth(), 1)].forEach(function (mo, j, arr) {
-        if (j === 1 && +arr[1] === +arr[0]) return;
-        var dt = new Date(mo.getFullYear(), mo.getMonth(), Math.min(b.day || 1, daysIn(mo.getFullYear(), mo.getMonth())));
-        if (dt >= d && dt <= end) due.push({ b: b, dt: dt });
-      });
-    });
+    bills.forEach(function (b) { billDates(b, isoDay(d), isoDay(end)).forEach(function (ds) { due.push({ b: b, dt: parseD(ds) }); }); });
     var byDay = {};
     due.forEach(function (x) { var kk = isoDay(x.dt); (byDay[kk] = byDay[kk] || { dt: x.dt, a: 0, names: [] }); byDay[kk].a += +x.b.a || 0; byDay[kk].names.push(x.b.name); });
     var groups = Object.keys(byDay).sort().map(function (kk) { return byDay[kk]; });
@@ -4013,7 +4014,7 @@ function planHomeHtml() {
   var nextJan = ymKey(ymY(cur) + 1, 0);
   if (isWide()) return planHomeWide(cur, t, inc, left, pct, n, P, nextJan);
   if (!isRail() && !window.__planAll) return planHomePhone(h, cur, nextJan);
-  h = '<div class="pcols"><div class="pcol">' + h + staleIncHtml() + '<div class="psect">This month</div>';
+  h = '<div class="pcols"><div class="pcol">' + h + '<div class="psect">This month</div>';
   h += '<div class="pchoices"><button class="pchoice" data-act="pgo" data-v="now"><span class="pico">✎</span><span><b>Change a budget</b><small>For this month, a month ahead, or to fix a past one.</small></span><em>›</em></button>' + billsChoiceHtml() + '</div>';
   h += planRealityHtml() + planPayHtml();
   h += '</div><div class="pcol"><div class="psect">Ahead</div>';
@@ -4024,31 +4025,11 @@ function planHomeHtml() {
   return h;
 }
 
-// 2.28: income lines in the budget that no income has ever been logged under (leftovers from an old budget tab)
-function staleIncome() {
-  var cur = nowYM(), bm = bmap(cur), seen = {}, spendWords = {};
-  S.tx.forEach(function (t) {
-    if (t.k === 'i') seen[low(t.c)] = 1;
-    else low(t.c).split(/[^a-z]+/).forEach(function (w) { if (w.length > 3) spendWords[w] = 1; });
-  });
-  // never had income logged under it, and named like one of your spending categories ("going out(food)", "travel?")
-  var spendy = function (c) { return c.split(/[^a-z]+/).some(function (w) { return spendWords[w]; }); };
-  return Object.keys(bm).filter(function (c) { return bm[c].g === 'inc' && !bm[c].rm && bm[c].a > 0 && !seen[c] && spendy(c) && !(S.staleOk || {})[c]; })
-    .map(function (c) { return { c: c, a: bm[c].a }; });
-}
-function staleIncHtml() {
-  var list = staleIncome(); if (!list.length || planDraftCount()) return '';
-  var tot = list.reduce(function (a, x) { return a + x.a; }, 0), cur = nowYM();
-  return '<section class="card stalecard" id="p_stale"><div class="ghead"><h3>Check your income lines</h3></div>' +
-    '<p class="sub">' + (list.length === 1 ? 'This income line has a spending name' : 'These ' + list.length + ' income lines have spending names') + ' and never had any income logged, but ' + (list.length === 1 ? 'it adds ' : 'they add ') + '<b>' + money(tot) + '</b> a month to your planned income:</p>' +
-    '<div class="stalelist">' + list.map(function (x) { return '<div class="l1"><b>' + esc(x.c) + '</b><em>' + money(x.a) + '</em></div>'; }).join('') + '</div>' +
-    '<p class="hint">They look like leftovers from an old budget tab. Removing them only changes your budget from ' + MONTHS[ymM(cur)] + ' on — you review it before anything saves.</p>' +
-    '<div class="btns"><button class="btn" data-act="stalekeep">They’re right</button><button class="btn pri" data-act="staledrop" id="p_staledrop">Remove ' + (list.length === 1 ? 'it' : 'them') + '</button></div></section>';
-}
+var ICO_BILL = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>';
 function billsChoiceHtml() {
   var n = recurBills().length, nx = null;
   recurBills().forEach(function (b) { var d = billNext(b); if (d && (!nx || d < nx.d)) nx = { b: b, d: d }; });
-  return '<button class="pchoice" data-act="recur" id="p_bills"><span class="pico">🧾</span><span><b>Bills</b><small>' +
+  return '<button class="pchoice" data-act="recur" id="p_bills"><span class="pico">' + ICO_BILL + '</span><span><b>Bills</b><small>' +
     (n ? n + ' bill' + (n === 1 ? '' : 's') + ' on your list' + (billsToCheck(false).length ? ' · ' + billsToCheck(false).length + ' to check off' : nx ? ' · next: ' + esc(nx.b.name) + ' ' + shortDate(nx.d) : '') + '. Add, change or remove them.' : 'Add the bills you pay on a schedule, and Piggy asks you to check them off.') + '</small></span><em>›</em></button>';
 }
 function planHomePhone(top, cur, nextJan) {
@@ -4057,7 +4038,7 @@ function planHomePhone(top, cur, nextJan) {
     return '<button class="' + (sec === x[0] ? 'on' : '') + '" data-act="psec" data-v="' + x[0] + '" role="tab" aria-selected="' + (sec === x[0]) + '">' + x[1] + '</button>';
   }).join('') + '</div><div class="ppane" data-p="' + sec + '">';
   if (sec === 'month') {
-    h += top + staleIncHtml() + '<div class="pchoices"><button class="pchoice" data-act="pgo" data-v="now"><span class="pico">✎</span><span><b>Change a budget</b><small>For this month, a month ahead, or to fix a past one.</small></span><em>›</em></button>' + billsChoiceHtml() + '</div>' + planRealityHtml() + planPayHtml();
+    h += top + '<div class="pchoices"><button class="pchoice" data-act="pgo" data-v="now"><span class="pico">✎</span><span><b>Change a budget</b><small>For this month, a month ahead, or to fix a past one.</small></span><em>›</em></button>' + billsChoiceHtml() + '</div>' + planRealityHtml() + planPayHtml();
   } else if (sec === 'ahead') {
     h += planComingHtml() + planChangesHtml() + planUsualHtml() + '<div class="pchoices"><button class="pchoice" data-act="pgo" data-v="whatif"><span class="pico">?</span><span><b>Try a what-if</b><small>What if I spent like my average, or made a different income? Nothing saves unless you choose.</small></span><em>›</em></button></div>';
   } else if (sec === 'trips') {
@@ -4075,7 +4056,7 @@ function planHomeWide(cur, t, inc, left, pct, n, P, nextJan) {
   h += '<div class="pcols3"><div class="pcol">';
   if (n) h += '<section class="card pdraft"><div><b>' + n + ' unsaved change' + (n === 1 ? '' : 's') + '</b><span>' + (P.mode === 'fix' ? 'Correcting ' : 'For ') + planMonthName(P.key) + '</span></div>' +
     '<button class="btn pri" data-act="pgo" data-v="resume">Continue</button><button class="btn" data-act="pdiscard" id="p_discard">Discard</button></section>';
-  h += staleIncHtml() + '<div class="pchoices" style="margin-bottom:12px">' + billsChoiceHtml() + '</div>';
+  h += '<div class="pchoices" style="margin-bottom:12px">' + billsChoiceHtml() + '</div>';
   h += '<section class="card ptable"><div class="ghead"><h3>This month</h3><button class="btn pri sm" data-act="pgo" data-v="now">Change a budget</button></div>' +
     '<div class="ptr pth" aria-hidden="true"><span>Group</span><span>Budget</span><span></span></div>';
   var tot = 0;
@@ -6627,7 +6608,7 @@ function settingsHtml() {
     var tabsTxt = S.seed && S.seed.tabs && S.seed.tabs.length ? S.seed.tabs.join(', ') : 'your yearly budget tabs';
     h += '<div class="bsec" style="margin-top:16px">Budget tabs</div><div class="hint" style="margin-bottom:8px">Changed amounts right in ' + esc(tabsTxt) + '? This reads them back in. Changes made in the app are kept.</div>' +
       '<button class="btn" style="width:100%" data-act="rebuild">Re-read budget tabs</button>';
-    h += '<div class="bsec" style="margin-top:16px">New spending layout</div><div class="hint" style="margin-bottom:8px">Rebuilds a tab with the new layout: shading against each month’s budget, year-so-far columns, averages that only count months so far, savings balances and two charts. Whatever is in that tab is replaced — amounts you typed under “Taken out of savings” are kept.</div>' +
+    h += '<div class="bsec" style="margin-top:16px">New spending layout</div><div class="hint" style="margin-bottom:8px">Rebuilds a tab with the new layout: shading against each month’s budget, year-so-far columns, averages that only count months so far and savings balances. Whatever is in that tab is replaced — amounts you typed under “Taken out of savings” are kept.</div>' +
       '<div class="field" style="margin-bottom:8px"><label for="sv_tab">Tab name</label><input id="sv_tab" value="' + esc(UI.svTab || 'test for next year') + '" autocomplete="off"></div>' +
       '<button class="btn" style="width:100%" data-act="spendview" id="sv_go">Build the new layout</button>' + (UI.svMsg ? '<div class="spendsum">' + UI.svMsg + '</div>' : '');
   }
@@ -7188,7 +7169,7 @@ var PREF_KEYS = ['pal', 'mode', 'style', 'corners', 'cards', 'density', 'icon', 
 function prefsObj() {
   var cfg = {};
   PREF_KEYS.forEach(function (k) { cfg[k] = S.cfg[k]; });
-  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, pay: S.pay || null, up: S.up || [], hu: S.hu || 0, bc: S.bc || 0, bm: S.bmark || {}, bmo: S.bmo || 0, td: S.tdis || {}, ap: S.autopay || {}, so: S.staleOk || {}, at: S.prefsAt || 0 };
+  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, pay: S.pay || null, up: S.up || [], hu: S.hu || 0, bc: S.bc || 0, bm: S.bmark || {}, bmo: S.bmo || 0, td: S.tdis || {}, ap: S.autopay || {}, at: S.prefsAt || 0 };
 }
 // "heads up seen" doesn't count as a change by itself: a phone that hasn't caught up mustn't send an older month back
 function prefsHash() { var p = prefsObj(); delete p.at; delete p.hu; delete p.bc; delete p.bmo; return JSON.stringify(p); }
@@ -7306,7 +7287,6 @@ function applyPull(data) {
   if (data.prefs && +data.prefs.bc > (S.bc || 0)) S.bc = +data.prefs.bc;
   if (data.prefs && +data.prefs.bmo > (S.bmo || 0)) S.bmo = +data.prefs.bmo;
   if (data.prefs && data.prefs.td && typeof data.prefs.td === 'object' && !S.tdis) S.tdis = data.prefs.td;
-  if (data.prefs && data.prefs.so && typeof data.prefs.so === 'object') { S.staleOk = S.staleOk || {}; Object.keys(data.prefs.so).forEach(function (k) { S.staleOk[k] = 1; }); }
   if (data.prefs && data.prefs.ap && typeof data.prefs.ap === 'object' && (!S.autopay || (+data.prefs.at || 0) > (S.prefsAt || 0) && !S.outbox.some(function (op) { return op.op === 'prefs'; }))) S.autopay = data.prefs.ap;
   if (data.prefs && data.prefs.bm && typeof data.prefs.bm === 'object') { S.bmark = S.bmark || {}; Object.keys(data.prefs.bm).forEach(function (k) { if (!S.bmark[k]) S.bmark[k] = data.prefs.bm[k]; }); }
   if ((data.v || 0) >= 10) S.prefsPulled = 1;
@@ -7571,16 +7551,6 @@ document.addEventListener('click', function (e) {
       var rcc = v, rcb = budgetOf(rcc, nowYM());
       openSheet('recuredit', { name: '', preset: { name: rcc, c: rcc, a: rcb || '', day: NOW.getDate() } }); break;
     case 'recursug': var sg = recurSuggestions()[+v]; if (sg) openSheet('recuredit', { name: '', preset: sg }); break;
-    case 'staledrop':
-      var sd = staleIncome(), Ps = planState(); if (!sd.length) break;
-      if (planDraftCount()) { toast('Finish or discard your other changes first'); break; }
-      Ps.mode = 'from'; Ps.key = nowYM(); Ps.vals = {};
-      sd.forEach(function (x) { Ps.vals[x.c] = { a: 0, g: 'inc', rm: 1 }; });
-      Ps.step = 'edit'; UI.popen = { inc: true }; save(); render(); window.scrollTo(0, 0); viewIn();
-      toast('Check it over, then tap Review & save');
-      break;
-    case 'stalekeep':
-      S.staleOk = S.staleOk || {}; staleIncome().forEach(function (x) { S.staleOk[x.c] = 1; }); save(); queuePrefs(); flushSoon(); keepScroll(render); break;
     case 'rcauto':
       e.preventDefault(); $('rc_auto').value = v;
       var rca = document.querySelectorAll('[data-act=rcauto]');
