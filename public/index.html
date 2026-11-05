@@ -631,13 +631,14 @@ body.on-plan main{padding-bottom:190px}
 .calnav button:disabled{opacity:.35}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .cdow{font-style:normal;text-align:center;font-size:11px;font-weight:700;color:var(--t3);padding-bottom:2px}
-.cday{aspect-ratio:1;border-radius:8px;background:var(--p2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--t2);min-width:0;line-height:1.1}
-.cday small{font-size:9px;font-weight:700;opacity:.85}
+.cday{aspect-ratio:1;border-radius:8px;background:var(--p2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--t2);min-width:0;min-height:0;overflow:hidden;line-height:1.1;padding:0;box-sizing:border-box;font-weight:500}
+.cday small{font-size:9px;font-weight:700;opacity:.85;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .cday.l1{background:color-mix(in srgb,var(--ac) 22%,var(--p2))}
 .cday.l2{background:color-mix(in srgb,var(--ac) 45%,var(--p2));color:var(--t1)}
 .cday.l3{background:color-mix(in srgb,var(--ac) 70%,var(--p2));color:var(--bf)}
 .cday.l4{background:var(--ac);color:var(--bf)}
-.cday.today{box-shadow:inset 0 0 0 2px var(--t1)}
+.cday.ctoday{box-shadow:inset 0 0 0 2px var(--ac);font-weight:700}
+.cday.ctoday.l3,.cday.ctoday.l4{box-shadow:inset 0 0 0 2px var(--bf)}
 .cday.fut{opacity:.45}
 .cday:disabled{cursor:default}
 .calleg{display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:8px;font-size:11px;color:var(--t3)}
@@ -942,6 +943,29 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 
 
 
+
+/* 2.25 */
+.dw{position:relative;display:block}
+.dw>.cur{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t2);font-weight:600;pointer-events:none}
+.dw>input{width:100%;box-sizing:border-box;padding-left:26px !important}
+.pcedit .pcdw{flex:1;min-width:0}
+.pcedit .pcdw input{text-align:left;padding-left:30px !important}
+.pcdw>.cur{font-family:var(--fdisp);font-size:24px}
+.tpdw{flex:0 0 110px;width:110px}
+.tpmode{margin-bottom:10px}
+.bfoot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 16px 12px;border-top:1px solid var(--b1);font-size:13px;color:var(--t2)}
+.bfoot span{flex:1 1 160px;min-width:0}
+.lcells+.bfoot{border-top:0;padding:0 20px 14px}
+.psegs{position:sticky;top:calc(env(safe-area-inset-top) + 6px);z-index:6;margin-bottom:12px}
+@media (max-width:699px){.psegs{top:calc(env(safe-area-inset-top) + 50px)}}
+.tsect{margin-top:14px}
+.tpill{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:700;vertical-align:2px}
+.tpill.now{background:var(--ac);color:var(--bf)}
+.tpill.soon{background:var(--acd);color:var(--ac)}
+.tpill.past{background:var(--p2);color:var(--t3)}
+.tripwrap.past .tripcard{opacity:.78}
+.tripwrap.now .tripcard{border-color:var(--ac);box-shadow:0 0 0 1px var(--ac)}
+.chip.ghost{background:transparent;border-style:dashed;color:var(--t3)}
 /* ===================== 2.24: motion that feels native ===================== */
 .pressed{transform:scale(var(--press,.97));transition:transform .1s ease-out !important}
 :where(button,a[href],[role=button],.tx,.crow,.scrow){transition:transform .42s cubic-bezier(.34,1.45,.64,1)}
@@ -955,16 +979,6 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
   #sheet{transition:transform .3s cubic-bezier(.32,.72,0,1),visibility 0s .3s}
   #sheet.on{transition:transform .44s cubic-bezier(.32,.72,0,1)}
   #toast{transition:transform .38s cubic-bezier(.32,.72,0,1),opacity .2s}
-}
-@media (max-width:699px) and (prefers-reduced-motion:no-preference){
-  body.sheetprep #app{clip-path:inset(var(--ly,0px) 0 calc(100% - var(--ly,0px) - var(--vh,100vh)) 0 round 0px);transform-origin:50% var(--ly,0px);
-    transition:transform .44s cubic-bezier(.32,.72,0,1),clip-path .44s cubic-bezier(.32,.72,0,1)}
-  body.sheeted #app{transform:translateY(calc(env(safe-area-inset-top) + 10px)) scale(.93);clip-path:inset(var(--ly,0px) 0 calc(100% - var(--ly,0px) - var(--vh,100vh)) 0 round 16px)}
-  html:has(body.sheetprep),body.sheetprep{background:#070b0b}
-  .tabs{transition:transform .36s cubic-bezier(.32,.72,0,1)}
-  body.sheeted .tabs{transform:translateY(110%)}
-  #fab{transition:transform .2s ease,opacity .2s}
-  body.sheeted #fab{opacity:0;pointer-events:none}
 }
 /* entries arriving */
 .freshhi{background:var(--acd) !important;transition:background 1s ease .35s}
@@ -1013,7 +1027,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 .rcfreq{display:flex;align-items:center;gap:8px}
 .rcfreq input{width:64px;min-height:44px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--p1);padding:0 10px;font-size:16px;text-align:center}
 .rcfreq .selw{flex:1}
-.rcpre{margin-top:8px}
+.rcpre{margin:0 0 10px}
 .rrow.none{opacity:.7}
 /* ===================== 2.22: computer layouts that use the whole screen ===================== */
 .sidex{display:none}
@@ -1158,7 +1172,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.24';
+var VERSION = '2.25';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1853,7 +1867,7 @@ function calendarHtml() {
   for (var d = 1; d <= dim; d++) {
     var v = days[d] || 0, lv = !v ? 0 : v <= cuts[0] ? 1 : v <= cuts[1] ? 2 : v <= cuts[2] ? 3 : 4;
     var fut = k === cur && d > today;
-    h += '<button class="cday l' + lv + (d === today ? ' today' : '') + (fut ? ' fut' : '') + '"' + (v ? ' data-act="calday" data-v="' + y + '-' + pad(m + 1) + '-' + pad(d) + '"' : ' disabled') +
+    h += '<button class="cday l' + lv + (d === today ? ' ctoday' : '') + (fut ? ' fut' : '') + '"' + (v ? ' data-act="calday" data-v="' + y + '-' + pad(m + 1) + '-' + pad(d) + '"' : ' disabled') +
       ' aria-label="' + MON[m] + ' ' + d + (v ? ', ' + money(v) : ', nothing') + '"><span>' + d + '</span>' + (v ? '<small>' + moneyShort(v) + '</small>' : '') + '</button>';
   }
   h += '</div><div class="calleg"><span>less</span><i class="cday l1"></i><i class="cday l2"></i><i class="cday l3"></i><i class="cday l4"></i><span>more</span></div>';
@@ -2546,7 +2560,7 @@ function viewMonth() {
 
   var side = '';
   if (!empty) {
-    if (!isFuture) side += billsLineHtml(key);
+    if (!isFuture && groups.indexOf('data-v="bills"') < 0) side += billsLineHtml(key);      // the Bills group carries this when it's there
     // trips whose dates touch this month, plus any with spending logged in it
     var mStart = y + '-' + pad(m + 1) + '-01', mEnd = y + '-' + pad(m + 1) + '-' + pad(dim), tnames = {};
     S.trips.forEach(function (t) { if (t.start && t.start <= mEnd && tripEnd(t) >= mStart) tnames[low(t.name)] = t.name; });
@@ -2609,6 +2623,7 @@ function latestHtml(key) {
 function groupOpen(gid, rows) {
   S.mopen = S.mopen || {};
   if (S.mopen[gid] !== undefined) return S.mopen[gid];
+  if (!window.__groupsAuto) return false;
   return rows.some(function (r) { return gid !== 'save' && gid !== 'give' && !r.yr && r.bud > 0 && r.spent - r.bud > 0.5; });   // something over budget: show it
 }
 function monthGroupHtml(g, rows, gs, gb, pace) {
@@ -2630,7 +2645,7 @@ function monthGroupHtml(g, rows, gs, gb, pace) {
       (FLEX[g.id] && pace < 1 && gb > 0 ? '<b style="left:' + Math.min(99, pace * 100).toFixed(1) + '%"></b>' : '') + '</span><i class="chev' + (open ? ' up' : '') + '"></i></button>';
     lh += '<div class="mgbody"><div class="mgin"><div class="lcells">';
     rows.forEach(function (row) { lh += slimCatRow(row, g.id, pace); });
-    return lh + '</div></div></div></section>';
+    return lh + '</div>' + (g.id === 'bills' ? billsFootHtml() : '') + '</div></div></section>';
   }
   var h = '<section class="card mgroup' + (open ? ' open' : '') + '"><button class="mghead" data-act="mgrp" data-v="' + g.id + '" aria-expanded="' + open + '">' +
     '<span class="mgname"><b>' + g.name + '</b><small><span data-count="' + gs + '" data-ck="gs' + g.id + '">' + money(gs) + '</span> of ' + money(gb) + (over && g.id !== 'save' && g.id !== 'give' ? ' · <span class="over">' + over + ' over</span>' : '') + '</small></span>' +
@@ -2639,6 +2654,7 @@ function monthGroupHtml(g, rows, gs, gb, pace) {
     (FLEX[g.id] && pace < 1 && gb > 0 ? '<b style="left:' + (pace * 100).toFixed(1) + '%"></b>' : '') + '</span></button>';
   h += '<div class="mgbody"><div class="mgin">';
   rows.forEach(function (row) { h += slimCatRow(row, g.id, pace); });
+  if (g.id === 'bills') h += billsFootHtml();
   return h + '</div></div></section>';
 }
 function slimCatRow(row, gid, pace) {
@@ -2677,6 +2693,18 @@ function billRemindHtml(key) {
       (x.d < 0 ? 'was due ' + shortDate(dueDate(x.b, key)) + ' — not logged yet' : x.d === 0 ? 'due today' : 'due in ' + x.d + ' day' + (x.d === 1 ? '' : 's')) + '</small></div>' +
       '<button class="rlog" data-act="recurlog" data-v="' + esc(x.b.name) + '" data-k="' + key + '">Log</button></div>';
   }).join('') + '</section>';
+}
+// inside the Bills group: what's left to check off, with the due dates one tap away
+function billsFootHtml() {
+  var key = UI.ym === null ? nowYM() : UI.ym;
+  if (!S.recur.length) {
+    var sug = key === nowYM() ? recurSuggestions() : [];
+    return '<div class="bfoot"><span>' + (sug.length ? sug.length + ' look like they repeat' : 'Get asked to check bills off when they’re due') + '</span><button class="chip" data-act="recur">Set up bills</button></div>';
+  }
+  var list = billsInMonth(key), todo = list.filter(function (x) { return x.st.s !== 'paid' && x.st.s !== 'skip'; });
+  return '<div class="bfoot"><span>' + (todo.length ? todo.length + ' to check off · next: ' + esc(todo[0].b.name) + ' ' + shortDate(todo[0].d) : 'All checked off ✓') + '</span>' +
+    (todo.length && key === nowYM() ? '<button class="chip on" data-act="billsopen">Check off</button>' : '') +
+    '<button class="chip" data-act="recurmonth" data-v="' + key + '">Due dates</button></div>';
 }
 // …and one line further down that opens the full list
 function billsLineHtml(key) {
@@ -3157,7 +3185,7 @@ function newCatForm() {
     h += '<div class="flabel">Group</div><div class="cchips" id="pk_groups">' + GROUPS.map(function (g, i) {
       return '<button type="button" class="chip' + ((PICK.gid || 'once') === g.id ? ' on' : '') + '" data-act="pkgroup" data-v="' + g.id + '">' + g.name + '</button>';
     }).join('') + '</div>' +
-    '<div class="field" style="margin-top:12px"><label for="pk_amt">Monthly budget (optional)</label><input id="pk_amt" inputmode="decimal" placeholder="$0"></div>' +
+    '<div class="field" style="margin-top:12px"><label for="pk_amt">Monthly budget (optional)</label><div class="dw"><span class="cur" aria-hidden="true">$</span><input id="pk_amt" inputmode="decimal" placeholder="0"></div></div>' +
     '<div class="hint" style="margin:-6px 0 10px">Budget starts ' + MONTHS[ymM(PICK.key)] + ' ' + ymY(PICK.key) + ', the month of this entry.</div>';
   }
   h += '<div class="btns"><button class="btn" data-act="pkback">Back</button><button class="btn pri" data-act="pkcreate">Create &amp; use</button></div></div>';
@@ -3845,6 +3873,7 @@ function planHomeHtml() {
   }
   var nextJan = ymKey(ymY(cur) + 1, 0);
   if (isWide()) return planHomeWide(cur, t, inc, left, pct, n, P, nextJan);
+  if (!isRail() && !window.__planAll) return planHomePhone(h, cur, nextJan);
   h = '<div class="pcols"><div class="pcol">' + h + '<div class="psect">This month</div>';
   h += '<div class="pchoices"><button class="pchoice" data-act="pgo" data-v="now"><span class="pico">✎</span><span><b>Change a budget</b><small>Raise or lower a category for ' + MONTHS[ymM(cur)] + ', or from ' + MONTHS[ymM(cur)] + ' on.</small></span><em>›</em></button></div>';
   h += planPayHtml();
@@ -3859,6 +3888,24 @@ function planHomeHtml() {
   return h;
 }
 
+function planHomePhone(top, cur, nextJan) {
+  var sec = UI.psec || 'month';
+  var h = '<div class="seg psegs" role="tablist">' + [['month', 'This month'], ['ahead', 'Ahead'], ['goals', 'Goals']].map(function (x) {
+    return '<button class="' + (sec === x[0] ? 'on' : '') + '" data-act="psec" data-v="' + x[0] + '" role="tab" aria-selected="' + (sec === x[0]) + '">' + x[1] + '</button>';
+  }).join('') + '</div><div class="ppane" data-p="' + sec + '">';
+  if (sec === 'month') {
+    h += top + '<div class="pchoices"><button class="pchoice" data-act="pgo" data-v="now"><span class="pico">✎</span><span><b>Change a budget</b><small>Raise or lower a category for ' + MONTHS[ymM(cur)] + ', or from ' + MONTHS[ymM(cur)] + ' on.</small></span><em>›</em></button></div>' + planPayHtml();
+  } else if (sec === 'ahead') {
+    h += planComingHtml() + '<div class="pchoices"><div class="pchoice"><span class="pico">→</span><span><b>Plan ahead</b><small>Set up a coming month or next year.</small>' +
+      '<span class="pchips"><button class="chip" data-act="pgo" data-v="next">' + MONTHS[ymM(cur + 1)] + (ymY(cur + 1) !== ymY(cur) ? ' ' + ymY(cur + 1) : '') + '</button>' +
+      (nextJan > cur + 1 ? '<button class="chip" data-act="pgo" data-v="year">' + ymY(nextJan) + '</button>' : '') + '</span></span></div>' +
+      '<button class="pchoice" data-act="pgo" data-v="whatif"><span class="pico">?</span><span><b>Try a what-if</b><small>What if I spent like my average, or made a different income? Nothing saves unless you choose.</small></span><em>›</em></button></div>';
+  } else {
+    h += goalsCardHtml(true) + planHistoryHtml() +
+      '<div class="hint" style="text-align:center;margin-top:14px">Made a typo in an old month? <button class="linkbtn" data-act="pgo" data-v="fix">Correct a past budget</button></div>';
+  }
+  return h + '</div>';
+}
 function planHomeWide(cur, t, inc, left, pct, n, P, nextJan) {
   var bm = bmap(cur), g = {};
   Object.keys(bm).forEach(function (c) { if (!bm[c].rm) g[bm[c].g] = (g[bm[c].g] || 0) + bm[c].a; });
@@ -3949,7 +3996,7 @@ function planCatHtml(c) {
   var h = '<div class="shead"><h2>' + esc(c) + '</h2><button data-act="close">Cancel</button></div>';
   h += '<div class="sub" style="margin:-6px 0 12px">' + groupLabel(g) + ' · ' + (P.mode === 'fix' ? 'correcting ' : 'for ') + planMonthName(P.key) + (P.mode === 'fix' ? '' : ' on') + '</div>';
   h += '<div class="pcedit"><button class="pstep" data-act="pcstep" data-v="-' + step + '" aria-label="Less">−' + step + '</button>' +
-    '<input id="pc_amt" class="amtin" inputmode="decimal" value="' + fmtAmt(amt) + '" aria-label="' + esc(c) + ' budget"><button class="pstep" data-act="pcstep" data-v="' + step + '" aria-label="More">+' + step + '</button></div>';
+    '<div class="dw pcdw"><span class="cur" aria-hidden="true">$</span><input id="pc_amt" class="amtin" inputmode="decimal" value="' + fmtAmt(amt) + '" aria-label="' + esc(c) + ' budget"></div><button class="pstep" data-act="pcstep" data-v="' + step + '" aria-label="More">+' + step + '</button></div>';
   var refs = [];
   if (base && !base.rm) refs.push(['Current budget', was]);
   if (avg) refs.push(['Your 6-month average', g === 'bills' ? r2(avg) : round5(avg)]);
@@ -4717,7 +4764,7 @@ function recurListHtml() {
     });
     h += '</section>';
   }
-  h += '<button class="btn pri" style="width:100%;margin-top:12px" data-act="recuredit" data-v="">+ Add a bill</button>';
+  h += '<div class="btns stickybar"><button class="btn pri" data-act="recuredit" data-v="" id="rc_add">+ Add a bill</button></div>';
   return h;
 }
 function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
@@ -4729,12 +4776,12 @@ function recurEditHtml(name, preset) {
   h += '<form class="form" id="recurform" data-old="' + esc(b ? b.name : '') + '" autocomplete="off" style="border:0;background:none;padding:0">' +
     '<div class="field"><label for="rc_name">Name</label><input id="rc_name" value="' + esc(v.name) + '" placeholder="e.g. rent"></div>' +
     '<div class="field"><label for="rc_c">Category</label><select id="rc_c">' + catList('e').map(function (c) { return '<option' + (low(v.c) === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div>' +
-    '<div class="row2"><div class="field"><label for="rc_a">Amount</label><input id="rc_a" inputmode="decimal" value="' + (v.a ? fmtAmt(v.a) : '') + '" placeholder="$0"></div>' +
-    '<div class="field"><label for="rc_next">Next due</label><input id="rc_next" type="date" value="' + nx + '"></div></div>' +
-    '<div class="field"><span class="flabel">Repeats</span><div class="rcfreq"><span>Every</span><input id="rc_every" inputmode="numeric" aria-label="How many" value="' + ev + '">' +
-    '<label class="selw"><span class="sr">Unit</span><select id="rc_unit">' + [['w', 'week(s)'], ['m', 'month(s)'], ['y', 'year(s)']].map(function (o) { return '<option value="' + o[0] + '"' + (u === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label></div>' +
-    '<div class="chips rcpre">' + [[1, 'm', 'Monthly'], [2, 'w', 'Every 2 weeks'], [6, 'm', 'Every 6 months'], [1, 'y', 'Yearly']].map(function (p) {
-      return '<button type="button" class="chip' + (ev === p[0] && u === p[1] ? ' on' : '') + '" data-act="rcpre" data-v="' + p[0] + '" data-u="' + p[1] + '">' + p[2] + '</button>'; }).join('') + '</div></div>' +
+    '<div class="field"><label for="rc_a">Amount</label><div class="dw"><span class="cur" aria-hidden="true">$</span><input id="rc_a" inputmode="decimal" value="' + (v.a ? fmtAmt(v.a) : '') + '" placeholder="0.00"></div></div>' +
+    '<div class="field"><span class="flabel">How often</span><div class="chips rcpre">' + [[1, 'm', 'Monthly'], [2, 'w', 'Every 2 weeks'], [6, 'm', 'Every 6 months'], [1, 'y', 'Yearly']].map(function (p) {
+      return '<button type="button" class="chip' + (ev === p[0] && u === p[1] ? ' on' : '') + '" data-act="rcpre" data-v="' + p[0] + '" data-u="' + p[1] + '">' + p[2] + '</button>'; }).join('') + '</div>' +
+    '<div class="rcfreq"><span>Every</span><input id="rc_every" inputmode="numeric" aria-label="How many" value="' + ev + '">' +
+    '<label class="selw"><span class="sr">Unit</span><select id="rc_unit">' + [['w', 'week(s)'], ['m', 'month(s)'], ['y', 'year(s)']].map(function (o) { return '<option value="' + o[0] + '"' + (u === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label></div></div>' +
+    '<div class="field"><label for="rc_next">Next due</label><input id="rc_next" type="date" value="' + nx + '"></div>' +
     '<div class="hint" style="margin-top:4px">Piggy asks you to check it off when it’s due — at the start of the month and each time you open the app until it’s marked paid.</div>' +
     '<div class="hint" id="rc_err" role="alert"></div>' +
     '<div class="btns">' + (b ? '<button type="button" class="btn danger" data-act="recurdel" id="rc_del">Delete</button>' : '') + '<button type="submit" class="btn pri" id="rc_save">' + (b ? 'Save' : 'Add bill') + '</button></div></form>';
@@ -4849,10 +4896,21 @@ function trendTrips() {
   if (!list.length) {
     h += '<div class="card empty"><b>No trips yet</b>Make a trip, then mark expenses as part of it — when you log them, or several at once from the trip’s page. Trip spending shows in its own color on charts and stays out of your monthly budget.</div>';
   }
+  var today = todayStr(), lastSec = '';
+  var phase = function (t) { return !t.start ? 'later' : t.start <= today && today <= tripEnd(t) ? 'now' : t.start > today ? 'soon' : 'past'; };
+  var order = { now: 0, soon: 1, later: 2, past: 3 };
+  list = list.slice().sort(function (a, b) {
+    var pa = phase(a), pb = phase(b); if (pa !== pb) return order[pa] - order[pb];
+    return pa === 'soon' ? (a.start < b.start ? -1 : 1) : ((b.start || '') < (a.start || '') ? -1 : 1);
+  });
   list.forEach(function (t) {
-    var st = tripStats(t.name), days = tripDays(t), tb = tripBudget(t), over = tb && st.total > tb;
-    h += '<div class="tripwrap"><button class="tedit" data-act="tripedit" data-v="' + esc(t.name) + '" aria-label="Edit ' + esc(t.name) + '">Edit</button><button class="card tripcard" data-act="tripview" data-v="' + esc(t.name) + '">' +
-      '<div class="l1"><b><i class="tdot"></i>' + esc(t.name) + '</b><em>' + money(st.total) + '</em></div>' +
+    var st = tripStats(t.name), days = tripDays(t), tb = tripBudget(t), over = tb && st.total > tb, ph = phase(t);
+    var sec = ph === 'now' ? 'On now' : ph === 'past' ? 'Past trips' : 'Coming up';
+    if (sec !== lastSec) { h += '<div class="psect tsect">' + sec + '</div>'; lastSec = sec; }
+    var dn = ph === 'now' ? Math.round((parseD(today) - parseD(t.start)) / 86400000) + 1 : 0, din = ph === 'soon' ? Math.round((parseD(t.start) - parseD(today)) / 86400000) : 0;
+    var pill = ph === 'now' ? '<span class="tpill now">Day ' + dn + ' of ' + days + '</span>' : ph === 'soon' ? '<span class="tpill soon">In ' + din + ' day' + (din === 1 ? '' : 's') + '</span>' : ph === 'later' ? '<span class="tpill soon">No dates</span>' : '<span class="tpill past">Done</span>';
+    h += '<div class="tripwrap ' + ph + '"><button class="tedit" data-act="tripedit" data-v="' + esc(t.name) + '" aria-label="Edit ' + esc(t.name) + '">Edit</button><button class="card tripcard" data-act="tripview" data-v="' + esc(t.name) + '">' +
+      '<div class="l1"><b><i class="tdot"></i>' + esc(t.name) + pill + '</b><em>' + money(st.total) + '</em></div>' +
       '<div class="l2">' + tripRange(t) + (days ? ' · ' + days + ' day' + (days === 1 ? '' : 's') : '') + ' · ' + st.items.length + ' entr' + (st.items.length === 1 ? 'y' : 'ies') + '</div>' +
       (tb ? '<div class="bar tbar"><i class="' + (over ? 'over' : '') + '" style="width:' + Math.min(100, st.total / tb * 100).toFixed(1) + '%"></i></div>' +
         '<div class="l2">' + (over ? '<span class="up">' + money(st.total - tb) + ' over</span>' : money(tb - st.total) + ' left') + ' of ' + money(tb) + '</div>' : '') +
@@ -4863,7 +4921,8 @@ function trendTrips() {
   for (var k = cur; k > cur - 18 && hints.length < 3; k--) {
     var amt = 0;
     S.tx.forEach(function (x) { if (x.k === 'e' && !x.tr && ymKey(x.y, x.m) === k && TRAVEL_CATS.test(low(x.c))) amt += x.a; });
-    if (amt > 50) hints.push({ k: k, a: amt });
+    var dis = (S.tdis || {})[k];
+    if (amt > 50 && !(dis && amt <= +dis + 0.5)) hints.push({ k: k, a: amt });      // put away: back only if more travel lands in that month
   }
   if (hints.length) {
     h += '<section class="card"><div class="ghead"><h3>Travel not linked to a trip</h3></div>';
@@ -4871,7 +4930,8 @@ function trendTrips() {
       h += '<div class="crow"><div class="l1"><b>' + MONTHS[ymM(x.k)] + ' ' + ymY(x.k) + '</b><em>' + money(x.a) + '</em></div>' +
         '<div class="l2">travel and trip expenses</div>' +
         '<div class="tlinks">' + (S.trips.length ? '<button class="chip" data-act="tripassign" data-v="' + x.k + '">Add to a trip</button>' : '') +
-        '<button class="chip" data-act="tripfrommonth" data-v="' + x.k + '">Make a trip for this</button></div></div>';
+        '<button class="chip" data-act="tripfrommonth" data-v="' + x.k + '">Make a trip for this</button>' +
+        '<button class="chip ghost" data-act="tdismiss" data-v="' + x.k + '" data-a="' + r2(x.a) + '">Not a trip</button></div></div>';
     });
     h += '</section>';
   }
@@ -5042,30 +5102,30 @@ function tripCatOptions(sel, extra) {
 }
 function tripLineHtml(c, a, extra) {
   return '<div class="tpl"><label class="selw"><span class="sr">Category</span><select data-tpc>' + tripCatOptions(c, extra) + '</select></label>' +
-    '<input data-tpa inputmode="decimal" placeholder="$0" aria-label="Budget" value="' + (a ? fmtAmt(a) : '') + '">' +
+    '<span class="dw tpdw"><span class="cur" aria-hidden="true">$</span><input data-tpa inputmode="decimal" placeholder="0" aria-label="Budget" value="' + (a ? fmtAmt(a) : '') + '"></span>' +
     '<button type="button" class="prm" data-act="tplrm" aria-label="Remove line">×</button></div>';
 }
 function tripFormSum() {
   var ins = document.querySelectorAll('#tp_lines [data-tpa]'), sum = 0;
   for (var i = 0; i < ins.length; i++) { var a = parseAmt(ins[i].value || '0'); if (!isNaN(a)) sum += a; }
-  var b = $('tp_budget'), has = ins.length > 0;
-  if (b) { b.readOnly = has; if (has) b.value = sum ? fmtAmt(sum) : ''; b.parentNode.classList.toggle('ro', has); }
-  var hint = $('tp_bhint'); if (hint) hint.textContent = has ? 'Adds up your category budgets.' : 'Or split it by category below.';
+  var hint = $('tp_bhint'); if (hint) hint.textContent = sum ? 'Total ' + money(sum) : 'The total is the categories added up.';
 }
 
 function tripEditHtml(name, preset) {
   var t = name ? tripByName(name) : null;
   var v = t || preset || { name: '', start: '', end: '', budget: '', notes: '' };
+  var byCat = UI.tpmode ? UI.tpmode === 'cat' : planSum(v.plan) > 0;
   var h = '<div class="shead"><h2>' + (t ? 'Edit trip' : 'New trip') + '</h2>' + (t ? '<button data-act="tripview" data-v="' + esc(t.name) + '">Cancel</button>' : '<button data-act="close">Cancel</button>') + '</div>';
-  h += '<form class="form" id="tripform" data-old="' + esc(t ? t.name : '') + '" autocomplete="off">' +
+  h += '<form class="form" id="tripform" data-old="' + esc(t ? t.name : '') + '" data-mode="' + (byCat ? 'cat' : 'total') + '" autocomplete="off">' +
     '<div class="field"><label for="tp_name">Name</label><input id="tp_name" value="' + esc(v.name) + '" placeholder="e.g. Japan"></div>' +
     '<div class="row2"><div class="field"><label for="tp_start">Start</label><input id="tp_start" type="date" value="' + esc(v.start || '') + '"></div>' +
-    '<div class="field"><label for="tp_end">End</label><input id="tp_end" type="date" value="' + esc(v.end || '') + '"></div></div>' +
-    '<div class="field' + (planSum(v.plan) ? ' ro' : '') + '"><label for="tp_budget">Trip budget (optional)</label><input id="tp_budget" inputmode="decimal" placeholder="$0" value="' + (tripBudget(v) ? fmtAmt(tripBudget(v)) : '') + '"' + (planSum(v.plan) ? ' readonly' : '') + '>' +
-      '<div class="hint" id="tp_bhint">' + (planSum(v.plan) ? 'Adds up your category budgets.' : 'Or split it by category below.') + '</div></div>' +
-    '<div class="field"><span class="flabel">Budget by category</span><div id="tp_lines">' +
+    '<div class="field"><label for="tp_end">End</label><input id="tp_end" type="date" value="' + esc(v.end || '') + '"' + (v.start ? ' min="' + esc(v.start) + '"' : '') + '></div></div>' +
+    '<div class="field"><span class="flabel">Trip budget (optional)</span><div class="seg tpmode" role="tablist">' +
+      '<button type="button" class="' + (byCat ? '' : 'on') + '" data-act="tpmode" data-v="total">One total</button><button type="button" class="' + (byCat ? 'on' : '') + '" data-act="tpmode" data-v="cat">By category</button></div>' +
+    '<div id="tp_totalbox"' + (byCat ? ' hidden' : '') + '><div class="dw"><span class="cur" aria-hidden="true">$</span><input id="tp_budget" inputmode="decimal" placeholder="0" aria-label="Trip budget" value="' + (!byCat && tripBudget(v) ? fmtAmt(tripBudget(v)) : '') + '"></div></div>' +
+    '<div id="tp_catbox"' + (byCat ? '' : ' hidden') + '><div id="tp_lines">' +
       Object.keys(v.plan || {}).map(function (c) { return tripLineHtml(c, v.plan[c], t ? Object.keys(tripStats(t.name).cat) : []); }).join('') + '</div>' +
-      '<button type="button" class="btn" style="width:100%;margin-top:6px" data-act="tpline">+ Add a category</button>' +
+      '<button type="button" class="btn" style="width:100%;margin-top:6px" data-act="tpline">+ Add a category</button><div class="hint" id="tp_bhint" style="margin-top:6px">' + (planSum(v.plan) ? 'Total ' + money(planSum(v.plan)) : 'The total is the categories added up.') + '</div></div>' +
       '<details class="itip"><summary>ⓘ <span>What this means</span></summary><div class="hint">Uses your normal expense categories, so nothing changes in your sheet. Trip spending never counts against your monthly budget.</div></details></div>' +
     '<div class="field"><label for="tp_notes">Notes</label><input id="tp_notes" value="' + esc(v.notes || '') + '" placeholder="optional"></div>' +
     '<div class="hint" id="tp_err" role="alert"></div>' +
@@ -5950,7 +6010,26 @@ function lockPage(on) {
   if (!on && b.classList.contains('locked')) { b.classList.remove('locked'); b.style.top = ''; window.scrollTo(0, LOCKY); }
 }
 
+var SHEET_STACK = [];
+// swiping down a sheet opened from another one goes back to that one; Close/Done still close everything
+function sheetBack() {
+  if (SHEET && SHEET_STACK.length) {
+    var prev = SHEET_STACK.pop(), sh = $('sheet');
+    SHEET = prev; UI.split = null;
+    renderSheet(); sh.scrollTop = prev.top || 0;
+    sh.style.transition = 'none'; sh.style.transform = 'translateY(40px)'; $('scrim').style.opacity = '';
+    void sh.offsetWidth; sh.style.transition = 'transform .32s ' + EASE_IOS; sh.style.transform = '';
+    setTimeout(function () { sh.style.transition = ''; }, 340);
+    return;
+  }
+  closeSheet();
+}
 function openSheet(kind, arg) {
+  if (SHEET && $('sheet').classList.contains('on') && SHEET.kind !== kind) {
+    var at = -1; SHEET_STACK.forEach(function (x, i) { if (x.kind === kind) at = i; });
+    if (at >= 0) SHEET_STACK = SHEET_STACK.slice(0, at);          // going back to one already open: unwind to it
+    else { SHEET.top = $('sheet').scrollTop; SHEET_STACK.push(SHEET); }
+  } else if (!SHEET) SHEET_STACK = [];
   SHEET = { kind: kind, arg: arg };
   UI.catTouched = false; UI.tripTouched = false; UI.catAuto = false;
   if (kind === 'settings') UI.open = {};      // every visit starts with the sections closed
@@ -5963,11 +6042,6 @@ function openSheet(kind, arg) {
   $('scrim').classList.add('on');
   $('sheet').classList.add('on');
   if (!wasOpen) {
-    if (isPhone() && !REDUCED) {
-      var ap = $('app'); clearTimeout(SHEETPREP);
-      ap.style.setProperty('--ly', LOCKY + 'px'); ap.style.setProperty('--vh', window.innerHeight + 'px');
-      document.body.classList.add('sheetprep'); void ap.offsetWidth; document.body.classList.add('sheeted');
-    }
     var lt = LAST_TAP.el;
     if (lt && Date.now() - LAST_TAP.at < 700 && lt.isConnected && kind !== 'add' && kind !== 'settings' && lt.offsetWidth > 200) growSheetFrom(lt);
   }
@@ -6010,11 +6084,7 @@ function sideExtra() {
 var SHEETPREP = 0;
 function closeSheet() {
   var wasEdit = SHEET && SHEET.kind === 'edit', was = SHEET && SHEET.kind;
-  if (document.body.classList.contains('sheeted')) {
-    document.body.classList.remove('sheeted'); clearTimeout(SHEETPREP);
-    SHEETPREP = setTimeout(function () { if (!SHEET) document.body.classList.remove('sheetprep'); }, 460);
-  }
-  $('app').style.transform = '';
+  SHEET_STACK = [];
   setTimeout(function () { playFresh(60); miniBar(); }, 320);
   SHEET = null;
   if (wasEdit && UI.edit) { UI.edit = null; if ($('txlist')) $('txlist').innerHTML = txListHtml(); }
@@ -6088,20 +6158,14 @@ function closeSheet() {
     s.style.transition = 'none';
     s.style.transform = 'translateY(' + dy + 'px)';
     $('scrim').style.opacity = String(Math.max(0, 1 - dy / 400));
-    // the page behind grows back toward full size as the sheet is pulled down
-    if (document.body.classList.contains('sheeted')) {
-      var p = Math.min(1, dy / Math.max(200, s.offsetHeight)), ap = $('app');
-      ap.style.transition = 'none';
-      ap.style.transform = 'translateY(calc((env(safe-area-inset-top) + 10px) * ' + (1 - p).toFixed(3) + ')) scale(' + (0.93 + 0.07 * p).toFixed(4) + ')';
-    }
   }, { passive: false });
   document.addEventListener('touchend', function () {
     if (!active) return;
     active = false;
     var s = el(), fast = dy > 40 && vel > 0.45;             // a quick flick closes it even from a short drag
-    s.style.transition = ''; $('app').style.transition = '';
-    if (dy > 110 || fast) closeSheet();
-    else { s.style.transform = ''; $('scrim').style.opacity = ''; $('app').style.transform = ''; }
+    s.style.transition = '';
+    if (dy > 110 || fast) sheetBack();
+    else { s.style.transform = ''; $('scrim').style.opacity = ''; }
   });
 })();
 
@@ -6607,7 +6671,9 @@ function submitTrip() {
   var f = $('tripform'), err = $('tp_err'), old = f.getAttribute('data-old');
   var t = { name: $('tp_name').value.trim(), start: $('tp_start').value, end: $('tp_end').value || $('tp_start').value,
     budget: parseAmt($('tp_budget').value || '0'), notes: $('tp_notes').value.trim(), plan: {} };
-  var lines = document.querySelectorAll('#tp_lines .tpl');
+  var byCat = f.getAttribute('data-mode') === 'cat';
+  if (byCat) t.budget = 0;                                 // one or the other, never both
+  var lines = byCat ? document.querySelectorAll('#tp_lines .tpl') : [];
   for (var li = 0; li < lines.length; li++) {
     var lc = low(lines[li].querySelector('[data-tpc]').value), la = parseAmt(lines[li].querySelector('[data-tpa]').value || '0');
     if (lc && la > 0) t.plan[lc] = (t.plan[lc] || 0) + la;
@@ -6916,7 +6982,7 @@ var PREF_KEYS = ['pal', 'mode', 'style', 'corners', 'cards', 'density', 'icon', 
 function prefsObj() {
   var cfg = {};
   PREF_KEYS.forEach(function (k) { cfg[k] = S.cfg[k]; });
-  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, pay: S.pay || null, up: S.up || [], hu: S.hu || 0, bc: S.bc || 0, bm: S.bmark || {}, bmo: S.bmo || 0, at: S.prefsAt || 0 };
+  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, pay: S.pay || null, up: S.up || [], hu: S.hu || 0, bc: S.bc || 0, bm: S.bmark || {}, bmo: S.bmo || 0, td: S.tdis || {}, at: S.prefsAt || 0 };
 }
 // "heads up seen" doesn't count as a change by itself: a phone that hasn't caught up mustn't send an older month back
 function prefsHash() { var p = prefsObj(); delete p.at; delete p.hu; delete p.bc; delete p.bmo; return JSON.stringify(p); }
@@ -7033,6 +7099,7 @@ function applyPull(data) {
   if (data.prefs && +data.prefs.hu > (S.hu || 0)) S.hu = +data.prefs.hu;
   if (data.prefs && +data.prefs.bc > (S.bc || 0)) S.bc = +data.prefs.bc;
   if (data.prefs && +data.prefs.bmo > (S.bmo || 0)) S.bmo = +data.prefs.bmo;
+  if (data.prefs && data.prefs.td && typeof data.prefs.td === 'object' && !S.tdis) S.tdis = data.prefs.td;
   if (data.prefs && data.prefs.bm && typeof data.prefs.bm === 'object') { S.bmark = S.bmark || {}; Object.keys(data.prefs.bm).forEach(function (k) { if (!S.bmark[k]) S.bmark[k] = data.prefs.bm[k]; }); }
   if ((data.v || 0) >= 10) S.prefsPulled = 1;
   CACHE = {}; VER++;
@@ -7355,6 +7422,12 @@ document.addEventListener('click', function (e) {
       $('txlist').innerHTML = txListHtml(); syncEditPanel(); refreshFilterBtn(); sideExtra();
       var amsel = $('a_m'); if (amsel) amsel.value = v;
       window.scrollTo(0, 0); break;
+    case 'psec':
+      if (UI.psec === v) break;
+      var pdir = ['month', 'ahead', 'goals'].indexOf(v) > ['month', 'ahead', 'goals'].indexOf(UI.psec || 'month') ? 1 : -1;
+      UI.psec = v; render(); window.scrollTo(0, 0);
+      var pp = document.querySelector('.ppane'); if (pp && pp.animate && !REDUCED) pp.animate([{ opacity: 0, transform: 'translateX(' + pdir * 18 + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: EASE_OUT });
+      break;
     case 'pgogrp':
       var pg2 = planState();
       if (pg2.mode === 'fix') pg2.vals = {};
@@ -7876,7 +7949,14 @@ document.addEventListener('click', function (e) {
       var lastA = $('tp_lines').querySelectorAll('[data-tpa]'); lastA[lastA.length - 1].focus();
       break;
     case 'tplrm': e.preventDefault(); el.parentNode.remove(); tripFormSum(); break;
-    case 'tripedit': openSheet('tripedit', { name: v || '' }); break;
+    case 'tripedit': UI.tpmode = null; openSheet('tripedit', { name: v || '' }); break;
+    case 'tpmode':
+      e.preventDefault(); UI.tpmode = v;
+      var tfm = $('tripform'); tfm.setAttribute('data-mode', v);
+      $('tp_totalbox').hidden = v !== 'total'; $('tp_catbox').hidden = v !== 'cat';
+      var tps = el.parentNode.querySelectorAll('button'); for (var tpi = 0; tpi < tps.length; tpi++) tps[tpi].classList.toggle('on', tps[tpi] === el);
+      if (v === 'cat' && !document.querySelector('#tp_lines .tpl')) { var tpb = document.querySelector('[data-act=tpline]'); if (tpb) tpb.click(); }
+      break;
     case 'tripassign': UI.assign = null; openSheet('tripassign', +v); break;
     case 'tassign': UI.assign.trip = v; var sa = $('sheet').scrollTop; renderSheet(); $('sheet').scrollTop = sa; break;
     case 'tasel': UI.assign.sel[v] = !UI.assign.sel[v]; var sb = $('sheet').scrollTop; renderSheet(); $('sheet').scrollTop = sb; break;
@@ -7887,9 +7967,15 @@ document.addEventListener('click', function (e) {
         if (!A.trip || !ids.length) return;
         tagEntries(A.trip, ids, []);
         UI.assign = null;
-        openSheet('tripv', A.trip); render(); flushSoon();
+        closeSheet(); keepScroll(render); flushSoon();
         toast('Added ' + ids.length + ' entr' + (ids.length === 1 ? 'y' : 'ies') + ' to ' + A.trip);
       });
+      break;
+    case 'tdismiss':
+      S.tdis = S.tdis || {}; S.tdis[v] = +el.getAttribute('data-a'); save(); queuePrefs(); flushSoon();
+      var tdr = el.closest('.crow');
+      var tdDone = function () { keepScroll(render); toast(MONTHS[ymM(+v)] + '’s travel put away', function () { delete S.tdis[v]; save(); queuePrefs(); keepScroll(render); flushSoon(); }); };
+      if (tdr) leaveThen(tdr, tdDone, 28); else tdDone();
       break;
     case 'tripfrommonth':
       var tk = +v, ty = ymY(tk), tm = ymM(tk);
@@ -8004,6 +8090,8 @@ document.addEventListener('input', function (e) {
 
 document.addEventListener('change', function (e) {
   var t = e.target;
+  // a trip's end date opens where the start is
+  if (t.id === 'tp_start' && $('tp_end')) { var te = $('tp_end'); te.min = t.value || ''; if (t.value && (!te.value || te.value < t.value)) te.value = t.value; }
   if (t.id === 'importFile' && t.files && t.files[0]) importData(t.files[0]);
   else if (/^cmp_(a|b|ya|yb)$/.test(t.id)) {
     var cs = cmpState(), f = t.id.slice(4);
@@ -8126,6 +8214,7 @@ function boot() {
       if (qs.get('name')) S.cfg.appname = qs.get('name').slice(0, 14);
     } catch (e) {}
     if (S.demo && !S.tx.length) buildDemo();
+    S.mopen = {}; UI.heroOpen = false;            // each time the app opens, every section starts closed
     applyTheme();
     render();
     var wantAdd = '';
