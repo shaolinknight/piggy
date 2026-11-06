@@ -1,0 +1,2135 @@
+/**
+ * PIGGY — connector between the Piggy app and your Google Sheet.   (script version 18)
+ *
+ * Paste this whole file into your sheet's  Extensions → Apps Script  editor (a new, empty sheet is fine),
+ * change PASSCODE below, then Deploy → New deployment → Web app
+ * (Execute as: Me, Who has access: Anyone). Copy the web-app URL into the app.
+ * After pasting a NEWER copy of this file: Deploy → Manage deployments → ✏️ → Version: New version → Deploy.
+ *
+ * What it does
+ *  - Reads every expenses/income tab that has a year in its name ("expenses 2027", "2027 income"…).
+ *  - Works from a brand-new, empty sheet: the tabs it needs are made the first time they're used.
+ *  - If the app logs something for a year that has no tab yet, it copies last year's entries tab
+ *    (same layout, header formulas updated to the new year) and clears the entries, or makes a plain one.
+ *  - Reads the yearly summary tabs ("2026 spending", "2024", …) for history before the logs existed.
+ *  - Keeps budgets in an "app budget" tab: one row per category per starting month, so mid-year
+ *    changes don't rewrite past months. It's filled from your yearly budget tabs ("2026 budget",
+ *    "2025 budget projected", …), each starting in its own January.
+ *  - Budget changes made in the app are also written into that year's budget tab: new amounts,
+ *    new categories (added to the right section) and removed categories (their row is deleted).
+ *    Planning a year with no budget tab yet builds a fresh one laid out like the app: sections,
+ *    monthly and yearly amounts, % of income and a short summary. Just that year's plan.
+ *  - Logging into a new year also makes that year's spending tab in the new layout: months across,
+ *    shaded against each month's budget, year-so-far columns and savings balances carried over.
+ *  - Expense tabs can carry three more columns, added the first time they're used:
+ *    "from savings" (which savings account paid for it), "owed back" (what others owe you for it)
+ *    and "paid back" (the date they did). Only your share counts toward your budget.
+ *  - Savings goals live in a "goals" tab.
+ *  - Alerts: runwayDailyCheck() emails you about bills due soon, categories over (or close to) budget,
+ *    and a recap of last month on the 1st. Run runwaySetUpAlerts() once from this editor to switch it on.
+ *  - Keeps a copy of the app's settings in an "app settings" tab, so reinstalling the app
+ *    brings your colours, icon and category order back.
+ *  - Trips: a "trips" tab lists each trip, and a "trip" column in the expense tabs marks which
+ *    entries belong to which trip.
+ *  - Adds, edits and deletes log rows the way you do by hand: newest first, grouped by month,
+ *    filling your blank pre-made month rows first, without breaking formula ranges.
+ *  - onEdit() fills in today's date in the "date" column when you type a new entry in the sheet.
+ *  - A "Runway" menu (desktop browser only) can re-read your budget tabs. The app has the same button.
+ */
+
+var PASSCODE = 'CHANGE-ME';          // ← pick any phrase; type the same phrase into the app
+var BUDGET_TAB = 'app budget';       // the tab the app reads budgets from (created automatically)
+var TRIPS_TAB = 'trips';
+var RECUR_TAB = 'recurring';             // the tab that lists your trips (created when you add the first one)
+var BUDGET_SOURCE = '';              // '' = find your budget tabs automatically.
+                                     // Or name one tab to always read from, e.g. '2026 budget'.
+
+var VERSION = 18;
+var VIEW_MARK = 'runway spending view';
+var GOALS_TAB = 'goals';
+var PREFS_TAB = 'app settings';
+var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+  'August', 'September', 'October', 'November', 'December'];
+var MON3 = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+var GROUPS = ['bills', 'giving', 'daily living', 'going out', 'one-time', 'savings', 'income'];
+var GIVING_CATS = /^(tithing|tithes?|donations?|charity|church|offering)$/;
+var GRID_SECTIONS = /^(income|revenue|recurring expenses|recurring savings|daily living|going out|one[ -]?time|discre\w*ionary|expenses|savings funds?|bills|giving|savings( accounts)?)$/;
+var GRID_STOP = /^(summary|savings amounts|trip expenses)$/;
+// Rows in a budget tab that name a section rather than a category.
+var SRC_SECTIONS = /^(income|revenue|recurring expenses|recurring savings|daily living|going out|one[ -]?time|discre\w*ionary|expenses|bills|giving)$/;
+// Rows that are totals or leftovers your sheet works out for itself.
+var SRC_SKIP = /^(all expenses|profit|gen\.? ?spend|net|remaining|monthly (profit|revenue|expenses)|over\/under|goal|averages?|category|budget for .*|made by runway.*|.+ total)$/;
+// Everything from here down is a different block (bottom-line rows, side calculations).
+var SRC_STOP = /^(dave ramsey|ramsey|summary|expense total|totals?)$/;
+var SEED_NOTE = /^from /i;            // rows the script filled in from a budget tab
+
+// ---------------------------------------------------------------- web entry points
+
+function doGet(e) { return respond_(route_((e && e.parameter) || {})); }
+
+function doPost(e) {
+  var body;
+  try { body = JSON.parse(e.postData.contents); } catch (err) { return respond_({ ok: false, error: 'bad_request' }); }
+  return respond_(route_(body));
+}
+
+function respond_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+var CUR_OID = '';      // id of the change being made, so a retried change is never done twice
+function route_(p) {
+  CUR_OID = p && p.oid ? String(p.oid).slice(0, 60) : '';
+  if (PASSCODE === 'CHANGE-ME') return { ok: false, error: 'set_passcode' };
+  if (String(p.pass || '') !== PASSCODE) return { ok: false, error: 'bad_passcode' };
+  try {
+    switch (p.action) {
+      case 'ping': return { ok: true, v: VERSION, name: SpreadsheetApp.getActive().getName() };
+      case 'pull': return pull_();
+      case 'add': return locked_(function () { return add_(p.tx); });
+      case 'update': return locked_(function () { return update_(p.ref, p.tx); });
+      case 'delete': return locked_(function () { return delete_(p.ref); });
+      case 'budget': return locked_(function () { var r = setBudget_(p.b); mirrorBudgets_([p.b]); refreshViews_(); return r; });
+      case 'budgetundo': return locked_(function () { var r = undoBudget_(p.c, +p.s); refreshViews_(); return r; });
+      case 'budgets': return locked_(function () {          // a whole plan saved at once
+        (p.list || []).forEach(function (b) { setBudget_(b); });
+        mirrorBudgets_(p.list || []);
+        refreshViews_();
+        return { ok: true, n: (p.list || []).length };
+      });
+      case 'rebuild': return locked_(function () { return rebuildBudget_(); });
+      case 'import': return locked_(function () { return importBudgetTab_(p.tab); });
+      case 'trip': return locked_(function () { return saveTrip_(p.trip, p.old); });
+      case 'tripdel': return locked_(function () { return deleteTrip_(p.name); });
+      case 'tag': return locked_(function () { return tagEntries_(p.trip, p.refs || [], p.untag || []); });
+      case 'spendtrips': return locked_(function () { return excludeTrips_(!!p.apply); });
+      case 'recur': return locked_(function () { return saveRecur_(p.bill, p.old); });
+      case 'recurdel': return locked_(function () { return deleteRecur_(p.name); });
+      case 'retiretrip': return locked_(function () { return retireTripExpenses_(!!p.apply); });
+      case 'yeartab': return locked_(function () { return yearTab_(+p.y); });
+      case 'prefs': return locked_(function () { return savePrefs_(p.prefs); });
+      case 'regroup': return locked_(function () { return regroup_(p.c, p.g); });
+      case 'goal': return locked_(function () { return saveGoal_(p.goal, p.old); });
+      case 'goaldel': return locked_(function () { return deleteGoal_(p.name); });
+      case 'alerts': return alertCheck_(true);
+      case 'alertsetup': return alertSetup_();
+      case 'spendview': return locked_(function () { return spendView_(p.tab, +p.y || 0); });
+      default: return { ok: false, error: 'unknown_action' };
+    }
+  } catch (err) {
+    return { ok: false, error: String((err && err.message) || err) };
+  }
+}
+
+function locked_(fn) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    // the app retries a change if it never heard back; if this one was already made, don't make it again
+    if (CUR_OID && opDone_(CUR_OID)) return { ok: true, dup: true };
+    var r = fn();
+    if (CUR_OID && r && r.ok) opMark_(CUR_OID);
+    return r;
+  } finally { lock.releaseLock(); }
+}
+var OPS_KEY = 'piggy.ops';
+function opList_() {
+  try { return JSON.parse(PropertiesService.getScriptProperties().getProperty(OPS_KEY) || '[]'); } catch (e) { return []; }
+}
+function opDone_(oid) { return opList_().indexOf(oid) >= 0; }
+function opMark_(oid) {
+  var l = opList_(); l.push(oid);
+  if (l.length > 500) l = l.slice(l.length - 500);      // the last 500 changes is plenty: retries come within minutes
+  PropertiesService.getScriptProperties().setProperty(OPS_KEY, JSON.stringify(l));
+}
+
+// ---------------------------------------------------------------- dates
+// Apps Script and your spreadsheet can be in different time zones. A date written as
+// "midnight" in the script's zone shows up as the evening before in yours, so every date
+// is written as midnight in the SPREADSHEET's zone, and dates an older version of this
+// script wrote the other way are recognised and corrected.
+
+function ssTz_() { return SpreadsheetApp.getActive().getSpreadsheetTimeZone(); }
+function scriptTz_() { try { return Session.getScriptTimeZone(); } catch (e) { return ssTz_(); } }
+function pad2_(n) { return (n < 10 ? '0' : '') + n; }
+
+function cellDate_(y, m, d) {        // m is 0-11
+  return Utilities.parseDate(y + '-' + pad2_(m + 1) + '-' + pad2_(d || 1), ssTz_(), 'yyyy-MM-dd');
+}
+
+// A date cell → 'yyyy-MM-dd' as you see it in the sheet (old script-zone dates corrected).
+function cellDay_(v) {
+  var tz = ssTz_(), stz = scriptTz_();
+  if (tz === stz || Utilities.formatDate(v, tz, 'HH:mm:ss') === '00:00:00') return Utilities.formatDate(v, tz, 'yyyy-MM-dd');
+  if (Utilities.formatDate(v, stz, 'HH:mm:ss') === '00:00:00') return Utilities.formatDate(v, stz, 'yyyy-MM-dd');
+  return Utilities.formatDate(v, tz, 'yyyy-MM-dd');
+}
+// Was this date written at script-zone midnight by an older version? (Then it displays a day early.)
+function legacyDate_(v) {
+  if (!(v instanceof Date) || isNaN(v)) return false;
+  var tz = ssTz_(), stz = scriptTz_();
+  return tz !== stz && Utilities.formatDate(v, tz, 'HH:mm:ss') !== '00:00:00' && Utilities.formatDate(v, stz, 'HH:mm:ss') === '00:00:00';
+}
+function dayToCell_(day) { var p = day.split('-'); return cellDate_(+p[0], +p[1] - 1, +p[2]); }
+
+function todayParts_() {
+  var s = Utilities.formatDate(new Date(), ssTz_(), 'yyyy-MM-dd').split('-');
+  return { y: +s[0], m: +s[1] - 1, d: +s[2] };
+}
+
+// ---------------------------------------------------------------- tab names
+
+// "expenses 2027", "Expenses 2027", "2027 expenses", "expense-2027", "income 2027"… → {k:'e'|'i', y:2027}
+function logName_(name) {
+  var s = String(name).trim().toLowerCase(), m;
+  if ((m = s.match(/^(expenses?|income)\s*[-_ ]?\s*(\d{4})$/))) return { k: m[1].charAt(0) === 'i' ? 'i' : 'e', y: +m[2] };
+  if ((m = s.match(/^(\d{4})\s*[-_ ]?\s*(expenses?|income)$/))) return { k: m[2].charAt(0) === 'i' ? 'i' : 'e', y: +m[1] };
+  return null;
+}
+
+// "2026 spending", "spending 2026", "2024" → 2026
+function gridName_(name) {
+  var s = String(name).trim().toLowerCase(), m;
+  if ((m = s.match(/^(\d{4})(\s+spending)?$/)) || (m = s.match(/^spending\s+(\d{4})$/))) return +m[1];
+  return 0;
+}
+
+function logSheets_() {
+  var out = [];
+  SpreadsheetApp.getActive().getSheets().forEach(function (sh) {
+    var n = logName_(sh.getName());
+    if (n) out.push({ sh: sh, k: n.k, y: n.y });
+  });
+  return out;
+}
+
+// ---------------------------------------------------------------- reading
+
+function pull_() {
+  var ss = SpreadsheetApp.getActive();
+  var out = { ok: true, v: VERSION, at: new Date().getTime(), tx: [], grids: [], budget: [], trips: [] };
+  var fixes = [];
+  ss.getSheets().forEach(function (sh) {
+    var n = logName_(sh.getName()), gy;
+    if (n) readLog_(sh, n.k, n.y, out.tx, fixes);
+    else if ((gy = gridName_(sh.getName()))) {
+      var g = readGrid_(sh, gy);
+      if (g) out.grids.push(g);
+    }
+  });
+  var bs = ss.getSheetByName(BUDGET_TAB) || findSheetCI_(BUDGET_TAB);
+  if (!bs) bs = locked_(function () { return budgetSheet_(true); });
+  var rows = readBudgetRows_(bs, fixes);
+  out.budget = rows.map(function (b) { return [b.s, b.g, b.c, b.a, b.row, b.note]; });
+  out.seed = seedStatus_(rows);
+  out.trips = readTrips_(fixes);
+  out.recur = readRecur_();
+  out.prefs = readPrefs_();
+  out.goals = readGoals_();
+  if (fixes.length) locked_(function () {        // correct dates an older version wrote a day early
+    fixes.forEach(function (f) { f.sh.getRange(f.r, f.c).setValue(f.v).setNumberFormat(f.fmt); });
+  });
+  return out;
+}
+
+// Each transaction goes out as a compact array:
+// [kind e|i, year, monthIndex, sheetRow, vendor, category, amount, notes, date yyyy-mm-dd or "", trip]
+function readLog_(sh, kind, year, out, fixes) {
+  var vals = sh.getDataRange().getValues();
+  var start = headerIndex_(vals) + 1;
+  var dcol = dateCol_(vals), tcol = tripColFound_(vals), fcol = headerCol_(vals, 'from savings'), ocol = headerCol_(vals, 'owed back'), pcol = headerCol_(vals, 'paid back');
+  for (var i = start; i < vals.length; i++) {
+    var row = vals[i];
+    var mi = monthIndex_(row[0]);
+    var amt = num_(row[3]);
+    if (mi < 0 || amt === null) continue;
+    var dv = row[dcol], day = dateStr_(dv);
+    if (fixes && legacyDate_(dv)) fixes.push({ sh: sh, r: i + 1, c: dcol + 1, v: dayToCell_(day), fmt: 'm/d/yyyy' });
+    var ow = ocol >= 0 ? num_(row[ocol]) : null;
+    out.push([kind, year, mi, i + 1, str_(row[1]), str_(row[2]), amt, str_(row[4]), day, tcol >= 0 ? str_(row[tcol]) : '',
+      fcol >= 0 ? str_(row[fcol]).toLowerCase() : '', ow === null ? 0 : ow, pcol >= 0 ? dateStr_(row[pcol]) : '']);
+  }
+}
+
+// Yearly grids: find the row with month headers, then read every labelled row under it.
+function readGrid_(sh, year) {
+  var vals = sh.getDataRange().getValues();
+  var hr = -1, cols = null;
+  for (var i = 0; i < Math.min(vals.length, 20) && hr < 0; i++) {
+    var c = {}, n = 0;
+    for (var j = 0; j < vals[i].length; j++) {
+      var mi = monthHeader_(vals[i][j]);
+      if (mi >= 0 && c[mi] === undefined) { c[mi] = j; n++; }
+    }
+    if (n >= 10) { hr = i; cols = c; }
+  }
+  if (hr < 0) return null;
+  var first = 999;
+  for (var k in cols) first = Math.min(first, cols[k]);
+  var rows = [], sec = '';
+  for (i = hr + 1; i < vals.length; i++) {
+    var label = '';
+    for (j = first - 1; j >= 0; j--) {
+      var v = vals[i][j];
+      if (typeof v === 'string' && v.trim() && num_(v) === null) { label = v.trim(); break; }
+    }
+    if (!label) continue;
+    var low = label.toLowerCase();
+    if (GRID_STOP.test(low)) break;
+    var mv = [], any = false;
+    for (var m = 0; m < 12; m++) {
+      var x = cols[m] === undefined ? null : num_(vals[i][cols[m]]);
+      mv.push(x === null ? 0 : Math.round(x * 100) / 100);
+      if (x) any = true;
+    }
+    if (!any) { if (GRID_SECTIONS.test(low)) sec = low; continue; }
+    rows.push([sec, label, mv]);
+  }
+  return { y: year, rows: rows };
+}
+
+// ---------------------------------------------------------------- budget ("app budget" tab)
+// Columns: A starting month | B group | C category | D monthly amount | E notes
+// For any month, a category's budget is the row with the latest starting month on or before it.
+
+function budgetSheet_(create) {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(BUDGET_TAB) || findSheetCI_(BUDGET_TAB);
+  if (sh || !create) return sh;
+  sh = ss.insertSheet(BUDGET_TAB);
+  sh.getRange(1, 1, 1, 5).setValues([['starting', 'group', 'category', 'monthly amount', 'notes']]);
+  sh.getRange(1, 7, 5, 1).setValues([
+    ['How this tab works'],
+    ['Each row is the budget for a category from its starting month onward.'],
+    ['To change a budget mid-year, add a NEW row with the new starting month — older months keep the old amount.'],
+    ['To add a category, add a row. To stop budgeting one, add a row with 0 and the note "removed".'],
+    ['Groups: bills, daily living, going out, one-time, savings, income']
+  ]);
+  try { sh.setFrozenRows(1); } catch (e) {}
+  groupValidation_(sh);
+  writeBudgetRows_(sh, seedRows_());
+  return sh;
+}
+
+// Writes budget rows (replacing whatever is below the header), grouped by category, oldest first.
+function writeBudgetRows_(sh, rows) {
+  var last = sh.getLastRow();
+  if (last > 1) sh.getRange(2, 1, last - 1, 5).clearContent();
+  if (!rows.length) return 0;
+  var out = rows.map(function (b) { return [cellDate_(Math.floor(b.s / 12), b.s % 12, 1), b.g, b.c, b.a, b.note || '']; });
+  sh.getRange(2, 1, out.length, 5).setValues(out);
+  sh.getRange(2, 1, out.length, 1).setNumberFormat('mmm yyyy');
+  sh.getRange(2, 4, out.length, 1).setNumberFormat('$#,##0.00');
+  return out.length;
+}
+
+// Your own budget tabs: "2026 budget", "2025 budget projected", "budget 2027"…
+// A tab with a year in its name is used for that year. One without a year ("budget 2.0")
+// is only a fallback, for when there are no year tabs at all.
+function budgetTabs_() {
+  var dated = [], undated = [];
+  SpreadsheetApp.getActive().getSheets().forEach(function (sh) {
+    var name = sh.getName().trim(), low = name.toLowerCase();
+    if (low.indexOf('budget') < 0 || low === String(BUDGET_TAB).toLowerCase()) return;
+    if (SPARE_TAB.test(low)) return;              // "test - 2027 budget", "2026 budget copy"…
+    var y = tabYear_(name);
+    if (y) dated.push({ sh: sh, name: name, y: y });
+    else undated.push({ sh: sh, name: name, y: 0 });
+  });
+  dated.sort(function (a, b) { return a.y - b.y; });
+  return dated.length ? dated : undated;
+}
+
+// Tabs that are experiments or backups, never the real thing.
+var SPARE_TAB = /^test\b|\btest\s*-|\bcopy\b|before trips|\bbackup\b|^old\b/i;
+
+function tabYear_(name) {
+  var m = String(name).toLowerCase().match(/(^|[^0-9])(20\d{2})([^0-9]|$)/);
+  return m ? +m[2] : 0;
+}
+
+// Budget tabs are laid out differently from each other, so find the column of category
+// names whose neighbour holds the amounts. (Percentage columns sit further right and
+// are never picked, because the amounts always sit immediately beside the labels.)
+function detectBudgetCols_(vals) {
+  var wide = 0;
+  for (var i = 0; i < vals.length; i++) wide = Math.max(wide, vals[i].length);
+  var best = { c: -1, hits: 0 };
+  for (var c = 0; c + 1 < Math.min(wide, 15); c++) {
+    var hits = 0;
+    for (var r = 0; r < vals.length; r++) {
+      var lab = str_(vals[r][c]);
+      if (!lab || num_(lab) !== null) continue;
+      if (num_(vals[r][c + 1]) !== null) hits++;
+    }
+    if (hits > best.hits) best = { c: c, hits: hits };
+  }
+  return best.hits >= 3 ? { label: best.c, value: best.c + 1 } : null;
+}
+
+// Where everything sits in a budget tab: each category's row, each section's header and
+// last category row, and where the list ends. Row numbers are 0-based.
+function budgetLayout_(vals, cols) {
+  var L = { rows: {}, sections: {}, cats: [], lastCat: -1, end: vals.length };
+  var sec = 'income';
+  L.sections.income = { header: -1, last: -1 };
+  for (var i = 0; i < vals.length; i++) {
+    var label = str_(vals[i][cols.label]);
+    if (!label || num_(label) !== null) continue;
+    var low = label.toLowerCase();
+    if (SRC_STOP.test(low) && L.cats.length >= 5) { L.end = i; break; }
+    if (SRC_SKIP.test(low) || SRC_STOP.test(low)) continue;
+    if (SRC_SECTIONS.test(low)) {
+      sec = groupFromSection_(low);
+      if (!L.sections[sec] || L.sections[sec].last < 0) L.sections[sec] = { header: i, last: -1 };
+      continue;
+    }
+    if (L.rows[low] !== undefined) continue;
+    L.rows[low] = i;
+    L.cats.push({ c: label, low: low, row: i, g: sec });
+    if (!L.sections[sec]) L.sections[sec] = { header: -1, last: -1 };
+    L.sections[sec].last = i;
+    L.lastCat = i;
+  }
+  return L;
+}
+
+// One budget tab → [{g, c, a}] in the order it's written.
+function readBudgetTab_(sh) {
+  var vals = sh.getDataRange().getValues();
+  var cols = detectBudgetCols_(vals);
+  if (!cols) return [];
+  var L = budgetLayout_(vals, cols);
+  return L.cats.map(function (x) {
+    var v = num_(vals[x.row][cols.value]);
+    return { g: x.g, c: x.c, a: v === null ? 0 : v };
+  });
+}
+
+// All budget tabs → dated rows, each year starting in its own January. A year that
+// repeats the previous year's amount doesn't get a row of its own.
+function seedRows_() {
+  var tabs = BUDGET_SOURCE ? [{ sh: findSheetCI_(BUDGET_SOURCE), name: BUDGET_SOURCE, y: tabYear_(BUDGET_SOURCE) }] : budgetTabs_();
+  tabs = tabs.filter(function (t) { return t && t.sh; });
+  var years = logSheets_().map(function (l) { return l.y; });
+  var fallbackY = years.length ? Math.min.apply(null, years) : todayParts_().y;
+  var byCat = {}, order = [];
+  tabs.forEach(function (t) {
+    var rows = readBudgetTab_(t.sh);
+    if (rows.length < 5) return;
+    // a tab with no section headings files everything under income (your 2023 tab did); skip it
+    if (rows.every(function (b) { return b.g === 'income'; })) return;
+    var s = (t.y || fallbackY) * 12;
+    rows.forEach(function (b) {
+      var k = b.c.toLowerCase();
+      if (!byCat[k]) { byCat[k] = []; order.push(k); }
+      var list = byCat[k], prev = list[list.length - 1];
+      if (prev && prev.g === b.g && Math.abs(prev.a - b.a) < 0.005) return;
+      list.push({ s: s, g: b.g, c: b.c, a: b.a, note: 'from ' + t.name });
+    });
+  });
+  var out = [];
+  order.forEach(function (k) { byCat[k].forEach(function (b) { out.push(b); }); });
+  return out;
+}
+
+// Re-read every budget tab, but keep rows you or the app added since (anything whose note
+// doesn't start with "from "). Your own row wins when both land on the same month.
+function rebuildBudget_() {
+  var sh = budgetSheet_(true);
+  var kept = readBudgetRows_(sh).filter(function (b) { return !SEED_NOTE.test(b.note || ''); });
+  var taken = {};
+  kept.forEach(function (b) { taken[b.c.toLowerCase() + '|' + b.s] = 1; });
+  var seed = seedRows_().filter(function (b) { return !taken[b.c.toLowerCase() + '|' + b.s]; });
+  if (!seed.length) return { ok: false, error: 'no_budget_tabs' };
+  var all = seed.concat(kept), order = [], byCat = {};
+  all.forEach(function (b) { var k = b.c.toLowerCase(); if (!byCat[k]) { byCat[k] = []; order.push(k); } byCat[k].push(b); });
+  var rows = [];
+  order.forEach(function (k) { byCat[k].sort(function (a, b) { return a.s - b.s; }).forEach(function (b) { rows.push(b); }); });
+  writeBudgetRows_(sh, rows);
+  return { ok: true, n: rows.length, kept: kept.length, tabs: budgetTabs_().map(function (t) { return t.name; }) };
+}
+
+// Pull one budget tab in, starting January of its year.
+function importBudgetTab_(name) {
+  var sh = findSheetCI_(String(name || ''));
+  if (!sh) throw new Error('no_tab');
+  var y = tabYear_(name) || todayParts_().y;
+  var rows = readBudgetTab_(sh);
+  if (rows.length < 3) throw new Error('no_budget_found');
+  budgetSheet_(true);
+  rows.forEach(function (b) { setBudget_({ mode: 'from', s: y * 12, g: b.g, c: b.c, a: b.a, note: 'from ' + sh.getName() }); });
+  return { ok: true, n: rows.length, y: y };
+}
+
+// Which tabs the current budget came from, and whether that's out of date.
+function seedStatus_(rows) {
+  var from = {}, tabs = budgetTabs_().filter(function (t) { return t.y; }).map(function (t) { return t.name; });
+  rows.forEach(function (b) { if (SEED_NOTE.test(b.note || '')) from[String(b.note).replace(SEED_NOTE, '')] = 1; });
+  var used = Object.keys(from);
+  var stale = tabs.length > 0 && used.some(function (u) { return tabs.indexOf(u) < 0; });
+  return { from: used, tabs: tabs, stale: stale };
+}
+
+function groupValidation_(sh) {
+  try {
+    var rule = SpreadsheetApp.newDataValidation().requireValueInList(GROUPS, true).setAllowInvalid(true).build();
+    sh.getRange(2, 2, 400, 1).setDataValidation(rule);
+  } catch (e) {}
+}
+
+function readBudgetRows_(sh, fixes) {
+  if (!sh) return [];
+  var n = sh.getLastRow();
+  if (n < 2) return [];
+  var vals = sh.getRange(2, 1, n - 1, 5).getValues(), out = [];
+  for (var i = 0; i < vals.length; i++) {
+    var s = monthKey_(vals[i][0]), c = str_(vals[i][2]);
+    if (s === null || !c) continue;
+    if (fixes && legacyDate_(vals[i][0])) fixes.push({ sh: sh, r: i + 2, c: 1, v: cellDate_(Math.floor(s / 12), s % 12, 1), fmt: 'mmm yyyy' });
+    var a = num_(vals[i][3]);
+    out.push({ s: s, g: str_(vals[i][1]).toLowerCase() || 'one-time', c: c, a: a === null ? 0 : a, row: i + 2, note: str_(vals[i][4]) });
+  }
+  return out;
+}
+
+// b = { mode, s: monthKey, g: group, c: category, a: amount, remove: bool }
+//  from:  the amount applies from month s onward
+//  month: just month s; the month after goes back to what it was
+//  year:  every month of s's year (other changes inside that year are replaced)
+//  fix:   corrects the row in effect at month s, so earlier months change too
+// remove: stop budgeting the category (amount 0, note "removed")
+function setBudget_(b) {
+  if (!b || !str_(b.c) || isNaN(Number(b.a)) || isNaN(Number(b.s))) throw new Error('bad_entry');
+  var sh = budgetSheet_(true);
+  var s = +b.s, mode = b.mode || 'from', a = b.remove ? 0 : Number(b.a);
+  var note = b.remove ? 'removed' : (b.note || '');
+  var want = str_(b.c).toLowerCase();
+  function mine() { return readBudgetRows_(sh).filter(function (r) { return r.c.toLowerCase() === want; }); }
+  function inEffectAt(list, k) { var best = null; list.forEach(function (r) { if (r.s <= k && (!best || r.s >= best.s)) best = r; }); return best; }
+  var rows = mine(), was = inEffectAt(rows, s);
+  var group = str_(b.g).toLowerCase() || (was && was.g) || (rows[0] && rows[0].g) || 'one-time';
+
+  if (mode === 'fix') {
+    var t = was;
+    if (!t) rows.forEach(function (r) { if (!t || r.s < t.s) t = r; });
+    if (t) { sh.getRange(t.row, 2, 1, 4).setValues([[group, t.c, a, note || (SEED_NOTE.test(t.note) ? 'changed in app' : t.note)]]); return { ok: true, row: t.row }; }
+    return putRow_(sh, rows, s, group, b.c, a, note);
+  }
+  if (mode === 'year') {
+    var y0 = Math.floor(s / 12) * 12;
+    // drop this category's other changes inside the year, bottom row first so row numbers hold
+    rows.filter(function (r) { return r.s > y0 && r.s <= y0 + 11; }).sort(function (p, q) { return q.row - p.row; })
+      .forEach(function (r) { sh.deleteRow(r.row); });
+    return putRow_(sh, mine(), y0, group, b.c, a, note);
+  }
+  if (mode === 'month') {
+    var res = putRow_(sh, rows, s, group, b.c, a, note);
+    var after = mine();
+    if (!after.some(function (r) { return r.s === s + 1; })) {
+      putRow_(sh, after, s + 1, was ? was.g : group, b.c, was ? was.a : 0, was ? 'back after ' + MON3[s % 12] : 'removed');
+    }
+    return res;
+  }
+  return putRow_(sh, rows, s, group, b.c, a, note);
+}
+
+// Cancel a budget change that hasn't started yet: delete its row(s) in the app budget, and put that
+// year's budget tab back to whatever is now in effect (or take the category out if nothing is).
+function undoBudget_(cat, s) {
+  if (!str_(cat) || isNaN(s)) throw new Error('bad_entry');
+  var sh = budgetSheet_(false); if (!sh) return { ok: true, n: 0 };
+  var want = str_(cat).toLowerCase();
+  var gone = readBudgetRows_(sh).filter(function (r) { return r.c.toLowerCase() === want && r.s === s; }).sort(function (p, q) { return q.row - p.row; });
+  gone.forEach(function (r) { sh.deleteRow(r.row); });
+  if (gone.length) {
+    var left = readBudgetRows_(sh).filter(function (r) { return r.c.toLowerCase() === want; }), now = null;
+    left.forEach(function (r) { if (r.s <= s && (!now || r.s >= now.s)) now = r; });
+    try {
+      var tab = yearBudgetTab_(Math.floor(s / 12));
+      if (tab) mirrorOne_(tab, now && now.note !== 'removed' ? { c: now.c, g: now.g, a: now.a } : { c: str_(cat), remove: true });
+    } catch (e) { /* the app budget is already right; the year tab is a convenience */ }
+  }
+  return { ok: true, n: gone.length };
+}
+
+// Set the row for (category, month) or add one next to the category's other rows.
+function putRow_(sh, rows, s, group, cat, a, note) {
+  var t = null;
+  rows.forEach(function (r) { if (r.s === s) t = r; });
+  if (t) {
+    var keep = note || (SEED_NOTE.test(t.note) || t.note === 'removed' ? 'changed in app' : t.note);
+    sh.getRange(t.row, 2, 1, 4).setValues([[group, t.c, a, keep]]);
+    return { ok: true, row: t.row };
+  }
+  var at = Math.max(2, lastRowIn_(sh, 3) + 1);
+  if (rows.length) {
+    var before = rows.filter(function (r) { return r.s < s; });
+    var anchor = before.length ? Math.max.apply(null, before.map(function (r) { return r.row; }))
+                               : Math.min.apply(null, rows.map(function (r) { return r.row; })) - 1;
+    sh.insertRowAfter(anchor);
+    at = anchor + 1;
+  }
+  sh.getRange(at, 1, 1, 5).setValues([[cellDate_(Math.floor(s / 12), s % 12, 1), group, str_(cat), a, note || '']]);
+  sh.getRange(at, 1).setNumberFormat('mmm yyyy');
+  sh.getRange(at, 4).setNumberFormat('$#,##0.00');
+  return { ok: true, row: at };
+}
+
+function groupFromSection_(sec) {
+  if (/giv|tith|donat|charit/.test(sec)) return 'giving';
+  if (/recurring exp|bill/.test(sec)) return 'bills';
+  if (/^expenses$/.test(sec)) return 'one-time';
+  if (/sav/.test(sec)) return 'savings';
+  if (/daily/.test(sec)) return 'daily living';
+  if (/going/.test(sec)) return 'going out';
+  if (/income|revenue/.test(sec)) return 'income';
+  return 'one-time';
+}
+
+// ---------------------------------------------------------------- your yearly budget tab, kept in step
+
+// Budget changes from the app are copied into that year's budget tab so the tab you look at
+// matches. "Just this month" changes are exceptions and leave the tab alone.
+function mirrorBudgets_(list) {
+  var byYear = {};
+  list.forEach(function (b) {
+    if (!b || b.mode === 'month' || isNaN(Number(b.s))) return;
+    var y = Math.floor(+b.s / 12);
+    (byYear[y] = byYear[y] || []).push(b);
+  });
+  Object.keys(byYear).forEach(function (y) {
+    try { mirrorYear_(+y, byYear[y]); } catch (e) { /* the app budget is already saved; the tab is a convenience */ }
+  });
+}
+
+function mirrorYear_(y, changes) {
+  var sh = yearBudgetTab_(y);
+  if (!sh) { buildYearBudget_(y); return; }       // a new tab is built from the app budget, which already has these changes
+  changes.forEach(function (b) { mirrorOne_(sh, { c: str_(b.c), g: str_(b.g).toLowerCase(), a: Number(b.a), remove: !!b.remove }); });
+  // new categories also go into the expense tab's category dropdown
+  var log = findLog_('e', y, false);
+  if (log) {
+    var hv = log.getRange(1, 1, Math.min(10, Math.max(1, log.getLastRow())), 3).getValues();
+    changes.forEach(function (b) { if (!b.remove && str_(b.g).toLowerCase() !== 'income') allowCategory_(log, headerIndex_(hv) + 2, str_(b.c)); });
+  }
+}
+
+function yearBudgetTab_(y) {
+  var t = budgetTabs_().filter(function (x) { return x.y === y; })[0];
+  return t ? t.sh : null;
+}
+
+// The budget in effect at month k, from the app budget tab: { lowercase category: row }
+function budgetAtStart_(k) {
+  var m = {};
+  readBudgetRows_(budgetSheet_(true)).forEach(function (r) {
+    var c = r.c.toLowerCase();
+    if (r.s <= k && (!m[c] || r.s >= m[c].s)) m[c] = r;
+  });
+  return m;
+}
+
+function allTabCats_(sh) {
+  var vals = sh.getDataRange().getValues(), cols = detectBudgetCols_(vals);
+  return cols ? budgetLayout_(vals, cols).cats.map(function (x) { return x.c; }) : [];
+}
+
+// The column where a side list starts ("dropdown menu items" / "budget items"), or 0.
+function sideListCol_(vals) {
+  for (var i = 0; i < Math.min(vals.length, 8); i++) for (var j = 2; j < vals[i].length; j++) {
+    if (/^(dropdown menu items|budget items|dropdown items)$/i.test(str_(vals[i][j]))) return j;
+  }
+  return 0;
+}
+
+// One change into the year tab. ch = { c, g, a, remove }
+function mirrorOne_(sh, ch) {
+  var vals = sh.getDataRange().getValues(), cols = detectBudgetCols_(vals);
+  if (!cols) return;
+  var L = budgetLayout_(vals, cols), low = str_(ch.c).toLowerCase();
+  var r = L.rows[low];
+  if (ch.remove) {
+    if (r === undefined) return;
+    // Only remove the budget table's cells, so lists kept off to the right (like your dropdown
+    // items in column J) don't lose an entry. Falls back to the whole row if there's no such list.
+    var w = sideListCol_(vals);
+    if (w > cols.value + 1) sh.getRange(r + 1, 1, 1, w).deleteCells(SpreadsheetApp.Dimension.ROWS);
+    else sh.deleteRow(r + 1);
+    return;
+  }
+  if (r !== undefined) { sh.getRange(r + 1, cols.value + 1).setValue(ch.a); return; }
+  // a new category: add it at the end of its section, copying the formatting and any
+  // formulas (like the % of income column) from the category row above it
+  var sec = L.sections[ch.g || 'one-time'];
+  var after = sec && sec.last >= 0 ? sec.last : (sec && sec.header >= 0 ? sec.header : L.lastCat);
+  if (after < 0) after = 0;
+  var width = Math.max(cols.value + 1, sh.getLastColumn() || cols.value + 1);
+  sh.insertRowAfter(after + 1);
+  var nr = after + 2;
+  var src = sh.getRange(after + 1, 1, 1, width);
+  try { src.copyTo(sh.getRange(nr, 1, 1, width), { formatOnly: true }); } catch (e) {}
+  var isCatRow = L.cats.some(function (x) { return x.row === after; });
+  if (isCatRow) {
+    var f = src.getFormulasR1C1()[0];
+    for (var j = 0; j < f.length; j++) {
+      if (f[j] && j !== cols.label && j !== cols.value) sh.getRange(nr, j + 1).setFormulaR1C1(f[j]);
+    }
+  }
+  sh.getRange(nr, cols.label + 1).setValue(ch.c);
+  sh.getRange(nr, cols.value + 1).setValue(ch.a);
+}
+
+// ---------------------------------------------------------------- a new year
+
+// "Keep these numbers for 2027": make sure that year's budget tab exists. If it already does,
+// bring its amounts in line with the app budget for January.
+function yearTab_(y) {
+  if (!(y > 2000)) throw new Error('bad_year');
+  var sh = yearBudgetTab_(y);
+  if (!sh) { var made = buildYearBudget_(y); return { ok: true, made: made ? made.getName() : '' }; }
+  var bud = budgetAtStart_(y * 12);
+  Object.keys(bud).forEach(function (k) {
+    var b = bud[k];
+    try { mirrorOne_(sh, { c: b.c, g: groupFor_(b.c, b.g, readPrefs_()), a: b.a, remove: b.note === 'removed' }); } catch (e) {}
+  });
+  return { ok: true, made: '', tab: sh.getName() };
+}
+
+// A brand-new year: the budget tab and the spending tab, if they're missing.
+var BUILDING_YEAR_ = false;
+function ensureYear_(y) {
+  if (BUILDING_YEAR_) return;
+  BUILDING_YEAR_ = true;
+  try {
+    if (!yearBudgetTab_(y)) { try { buildYearBudget_(y); } catch (e) {} }
+    try { ensureSpendingTab_(y); } catch (e) {}
+  } finally { BUILDING_YEAR_ = false; }
+}
+
+function fmt_(fn) { try { fn(); } catch (e) { /* formatting is a nicety */ } }
+
+// Which group a category belongs in: what you picked in the app's settings, then giving
+// categories (tithing, donations…) under Giving, then what the app budget says.
+function groupFor_(cat, g, prefs) {
+  var low = str_(cat).toLowerCase(), ids = { bills: 'bills', give: 'giving', daily: 'daily living', out: 'going out', once: 'one-time', save: 'savings', inc: 'income' };
+  var pick = prefs && prefs.catGroup && prefs.catGroup[low];
+  if (pick && ids[pick]) return ids[pick];
+  g = str_(g).toLowerCase() || 'one-time';
+  if (g === 'bills' && GIVING_CATS.test(low)) return 'giving';
+  return GROUPS.indexOf(g) >= 0 ? g : groupFromSection_(g);
+}
+
+// "Budget for 2027": a fresh tab laid out like the app (not a copy of last year's, so no old
+// notes come along). Amounts come from the app budget for January: just this year's plan.
+function buildYearBudget_(y) {
+  var ss = SpreadsheetApp.getActive();
+  var prevTab = budgetTabs_().filter(function (t) { return t.y && t.y < y; }).pop();
+  var name = prevTab ? prevTab.name.replace(String(prevTab.y), String(y)) : y + ' budget';
+  if (findSheetCI_(name)) return findSheetCI_(name);
+  var prefs = readPrefs_();
+  var bud = budgetAtStart_(y * 12);
+  var cats = [];
+  Object.keys(bud).forEach(function (k) {
+    var b = bud[k];
+    if (b.note === 'removed') return;
+    cats.push({ c: b.c, low: k, g: groupFor_(b.c, b.g, prefs), a: b.a });
+  });
+  // the app's order: groups as you've arranged them, categories as you've arranged them
+  var gOrder = ['bills', 'giving', 'daily living', 'going out', 'one-time', 'savings'];
+  var ids = { bills: 'bills', give: 'giving', daily: 'daily living', out: 'going out', once: 'one-time', save: 'savings' };
+  if (prefs && prefs.order && prefs.order.groups) {
+    var mine = prefs.order.groups.map(function (id) { return ids[id]; }).filter(Boolean);
+    gOrder = mine.concat(gOrder.filter(function (g) { return mine.indexOf(g) < 0; }));
+  }
+  var catPos = function (c) {
+    var o = prefs && prefs.order && prefs.order.cats, all = [];
+    if (o) Object.keys(o).forEach(function (g) { all = all.concat(o[g] || []); });
+    var i = all.indexOf(c.low);
+    return i < 0 ? 9999 : i;
+  };
+  var sections = [{ g: 'income', title: 'Income' }].concat(gOrder.map(function (g) {
+    // "Recurring savings", not "Savings": a category is often called "savings"
+    return { g: g, title: g === 'savings' ? 'Recurring savings' : g.charAt(0).toUpperCase() + g.slice(1) };
+  }));
+  sections.forEach(function (sec) {
+    sec.cats = cats.filter(function (c) { return c.g === sec.g; });
+    sec.cats.sort(function (a, b) { return catPos(a) - catPos(b); });
+  });
+  sections = sections.filter(function (sec) { return sec.cats.length; });
+
+  var index = prevTab ? Math.max(0, prevTab.sh.getIndex() - 1) : 0;
+  var sh = ss.insertSheet(name, index);
+  var rows = [], fm = [], W = 4, LIST = 6;                          // A:D is the budget, F is the dropdown list
+  function put(vals) {                                              // returns the 1-based row
+    var a = vals.slice(); while (a.length < W) a.push('');
+    rows.push(a); return rows.length;
+  }
+  var tz = ssTz_(), today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  // 2.30: just this year's plan. Last year's numbers and the habits block are gone, and only two rows stay frozen.
+  put(['Budget for ' + y]);
+  var HDR = put(['Category', 'Monthly', 'Yearly', '% of income']);
+  var incTotal = 0, totals = [];
+  sections.forEach(function (sec) {
+    var head = put([sec.title]);
+    sec.cats.forEach(function (c) {
+      var r = put([c.c, c.a]);
+      fm.push([r, 3, '=B' + r + '*12']);
+      if (sec.g !== 'income') fm.push([r, 4, 'PCT']);
+    });
+    var t = put([sec.title + ' total']);
+    ['B', 'C'].forEach(function (col, i) {
+      fm.push([t, [2, 3][i], '=SUM(' + col + head + ':INDEX(' + col + ':' + col + ',ROW()-1))']);
+    });
+    if (sec.g === 'income') incTotal = t; else { totals.push({ t: t, g: sec.g }); fm.push([t, 4, 'PCT']); }
+    sec.head = head; sec.total = t;
+    put([]);
+  });
+  var I = incTotal ? '$B$' + incTotal : '0';
+  fm.forEach(function (f) { if (f[2] === 'PCT') f[2] = '=IF(' + I + '=0,"",B' + f[0] + '/' + I + ')'; });
+  var spendT = totals.filter(function (x) { return x.g !== 'savings'; }).map(function (x) { return 'B' + x.t; });
+  var saveT = totals.filter(function (x) { return x.g === 'savings'; }).map(function (x) { return 'B' + x.t; });
+  var SUMR = put(['Summary']);
+  var rIn = put(['Money in each month']); fm.push([rIn, 2, '=' + I]);
+  var rOut = put(['Planned spending']); fm.push([rOut, 2, spendT.length ? '=' + spendT.join('+') : '=0']);
+  var rSave = put(['Planned saving']); fm.push([rSave, 2, saveT.length ? '=' + saveT.join('+') : '=0']);
+  var rLeft = put(['Left over (not planned)']); fm.push([rLeft, 2, '=B' + rIn + '-B' + rOut + '-B' + rSave]);
+  var rRate = put(['Saving rate']); fm.push([rRate, 2, '=IF(B' + rIn + '=0,"",B' + rSave + '/B' + rIn + ')']);
+
+  // write it
+  var grid = rows.map(function (r) { var a = r.slice(0, W); while (a.length < W) a.push(''); return a; });
+  sh.getRange(1, 1, grid.length, W).setValues(grid);
+  fm.forEach(function (f) { sh.getRange(f[0], f[1]).setFormula(f[2]); });
+  // the expense-category dropdown list, off to the right like your other budget tabs
+  var list = cats.filter(function (c) { return c.g !== 'income'; }).map(function (c) { return c.c; });
+  var listRows = [['dropdown menu items']].concat(list.map(function (c) { return [c]; }));
+  for (var k = 0; k < 20; k++) listRows.push(['']);
+  sh.getRange(HDR, LIST, listRows.length, 1).setValues(listRows);
+
+  var money = '$#,##0.00;-$#,##0.00', pct = '0%;-0%';
+  fmt_(function () { sh.setFrozenRows(HDR); });
+  fmt_(function () { sh.getRange(1, 1).setFontSize(16).setFontWeight('bold'); });
+  fmt_(function () { sh.getRange(1, 1).setNote('Made by Runway on ' + today + ' from the budget in the app. Change amounts here or in the app and the other follows.'); });
+  fmt_(function () { sh.getRange(HDR, 1, 1, W).setFontWeight('bold').setBackground('#1f2a44').setFontColor('#ffffff'); });
+  fmt_(function () { sh.getRange(HDR, LIST).setFontWeight('bold'); });
+  fmt_(function () {
+    sh.getRange(HDR + 1, 2, SUMR - HDR, 2).setNumberFormat(money);
+    sh.getRange(HDR + 1, 4, SUMR - HDR, 1).setNumberFormat(pct);
+    sh.getRange(rIn, 2, 4, 1).setNumberFormat(money);
+    sh.getRange(rRate, 2, 1, 1).setNumberFormat('0%;-0%');
+  });
+  sections.forEach(function (sec) {
+    fmt_(function () { sh.getRange(sec.head, 1, 1, W).setFontWeight('bold').setBackground('#e8ebf2'); });
+    fmt_(function () { sh.getRange(sec.total, 1, 1, W).setFontWeight('bold').setBorder(true, null, null, null, null, null); });
+  });
+  fmt_(function () { sh.getRange(SUMR, 1, 1, W).setFontWeight('bold').setBackground('#e8ebf2'); });
+  fmt_(function () { sh.setColumnWidth(1, 210); for (var c = 2; c <= W; c++) sh.setColumnWidth(c, 110); sh.setColumnWidth(5, 30); sh.setColumnWidth(LIST, 150); });
+
+  // the new year's expenses tab picks categories from this list
+  var log = findLog_('e', y, false);
+  if (log) setCategoryValidation_(log, sh.getRange(HDR + 1, LIST, listRows.length - 1, 1));
+  return sh;
+}
+
+// Point the category column of an expenses tab at a list.
+function setCategoryValidation_(log, range) {
+  try {
+    var vals = log.getRange(1, 1, Math.min(10, Math.max(1, log.getLastRow())), 3).getValues();
+    var first = headerIndex_(vals) + 2;
+    var rule = SpreadsheetApp.newDataValidation().requireValueInRange(range, true).setAllowInvalid(false).build();
+    log.getRange(first, 3, Math.max(1, (log.getMaxRows ? log.getMaxRows() : 1000) - first + 1), 1).setDataValidation(rule);
+  } catch (e) {}
+}
+
+// "2027 spending": every new year's spending tab is built in the new layout (see spendView_).
+// Savings accounts carry over from the latest spending tab: a new-layout one, or an old-style one.
+function ensureSpendingTab_(y) {
+  var ss = SpreadsheetApp.getActive(), prev = null, mine = null;
+  ss.getSheets().forEach(function (sh) {
+    var n = sh.getName(), gy = gridName_(n);
+    if (!gy || SPARE_TAB.test(n) || !/spending/i.test(n)) return;
+    if (gy === y) mine = sh;
+    else if (gy < y && (!prev || gy > prev.y)) prev = { sh: sh, y: gy, name: n };
+  });
+  if (mine) return mine;
+  // where to take savings accounts from: the latest new-layout tab before this year (a tab named for its
+  // year wins over a test tab), otherwise last year's old-style spending tab, otherwise nothing
+  var views = viewTabs_().filter(function (v) { return v.y < y; });
+  views.sort(function (a, b) { return a.y - b.y || (gridName_(a.sh.getName()) ? 1 : 0) - (gridName_(b.sh.getName()) ? 1 : 0); });
+  var view = views.pop();
+  var src = view ? view.sh : (prev ? prev.sh : null);
+  var nm = prev ? prev.name.replace(String(prev.y), String(y)) : y + ' spending';
+  findLog_('e', y, true); findLog_('i', y, true);       // both entry tabs exist first, so the formulas have something to point at
+  var nsh = ss.insertSheet(nm, prev ? Math.max(0, prev.sh.getIndex() - 1) : 0);
+  spendView_(nm, y, src);
+  return nsh;
+}
+
+// ---------------------------------------------------------------- the spending tab, new layout
+// Months across, one row per category, laid out like the app. Spending is shaded against that
+// month's budget, "so far" columns compare the year to date with the budget to date, averages only
+// count months that have happened, and savings balances sit at the bottom. Budgets per month live in
+// hidden columns U:AF (they follow mid-year changes) and refresh whenever you save a budget.
+var VC = { months: 2, sofar: 14, budsofar: 15, left: 16, avg: 17, bud: 18, trend: 19, hb: 21, mark: 34 };
+
+function viewTabs_() {
+  var out = [];
+  SpreadsheetApp.getActive().getSheets().forEach(function (sh) {
+    try {
+      if (sh.getLastColumn() < VC.mark) return;
+      var m = str_(sh.getRange(1, VC.mark).getValue()).match(/^runway spending view (\d{4})$/);
+      if (m) out.push({ sh: sh, y: +m[1] });
+    } catch (e) {}
+  });
+  return out.sort(function (a, b) { return a.y - b.y; });
+}
+
+// What to carry over from the tab being replaced: savings accounts, money taken out of them
+// each month, and where each account's starting balance comes from.
+function viewCarry_(sh, prevView) {
+  var C = { accounts: [], y: 0 };
+  if (!sh) return C;
+  var vals = sh.getDataRange().getValues(), f = sh.getDataRange().getFormulas();
+  for (var i = 0; i < vals.length; i++) for (var j = 0; j < (f[i] || []).length; j++) {
+    var m = String(f[i][j] || '').match(/'(?:expenses|income) (\d{4})'!/i);
+    if (m) { C.y = +m[1]; break; }
+  }
+  var mark = vals[0] && vals[0][VC.mark - 1] && str_(vals[0][VC.mark - 1]).match(/(\d{4})$/);
+  if (mark) {                                       // already the new layout: keep what you typed
+    C.y = +mark[1]; C.isView = true;
+    var wd = -1, bal = -1;
+    for (i = 0; i < vals.length; i++) {
+      var lab = str_(vals[i][0]).toLowerCase();
+      if (/^taken out of savings/.test(lab)) wd = i;
+      if (/^savings balances/.test(lab)) bal = i;
+    }
+    if (wd >= 0) for (i = wd + 1; i < vals.length; i++) {
+      var a = str_(vals[i][0]); if (!a || /^total/i.test(a)) break;
+      C.accounts.push({ name: a, out: vals[i].slice(1, 13).map(function (v) { return num_(v) || 0; }), start: null });
+    }
+    if (bal >= 0) for (i = bal + 2; i < vals.length; i++) {
+      var a2 = str_(vals[i][0]).toLowerCase(); if (!a2 || /^total/.test(a2)) break;
+      C.accounts.forEach(function (x) { if (x.name.toLowerCase() === a2) x.start = f[i][1] ? f[i][1] : (num_(vals[i][1]) || 0); });
+    }
+    return C;
+  }
+  // the old layout: a "savings account balance" block with paired month/used columns
+  var head = -1;
+  for (i = 0; i < vals.length; i++) if (/^savings account balance$/i.test(str_(vals[i][0]))) { head = i; break; }
+  if (head < 0) return C;
+  var months = [];
+  for (j = 0; j < (vals[0] || []).length; j++) if (monthHeader_(vals[0][j]) >= 0) months.push(j);
+  for (i = head + 1; i < vals.length; i++) {
+    var name = str_(vals[i][0]);
+    if (!name || /^total/i.test(name)) break;
+    var out = months.map(function (mc) {
+      var used = num_(vals[i][mc + 1]) || 0;
+      var tweak = String(f[i][mc] || '').match(/\)\s*-\s*([\d.]+)\s*$/);   // "…)-2000": money moved out that month
+      return used + (tweak ? +tweak[1] : 0);
+    });
+    var ref = String(f[i][months[0]] || '').match(/^=\s*('[^']+'!\$?[A-Z]{1,3}\$?\d+)/);
+    var qn = "'" + sh.getName().replace(/'/g, "''") + "'!", dc = months[months.length - 1];
+    // where this account ends the year: December's balance (each month's cell already includes that month)
+    C.accounts.push({ name: name, out: out, start: ref ? '=' + ref[1] : (num_(vals[i][months[0]]) || 0),
+      end: '=N(' + qn + colLetter_(dc) + (i + 1) + ')' });
+  }
+  return C;
+}
+
+// Build (or rebuild) the new layout in a tab. from = a tab to take savings accounts and starting
+// balances from (last year's new-style tab when a new year starts).
+function spendView_(tabName, y, from) {
+  var ss = SpreadsheetApp.getActive(), sh = findSheetCI_(str_(tabName));
+  if (!sh) throw new Error('no_tab');
+  var C;
+  if (from) {
+    var P = viewCarry_(from);
+    C = { y: y, accounts: P.accounts.map(function (a) {
+      // last year's "now" balance is this year's start
+      return { name: a.name, out: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], start: P.isView ? "=IFERROR(VLOOKUP(\"" + a.name.replace(/"/g, '""') + "\",'" + from.getName().replace(/'/g, "''") + "'!$A:$E,5,FALSE),0)" : (a.end || 0) };
+    }) };
+  } else C = viewCarry_(sh);
+  y = y || C.y || todayParts_().y;
+  var prefs = readPrefs_();
+  var elog = findLog_('e', y, false), ilog = findLog_('i', y, false);
+  var EN = elog ? elog.getName() : 'expenses ' + y, IN = ilog ? ilog.getName() : 'income ' + y;
+  var tcol = elog ? tripColFound_(elog.getRange(1, 1, Math.min(10, Math.max(1, elog.getLastRow())), Math.max(1, elog.getLastColumn())).getValues()) : -1;
+  var qe = "'" + EN.replace(/'/g, "''") + "'!", qi = "'" + IN.replace(/'/g, "''") + "'!", T = tcol >= 0 ? colLetter_(tcol) : '';
+  if (elog) ['from savings', 'owed back', 'paid back'].forEach(function (n) { try { ensureColHeader_(elog, n); } catch (e) {} });   // so the formulas can use them from day one
+  var hv = elog ? elog.getRange(1, 1, Math.min(10, Math.max(1, elog.getLastRow())), Math.max(1, elog.getLastColumn())).getValues() : [];
+  var FSc = elog ? headerCol_(hv, 'from savings') : -1, OWc = elog ? headerCol_(hv, 'owed back') : -1;
+  var FS = FSc >= 0 ? colLetter_(FSc) : '', OW = OWc >= 0 ? colLetter_(OWc) : '';
+  var notSave = FS ? ',' + qe + '$' + FS + ':$' + FS + ',""' : '';
+
+  // categories: anything budgeted at some point this year, plus anything logged
+  var bm = [], cats = {}, order = [];
+  for (var m = 0; m < 12; m++) bm.push(budgetAtStart_(y * 12 + m));
+  var tx = [], logged = {};
+  if (elog) readLog_(elog, 'e', y, tx);
+  if (ilog) readLog_(ilog, 'i', y, tx);
+  tx.forEach(function (t) { logged[t[5].toLowerCase()] = 1; });
+  // budgeted categories, skipping leftovers from old budget tabs that nothing is logged to
+  bm.forEach(function (mm) { Object.keys(mm).forEach(function (k) {
+    var b = mm[k]; if (b.note === 'removed' || cats[k]) return;
+    // (an old tab without section headings left some categories filed under income)
+    if (!logged[k] && !(b.a > 0 && (str_(b.g).toLowerCase() !== 'income' || b.s >= (y - 1) * 12))) return;
+    cats[k] = { c: b.c, g: groupFor_(b.c, b.g, prefs) }; order.push(k);
+  }); });
+  if (T && !cats.travel) { cats.travel = { c: 'travel', g: groupFor_('travel', (bm[11].travel || {}).g || 'one-time', prefs) }; order.push('travel'); }   // trips land here
+  tx.forEach(function (t) {
+    var k = t[5].toLowerCase(); if (!k || cats[k]) return;
+    cats[k] = { c: t[5], g: t[0] === 'i' ? 'income' : groupFor_(t[5], '', prefs) }; order.push(k);
+  });
+  var gOrder = ['bills', 'giving', 'daily living', 'going out', 'one-time'];
+  var ids = { give: 'giving', daily: 'daily living', out: 'going out', once: 'one-time' };
+  if (prefs && prefs.order && prefs.order.groups) {
+    var mine = prefs.order.groups.map(function (id) { return ids[id]; }).filter(Boolean);
+    gOrder = ['bills'].concat(mine).concat(gOrder.filter(function (g) { return g !== 'bills' && mine.indexOf(g) < 0; }));
+  }
+  var catPos = function (k) { var o = prefs && prefs.order && prefs.order.cats, all = []; if (o) Object.keys(o).forEach(function (g) { all = all.concat(o[g] || []); }); var i = all.indexOf(k); return i < 0 ? 9999 + order.indexOf(k) : i; };
+  var sections = [{ g: 'income', title: 'Income' }].concat(gOrder.map(function (g) { return { g: g, title: g.charAt(0).toUpperCase() + g.slice(1) }; }))
+    .concat([{ g: 'savings', title: 'Put into savings' }]);
+  sections.forEach(function (sec) { sec.cats = order.filter(function (k) { return cats[k].g === sec.g; }).sort(function (a, b) { return catPos(a) - catPos(b); }); });
+  sections = sections.filter(function (sec) { return sec.cats.length; });
+
+  // wipe the tab
+  try { sh.getCharts().forEach(function (c) { sh.removeChart(c); }); } catch (e) {}
+  fmt_(function () { sh.setConditionalFormatRules([]); });
+  fmt_(function () { sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).shiftRowGroupDepth(-8); });
+  fmt_(function () { sh.clear(); });
+  var lr = sh.getLastRow(), lc = Math.max(VC.mark, sh.getLastColumn());
+  if (lr) sh.getRange(1, 1, lr, lc).clearContent();
+  fmt_(function () { sh.showColumns(1, Math.max(lc, VC.mark)); });
+
+  var rows = [], fm = [], R = {}, fmtRows = [];
+  function put(vals, kind) { var a = (vals || []).slice(); while (a.length < VC.mark) a.push(''); rows.push(a); fmtRows.push(kind || ''); return rows.length; }
+  var MN = MONTHS;
+  // v17: three rows up top (frozen): title + what each number is, months so far + the numbers, then the column headings
+  var KL = put(['Spending ' + y, 'Spent this month', '', 'Left this month', '', 'Spent this year', '', 'Left this year', '', 'Saved this year', '', 'Saving rate'], 'klabel');
+  rows[0][VC.mark - 1] = VIEW_MARK + ' ' + y;
+  var KV = put([], 'kvalue'), RM = KV, RMC = '$A$' + KV;   // A2: how many months have happened
+  fm.push([KV, 1, '=IF(YEAR(TODAY())>' + y + ',12,IF(YEAR(TODAY())<' + y + ',0,MONTH(TODAY())))']);
+  var HDR = put(['Category'].concat(MN).concat(['So far', 'Budget so far', 'Left so far', 'Avg / month', 'Budget / month', 'Trend', '']).concat(MN.map(function (x) { return 'budget ' + x.slice(0, 3).toLowerCase(); })), 'header');
+  var monthRef = function (col) { return colLetter_(col - 1) + '$' + HDR; };
+  var spendTotals = [], saveTotal = 0, incTotal = 0, cfFlex = [], cfSave = [], cfBills = [], travelRow = 0;
+  function rowFormulas(r, isInc) {
+    var B = function (c) { return colLetter_(c - 1) + r; };
+    fm.push([r, VC.sofar, '=IF(' + RMC + '=0,0,SUM(' + B(2) + ':INDEX(' + B(2) + ':' + B(13) + ',' + RMC + ')))']);
+    fm.push([r, VC.budsofar, '=IF(' + RMC + '=0,0,SUM(' + B(VC.hb) + ':INDEX(' + B(VC.hb) + ':' + B(VC.hb + 11) + ',' + RMC + ')))']);
+    fm.push([r, VC.left, isInc ? '=' + B(VC.sofar) + '-' + B(VC.budsofar) : '=' + B(VC.budsofar) + '-' + B(VC.sofar)]);
+    fm.push([r, VC.avg, '=IF(' + RMC + '=0,0,' + B(VC.sofar) + '/' + RMC + ')']);
+    fm.push([r, VC.bud, '=IF(' + RMC + '=0,' + B(VC.hb) + ',INDEX(' + B(VC.hb) + ':' + B(VC.hb + 11) + ',' + RMC + '))']);
+    fm.push([r, VC.trend, '=IF(' + RMC + '<2,"",SPARKLINE(' + B(2) + ':INDEX(' + B(2) + ':' + B(13) + ',' + RMC + '),{"charttype","column";"color","#6b8fb3";"negcolor","#c0392b"}))']);
+  }
+  sections.forEach(function (sec) {
+    var head = put([sec.title], 'section'), first = rows.length + 1;
+    sec.cats.forEach(function (k) {
+      var r = put([cats[k].c], 'cat'), isInc = sec.g === 'income';
+      for (var mi = 0; mi < 12; mi++) {
+        var col = 2 + mi, mr = monthRef(col), f;
+        if (isInc) f = '=IFERROR(SUMIFS(' + qi + '$D:$D,' + qi + '$A:$A,' + mr + ',' + qi + '$C:$C,$A' + r + '),0)';
+        else {
+          var cond = qe + '$A:$A,' + mr + ',' + qe + '$C:$C,$A' + r + (T ? ',' + qe + '$' + T + ':$' + T + ',""' : '') + notSave;
+          f = 'SUMIFS(' + qe + '$D:$D,' + cond + ')' + (OW ? '-SUMIFS(' + qe + '$' + OW + ':$' + OW + ',' + cond + ')' : '');
+          // travel: travel entries plus everything tagged with a trip, like your 2026 tab
+          if (T && k === 'travel') {
+            var tcond = qe + '$A:$A,' + mr + ',' + qe + '$' + T + ':$' + T + ',"<>"' + notSave;
+            f += '+SUMIFS(' + qe + '$D:$D,' + tcond + ')' + (OW ? '-SUMIFS(' + qe + '$' + OW + ':$' + OW + ',' + tcond + ')' : '');
+          }
+          f = '=IFERROR(' + f + ',0)';
+        }
+        fm.push([r, col, f]);
+        var b = bm[mi][k];
+        rows[r - 1][VC.hb - 1 + mi] = b && b.note !== 'removed' ? b.a : 0;
+      }
+      if (k === 'travel') travelRow = r;
+      rowFormulas(r, isInc);
+    });
+    var last = rows.length;
+    var t = put([sec.title + ' total'], 'total');
+    for (var c = 2; c <= VC.bud; c++) if (c !== VC.trend) fm.push([t, c, '=SUM(' + colLetter_(c - 1) + first + ':' + colLetter_(c - 1) + last + ')']);
+    for (c = VC.hb; c < VC.hb + 12; c++) fm.push([t, c, '=SUM(' + colLetter_(c - 1) + first + ':' + colLetter_(c - 1) + last + ')']);
+    fm.push([t, VC.avg, '=IF(' + RMC + '=0,0,' + colLetter_(VC.sofar - 1) + t + '/' + RMC + ')']);
+    fm.push([t, VC.trend, '=IF(' + RMC + '<2,"",SPARKLINE(B' + t + ':INDEX(B' + t + ':M' + t + ',' + RMC + '),{"charttype","column";"color","#6b8fb3"}))']);
+    sec.first = first; sec.last = last; sec.total = t; sec.head = head;
+    if (sec.g === 'income') incTotal = t;
+    else if (sec.g === 'savings') { saveTotal = t; cfSave.push([first, t]); }
+    else { spendTotals.push(t); (sec.g === 'bills' || sec.g === 'giving' ? cfBills : cfFlex).push([first, t]); }
+    put([]);
+  });
+
+  // ---- summary
+  var SUMH = put(['Summary'], 'section');
+  function sumRow(label, fn, kind) {
+    var r = put([label], kind || 'sum');
+    for (var c = 2; c <= 13; c++) fm.push([r, c, fn(colLetter_(c - 1))]);
+    fm.push([r, VC.sofar, '=IF(' + RMC + '=0,0,SUM(B' + r + ':INDEX(B' + r + ':M' + r + ',' + RMC + ')))']);
+    fm.push([r, VC.avg, '=IF(' + RMC + '=0,0,' + colLetter_(VC.sofar - 1) + r + '/' + RMC + ')']);
+    fm.push([r, VC.trend, '=IF(' + RMC + '<2,"",SPARKLINE(B' + r + ':INDEX(B' + r + ':M' + r + ',' + RMC + '),{"charttype","column";"color","#6b8fb3";"negcolor","#c0392b"}))']);
+    return r;
+  }
+  var nAcc = C.accounts.length;
+  var rInc = sumRow('Income', function (L) { return incTotal ? '=' + L + incTotal : '=0'; });
+  var rSpend = sumRow('Spending', function (L) { return spendTotals.length ? '=' + spendTotals.map(function (t) { return L + t; }).join('+') : '=0'; });
+  var rSave = sumRow('Put into savings', function (L) { return saveTotal ? '=' + L + saveTotal : '=0'; });
+  var WDH_AT = 0;                                    // filled in below once we know the row
+  var rOut = sumRow('Taken out of savings', function (L) { return 'WD:' + L; });
+  var rNet = sumRow('Left over', function (L) { return '=' + L + rInc + '-' + L + rSpend + '-' + L + rSave + '+' + L + rOut; }, 'total');
+  var rRate = put(['Saving rate'], 'rate');
+  for (var c2 = 2; c2 <= 13; c2++) { var L2 = colLetter_(c2 - 1); fm.push([rRate, c2, '=IF(' + L2 + rInc + '=0,"",' + L2 + rSave + '/' + L2 + rInc + ')']); }
+  fm.push([rRate, VC.sofar, '=IF(' + colLetter_(VC.sofar - 1) + rInc + '=0,"",' + colLetter_(VC.sofar - 1) + rSave + '/' + colLetter_(VC.sofar - 1) + rInc + ')']);
+  // spending's budget, for the shading and "so far"
+  spendTotals.forEach(function () {});
+  for (var hb = 0; hb < 12; hb++) fm.push([rSpend, VC.hb + hb, spendTotals.length ? '=' + spendTotals.map(function (t) { return colLetter_(VC.hb - 1 + hb) + t; }).join('+') : '=0']);
+  fm.push([rSpend, VC.budsofar, '=IF(' + RMC + '=0,0,SUM(' + colLetter_(VC.hb - 1) + rSpend + ':INDEX(' + colLetter_(VC.hb - 1) + rSpend + ':' + colLetter_(VC.hb + 10) + rSpend + ',' + RMC + ')))']);
+  fm.push([rSpend, VC.left, '=' + colLetter_(VC.budsofar - 1) + rSpend + '-' + colLetter_(VC.sofar - 1) + rSpend]);
+  fm.push([rSpend, VC.bud, '=IF(' + RMC + '=0,' + colLetter_(VC.hb - 1) + rSpend + ',INDEX(' + colLetter_(VC.hb - 1) + rSpend + ':' + colLetter_(VC.hb + 10) + rSpend + ',' + RMC + '))']);
+  cfFlex.push([rSpend, rSpend]);
+  put([]);
+
+  // ---- savings: money taken out (you type it) and balances
+  var WDH = put(['Taken out of savings (type amounts here)'], 'section');
+  var wdFirst = rows.length + 1;
+  C.accounts.forEach(function (a) {
+    var r = put([a.name], 'input');
+    for (var mi = 0; mi < 12; mi++) rows[r - 1][1 + mi] = a.out[mi] ? a.out[mi] : '';
+    fm.push([r, VC.sofar, '=SUM(B' + r + ':M' + r + ')']);
+    a.wdRow = r;
+  });
+  var wdLast = rows.length;
+  var wdTot = put(['Total taken out'], 'total');
+  for (c2 = 2; c2 <= 13; c2++) fm.push([wdTot, c2, nAcc ? '=SUM(' + colLetter_(c2 - 1) + wdFirst + ':' + colLetter_(c2 - 1) + wdLast + ')' : '=0']);
+  fm.push([wdTot, VC.sofar, '=SUM(B' + wdTot + ':M' + wdTot + ')']);
+  fm.forEach(function (f) { if (typeof f[2] === 'string' && f[2].indexOf('WD:') === 0) f[2] = '=' + f[2].slice(3) + wdTot; });
+  put([]);
+  var BALH = put(['Savings balances'], 'section');
+  var BH = put(['Account', 'Start of year', 'Put in', 'Taken out', 'Now'], 'header2');
+  var balFirst = rows.length + 1;
+  C.accounts.forEach(function (a) {
+    var r = put([a.name], 'bal');
+    if (typeof a.start === 'string' && a.start.charAt(0) === '=') fm.push([r, 2, a.start]); else rows[r - 1][1] = +a.start || 0;
+    var sc = null;
+    sections.forEach(function (sec) { if (sec.g === 'savings') sec.cats.forEach(function (k, i) { if (k === a.name.toLowerCase().trim()) sc = sec.first + i; }); });
+    fm.push([r, 3, sc ? '=' + colLetter_(VC.sofar - 1) + sc : '=0']);
+    // taken out = what you typed above, plus purchases the app marked "paid from savings" with this account
+    fm.push([r, 4, '=' + colLetter_(VC.sofar - 1) + a.wdRow + (FS ? '+IFERROR(SUMIFS(' + qe + '$D:$D,' + qe + '$' + FS + ':$' + FS + ',$A' + r + '),0)' : '')]);
+    fm.push([r, 5, '=B' + r + '+C' + r + '-D' + r]);
+  });
+  var balLast = rows.length;
+  var balTot = put(['Total'], 'total');
+  for (c2 = 2; c2 <= 5; c2++) fm.push([balTot, c2, nAcc ? '=SUM(' + colLetter_(c2 - 1) + balFirst + ':' + colLetter_(c2 - 1) + balLast + ')' : '=0']);
+  put([]);
+
+  // ---- top band
+  var cur = function (r) { return '=IF(' + RMC + '=0,0,INDEX(B' + r + ':M' + r + ',' + RMC + '))'; };
+  fm.push([KV, 2, cur(rSpend)]);
+  fm.push([KV, 4, '=IF(' + RMC + '=0,0,INDEX(' + colLetter_(VC.hb - 1) + rSpend + ':' + colLetter_(VC.hb + 10) + rSpend + ',' + RMC + ')-INDEX(B' + rSpend + ':M' + rSpend + ',' + RMC + '))']);
+  fm.push([KV, 6, '=' + colLetter_(VC.sofar - 1) + rSpend]);
+  fm.push([KV, 8, '=' + colLetter_(VC.left - 1) + rSpend]);
+  fm.push([KV, 10, '=' + colLetter_(VC.sofar - 1) + rSave]);
+  fm.push([KV, 12, '=' + colLetter_(VC.sofar - 1) + rRate]);
+  rows[KL - 1][13] = 'In savings now'; fm.push([KV, 14, '=E' + balTot]);
+
+  // ---- write: everything in one go (formulas ride along in setValues), then formatting in a
+  // handful of whole-block calls. Cell-by-cell writes were too slow for the app to wait on.
+  var W = VC.mark, N = rows.length;
+  fm.forEach(function (f) { rows[f[0] - 1][f[1] - 1] = f[2]; });
+  sh.getRange(1, 1, N, W).setValues(rows);
+
+  // ---- look
+  var money = '$#,##0;-$#,##0;"–"', navy = '#1f2a44';
+  function grid(v) { var g = []; for (var i = 0; i < N; i++) { var r = []; for (var j = 0; j < W; j++) r.push(v); g.push(r); } return g; }
+  var nf = grid('@'), bg = grid(null), fw = grid('normal'), fc = grid('#1d1b17'), fz = grid(10);
+  function paint(r, c1, c2, f) { for (var c = c1; c <= c2; c++) f(r - 1, c - 1); }
+  for (var i = 0; i < N; i++) for (var j = 1; j < W; j++) nf[i][j] = i + 1 > HDR ? money : 'General';
+  for (i = 0; i < N; i++) nf[i][0] = 'General';
+  paint(KV, 1, 1, function (r, c) { fc[r][c] = '#7a7368'; fz[r][c] = 10; fw[r][c] = 'normal'; nf[r][c] = '0" of 12 months"'; });
+  paint(KL, 1, 14, function (r, c) { fc[r][c] = '#57524a'; if (c) bg[r][c] = '#f4f1ea'; });
+  paint(KV, 2, 14, function (r, c) { fz[r][c] = 15; fw[r][c] = 'bold'; nf[r][c] = money; bg[r][c] = '#f4f1ea'; });
+  paint(KL, 1, 1, function (r, c) { fz[r][c] = 16; fw[r][c] = 'bold'; fc[r][c] = '#1d1b17'; });
+  nf[KV - 1][11] = '0%';
+  paint(HDR, 1, VC.trend, function (r, c) { fw[r][c] = 'bold'; bg[r][c] = navy; fc[r][c] = '#ffffff'; });
+  for (i = HDR; i < N; i++) for (j = VC.sofar - 1; j < VC.bud; j++) bg[i][j] = '#f7f8fb';
+  paint(rRate, 2, VC.sofar, function (r, c) { nf[r][c] = '0%'; });
+  fmtRows.forEach(function (k, idx) {
+    var r = idx + 1;
+    if (k === 'section') paint(r, 1, VC.trend, function (a, c) { bg[a][c] = '#e8ebf2'; fw[a][c] = 'bold'; });
+    if (k === 'total') paint(r, 1, VC.trend, function (a, c) { fw[a][c] = 'bold'; });
+    if (k === 'input') paint(r, 2, 13, function (a, c) { bg[a][c] = '#fff8e1'; });
+    if (k === 'header2') paint(r, 1, 5, function (a, c) { fw[a][c] = 'bold'; fc[a][c] = '#57524a'; nf[a][c] = 'General'; });
+    if (k === 'chart') paint(r, 1, 13, function (a, c) { fc[a][c] = '#9aa3b5'; fz[a][c] = 9; });
+  });
+  fmt_(function () {
+    var all = sh.getRange(1, 1, N, W);
+    all.setNumberFormats(nf); all.setBackgrounds(bg); all.setFontWeights(fw); all.setFontColors(fc); all.setFontSizes(fz);
+  });
+  fmt_(function () { sh.getRange(HDR, 2, 1, VC.trend - 1).setHorizontalAlignment('center'); sh.getRange(HDR, 1).setNote('Shading: green = within budget, red = over. "So far" columns compare the year to date with the budget to date.'); });
+  fmt_(function () {
+    var tl = sh.getRangeList(fmtRows.map(function (k, idx) { return k === 'total' ? 'A' + (idx + 1) + ':' + colLetter_(VC.trend - 1) + (idx + 1) : ''; }).filter(Boolean));
+    tl.setBorder(true, null, null, null, null, null, '#9aa3b5', SpreadsheetApp.BorderStyle.SOLID);
+  });
+  fmt_(function () { sh.setFrozenRows(HDR); sh.setFrozenColumns(1); });
+  fmt_(function () { sh.setColumnWidth(1, 170); sh.setColumnWidths(2, 12, 78); sh.setColumnWidths(VC.sofar, VC.bud - VC.sofar + 1, 92); sh.setColumnWidth(VC.trend, 110); sh.setColumnWidth(20, 20); });
+  fmt_(function () { sh.hideColumns(VC.hb, 12); sh.hideColumns(VC.mark); });
+  // shading against each month's budget (only months that have happened)
+  var rules = [], B2 = RMC;
+  function rng(a, b) { return sh.getRange(a, 2, b - a + 1, 12); }
+  fmt_(function () {
+    cfFlex.forEach(function (x) {
+      var r = x[0], top = 'B' + r, bud = colLetter_(VC.hb - 1) + r;
+      rules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=AND(COLUMN(' + top + ')-1<=' + B2 + ',' + bud + '>0,' + top + '>' + bud + '+0.5)').setBackground('#f8d7d3').setFontColor('#8e1b13').setRanges([rng(x[0], x[1])]).build());
+      rules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=AND(COLUMN(' + top + ')-1<=' + B2 + ',' + bud + '>0,' + top + '>=' + bud + '*0.9)').setBackground('#fdecc8').setRanges([rng(x[0], x[1])]).build());
+      rules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=AND(COLUMN(' + top + ')-1<=' + B2 + ',' + bud + '>0,' + top + '<=' + bud + ')').setBackground('#dcefdc').setRanges([rng(x[0], x[1])]).build());
+      rules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=AND(COLUMN(' + top + ')-1<=' + B2 + ',' + bud + '=0,' + top + '>0)').setFontColor('#8e1b13').setRanges([rng(x[0], x[1])]).build());
+    });
+    cfBills.forEach(function (x) {
+      var r = x[0], top = 'B' + r, bud = colLetter_(VC.hb - 1) + r;
+      rules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=AND(COLUMN(' + top + ')-1<' + B2 + ',' + bud + '>0,' + top + '=0)').setFontColor('#b06a00').setBackground('#fdf3e1').setRanges([rng(x[0], x[1])]).build());
+    });
+    cfSave.forEach(function (x) {
+      var r = x[0], top = 'B' + r, bud = colLetter_(VC.hb - 1) + r;
+      rules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=AND(COLUMN(' + top + ')-1<=' + B2 + ',' + bud + '>0,' + top + '>=' + bud + '-0.5)').setBackground('#dcefdc').setRanges([rng(x[0], x[1])]).build());
+    });
+    var spendTop = incTotal ? incTotal + 1 : HDR + 1, leftCol = sh.getRange(spendTop, VC.left, rSpend - spendTop + 1, 1);
+    rules.push(SpreadsheetApp.newConditionalFormatRule().whenNumberLessThan(0).setFontColor('#b3261e').setRanges([leftCol, sh.getRange(KV, 4), sh.getRange(KV, 8), sh.getRange(rNet, 2, 1, VC.sofar - 1)]).build());
+    sh.setConditionalFormatRules(rules);
+  });
+  // fold each section down to its total
+  sections.forEach(function (sec) { fmt_(function () { sh.getRange(sec.first, 1, sec.last - sec.first + 1, 1).shiftRowGroupDepth(1); }); });
+  fmt_(function () { sh.getRange(wdFirst, 1, Math.max(1, wdLast - wdFirst + 1), 1).shiftRowGroupDepth(nAcc ? 1 : 0); });
+  return { ok: true, tab: sh.getName(), y: y, rows: rows.length, categories: order.length, accounts: C.accounts.map(function (a) { return a.name; }), travelRow: travelRow };
+}
+
+// After a budget change: rewrite the hidden per-month budget columns of every new-style tab.
+function refreshViews_() {
+  try {
+    viewTabs_().forEach(function (v) {
+      var sh = v.sh, vals = sh.getDataRange().getValues(), f = sh.getDataRange().getFormulas(), bm = [];
+      for (var m = 0; m < 12; m++) bm.push(budgetAtStart_(v.y * 12 + m));
+      var block = sh.getRange(1, VC.hb, vals.length, 12), cur = block.getValues(), bf = block.getFormulas(), touched = false;
+      for (var i = 0; i < vals.length; i++) {
+        var k = str_(vals[i][0]).toLowerCase();
+        for (m = 0; m < 12; m++) if (bf[i][m]) cur[i][m] = bf[i][m];     // keep the totals' formulas
+        if (!k || f[i][VC.hb - 1]) continue;                 // totals are formulas
+        if (!/SUMIFS/.test(f[i][1] || '')) continue;          // only category rows
+        for (m = 0; m < 12; m++) { var b = bm[m][k]; cur[i][m] = b && b.note !== 'removed' ? b.a : 0; }
+        touched = true;
+      }
+      if (touched) block.setValues(cur);
+    });
+  } catch (e) {}
+}
+
+// ---------------------------------------------------------------- app settings ("app settings" tab)
+// The app keeps its look and your category order on the phone. A copy lives here so a fresh
+// install (or a second phone) gets them back.
+function readPrefs_() {
+  var sh = findSheetCI_(PREFS_TAB);
+  if (!sh) return null;
+  try {
+    var v = sh.getRange(2, 1).getValue();
+    return v ? JSON.parse(String(v)) : null;
+  } catch (e) { return null; }
+}
+
+function savePrefs_(prefs) {
+  if (!prefs || typeof prefs !== 'object') throw new Error('bad_prefs');
+  var ss = SpreadsheetApp.getActive(), sh = findSheetCI_(PREFS_TAB);
+  if (!sh) {
+    sh = ss.insertSheet(PREFS_TAB, ss.getSheets().length);
+    sh.getRange(1, 1).setValue('Runway keeps a copy of its settings here (colours, icon, category order). Leave this cell alone; delete the tab to forget them.');
+  }
+  prefs.at = prefs.at || new Date().getTime();
+  sh.getRange(2, 1).setValue(JSON.stringify(prefs));
+  return { ok: true, at: prefs.at };
+}
+
+// Move a category to another group in the app budget tab (every row for it).
+function regroup_(cat, g) {
+  g = str_(g).toLowerCase();
+  if (!str_(cat) || GROUPS.indexOf(g) < 0) throw new Error('bad_entry');
+  var sh = budgetSheet_(true), want = str_(cat).toLowerCase(), n = 0;
+  groupValidation_(sh);
+  readBudgetRows_(sh).forEach(function (r) { if (r.c.toLowerCase() === want && r.g !== g) { sh.getRange(r.row, 2).setValue(g); n++; } });
+  return { ok: true, n: n };
+}
+
+// ---------------------------------------------------------------- savings goals ("goals" tab)
+// Columns: A goal | B target | C by (month) | D savings category | E saved before starting | F started (month) | G notes
+// Progress = column E + everything logged to the category after the starting month.
+function goalsSheet_(create) {
+  var sh = findSheetCI_(GOALS_TAB);
+  if (sh || !create) return sh;
+  sh = SpreadsheetApp.getActive().insertSheet(GOALS_TAB);
+  sh.getRange(1, 1, 1, 7).setValues([['goal', 'target', 'by', 'savings category', 'saved before starting', 'started', 'notes']]);
+  sh.getRange(1, 9, 2, 1).setValues([['How this tab works'], ['Each goal adds up what you log to its savings category after the "started" month, on top of what you had saved before. Piggy works out how much a month you need to get there on time.']]);
+  try { sh.setFrozenRows(1); } catch (e) {}
+  return sh;
+}
+// [name, target, by month key, category, saved before, started month key, notes, row]
+function readGoals_() {
+  var sh = goalsSheet_(false);
+  if (!sh) return [];
+  var n = lastRowIn_(sh, 1);
+  if (n < 2) return [];
+  var vals = sh.getRange(2, 1, n - 1, 7).getValues(), out = [];
+  for (var i = 0; i < vals.length; i++) {
+    var name = str_(vals[i][0]); if (!name) continue;
+    var t = num_(vals[i][1]), b = num_(vals[i][4]);
+    out.push([name, t === null ? 0 : t, monthKey_(vals[i][2]), str_(vals[i][3]).toLowerCase(), b === null ? 0 : b, monthKey_(vals[i][5]), str_(vals[i][6]), i + 2]);
+  }
+  return out;
+}
+// goal = { name, target, by (month key), c, base, start (month key), notes }; old = previous name
+function saveGoal_(goal, old) {
+  if (!goal || !str_(goal.name) || isNaN(Number(goal.target))) throw new Error('bad_entry');
+  var sh = goalsSheet_(true), from = str_(old || goal.name).toLowerCase(), n = lastRowIn_(sh, 1), row = -1;
+  if (n >= 2) {
+    var names = sh.getRange(2, 1, n - 1, 1).getValues();
+    for (var i = 0; i < names.length; i++) if (str_(names[i][0]).toLowerCase() === from) { row = i + 2; break; }
+  }
+  if (row < 0) row = Math.max(2, n + 1);
+  function mdate(k) { k = Number(k); return isNaN(k) || !k ? '' : cellDate_(Math.floor(k / 12), k % 12, 1); }
+  sh.getRange(row, 1, 1, 7).setValues([[str_(goal.name), Number(goal.target) || 0, mdate(goal.by), str_(goal.c), Number(goal.base) || 0, mdate(goal.start), str_(goal.notes)]]);
+  sh.getRange(row, 2).setNumberFormat('$#,##0.00'); sh.getRange(row, 5).setNumberFormat('$#,##0.00');
+  sh.getRange(row, 3).setNumberFormat('mmm yyyy'); sh.getRange(row, 6).setNumberFormat('mmm yyyy');
+  return { ok: true, row: row };
+}
+function deleteGoal_(name) {
+  var sh = goalsSheet_(false), want = str_(name).toLowerCase();
+  if (sh && lastRowIn_(sh, 1) >= 2) {
+    var names = sh.getRange(2, 1, lastRowIn_(sh, 1) - 1, 1).getValues();
+    for (var i = names.length - 1; i >= 0; i--) if (str_(names[i][0]).toLowerCase() === want) sh.deleteRow(i + 2);
+  }
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------- alerts by email
+// Turn on: in the Apps Script editor pick runwaySetUpAlerts in the function list → Run → allow.
+// That lets the script send you email and checks once a day around 8am. Which alerts you get is
+// set in the app (Settings → Alerts) and saved in the "app settings" tab.
+function runwaySetUpAlerts() {
+  var r = alertSetup_();
+  var t = alertCheck_(true);
+  var msg = r.ok ? 'Alerts are on: a check runs every morning around 8. A test email went to ' + t.to + '.' : 'Couldn’t set up alerts: ' + r.error;
+  try { SpreadsheetApp.getUi().alert(msg); } catch (e) { Logger.log(msg); }
+  return r;
+}
+function runwayDailyCheck() {
+  try { return alertCheck_(false); } catch (e) { Logger.log(String(e && e.message || e)); return { ok: false }; }
+}
+function alertSetup_() {
+  try {
+    var has = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'runwayDailyCheck'; });
+    if (!has) ScriptApp.newTrigger('runwayDailyCheck').timeBased().everyDays(1).atHour(8).create();
+    return { ok: true, made: !has };
+  } catch (e) { return { ok: false, error: authErr_(e) }; }
+}
+function authErr_(e) {
+  var m = String(e && e.message || e);
+  return /permission|authori[sz]|scope/i.test(m) ? 'needs_auth' : m;
+}
+function alertPrefs_() {
+  var p = readPrefs_() || {}, a = p.alerts || {};
+  return { prefs: p, on: !!a.on, bills: a.bills !== false, days: a.days === undefined ? 2 : Math.max(0, Math.min(7, +a.days || 0)),
+    over: a.over !== false, near: !!a.near, recap: a.recap !== false, email: str_(a.email) };
+}
+function sentLog_() {
+  var props = PropertiesService.getScriptProperties(), log = {};
+  try { log = JSON.parse(props.getProperty('runway.sent') || '{}'); } catch (e) { log = {}; }
+  return { log: log, save: function () { props.setProperty('runway.sent', JSON.stringify(log)); } };
+}
+function money_(a) { var n = Math.abs(a), s = n.toFixed(n % 1 ? 2 : 0).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (a < 0 ? '-$' : '$') + s; }
+function esc_(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+// What a month looks like: spending per category (trip entries counted separately), income, savings.
+function monthFacts_(key, prefs) {
+  var y = Math.floor(key / 12), m = key % 12, tx = [];
+  var e = findLog_('e', y, false), i = findLog_('i', y, false);
+  if (e) readLog_(e, 'e', y, tx);
+  if (i) readLog_(i, 'i', y, tx);
+  var bud = budgetAtStart_(key), F = { key: key, tx: [], cat: {}, inc: 0, saved: 0, spent: 0, trip: 0, budget: 0, bud: bud, grp: {} };
+  Object.keys(bud).forEach(function (c) {
+    var b = bud[c]; if (b.note === 'removed') return;
+    var g = groupFor_(b.c, b.g, prefs); F.grp[c] = g;
+    if (g !== 'income' && g !== 'savings') F.budget += b.a;
+  });
+  tx.forEach(function (t) {
+    if (t[2] !== m) return;
+    if (t[0] === 'i') { F.inc += t[6]; return; }
+    F.tx.push(t);
+    var c = t[5].toLowerCase(), g = F.grp[c] || groupFor_(c, '', prefs);
+    if (g === 'savings') { F.saved += t[6]; return; }
+    if (t[10]) return;                                  // paid from savings: not this month's spending
+    var share = t[6] - (t[11] || 0);
+    if (t[9]) { F.trip += share; return; }
+    F.cat[c] = (F.cat[c] || 0) + share; F.spent += share;
+  });
+  return F;
+}
+
+// test: send now, listing everything that applies, without remembering it as sent.
+function alertCheck_(test) {
+  var A = alertPrefs_();
+  if (!test && !A.on) return { ok: true, sent: false, off: true };
+  var now = todayParts_(), key = now.y * 12 + now.m, F = monthFacts_(key, A.prefs), items = [], S = sentLog_(), fresh = [];
+  var dim = new Date(now.y, now.m + 1, 0).getDate();
+  function add(id, html, short) { if (test || !S.log[id]) { items.push({ html: html, short: short }); fresh.push(id); } }
+  if (A.bills) readRecur_().forEach(function (b) {
+    var name = b[0], c = b[1], a = b[2], day = Math.min(b[3], dim);
+    if (groupFor_(c, 'bills', A.prefs) === 'giving') return;
+    var w = name.toLowerCase(), paid = F.tx.some(function (t) {
+      if (t[5].toLowerCase() !== c) return false;
+      var v = t[4].toLowerCase();
+      return (w && v && (v.indexOf(w) >= 0 || w.indexOf(v) >= 0)) || (a > 0 && Math.abs(t[6] - a) <= Math.max(2, a * 0.15));
+    });
+    if (paid) return;
+    var left = day - now.d, when = MON3[now.m].charAt(0).toUpperCase() + MON3[now.m].slice(1) + ' ' + day;
+    if (left < 0) add('late|' + key + '|' + w, '<b>' + esc_(name) + '</b> (' + money_(a) + ') was due ' + when + ' and isn’t logged yet.', name + ' is late');
+    else if (left <= A.days) add('due|' + key + '|' + w, '<b>' + esc_(name) + '</b> (' + money_(a) + ') is due ' + (left === 0 ? 'today' : left === 1 ? 'tomorrow' : 'in ' + left + ' days, ' + when) + '.', name + (left === 0 ? ' due today' : ' due ' + (left === 1 ? 'tomorrow' : 'in ' + left + ' days')));
+  });
+  var roll = (A.prefs && A.prefs.roll) || {};
+  if (A.over || A.near) Object.keys(F.bud).forEach(function (c) {
+    var b = F.bud[c], g = F.grp[c];
+    if (!g || !/^(daily living|going out|one-time)$/.test(g) || !(b.a > 0)) return;
+    var sp = F.cat[c] || 0;
+    if (roll[c] !== undefined && roll[c] !== null) {             // "carry unused budget": earlier months' leftovers count
+      var carry = 0;
+      for (var k = Math.max(+roll[c], key - now.m); k < key; k++) { var bb = budgetAtStart_(k)[c]; carry += (bb && bb.note !== 'removed' ? bb.a : 0) - (monthCatSpend_(k, c, A.prefs)); }
+      b = { c: b.c, a: b.a + carry };
+      if (!(b.a > 0)) b.a = 0.01;
+    }
+    if (A.over && sp > b.a + 0.5) add('over|' + key + '|' + c, '<b>' + esc_(b.c) + '</b> is over budget: ' + money_(sp) + ' of ' + money_(b.a) + ' (' + money_(sp - b.a) + ' over).', b.c + ' over budget');
+    else if (A.near && b.a >= 20 && sp >= b.a * 0.9 && sp <= b.a + 0.5) add('near|' + key + '|' + c, '<b>' + esc_(b.c) + '</b> is nearly used up: ' + money_(sp) + ' of ' + money_(b.a) + '.', b.c + ' nearly used up');
+  });
+  var recap = '';
+  if (A.recap && (test || now.d <= 3) && (test || !S.log['recap|' + key])) {
+    recap = recapHtml_(key - 1, A.prefs);
+    if (recap) fresh.push('recap|' + key);
+  }
+  var to = A.email || Session.getEffectiveUser().getEmail();
+  if (!items.length && !recap && !test) return { ok: true, sent: false, items: [] };
+  var day = MON3[now.m].charAt(0).toUpperCase() + MON3[now.m].slice(1) + ' ' + now.d;
+  var subj = 'Piggy · ' + (items.length ? items.map(function (x) { return x.short; }).slice(0, 3).join(' · ') + (items.length > 3 ? ' +' + (items.length - 3) : '') : recap ? 'your ' + MONTHS[(key + 11) % 12] + ' recap' : 'test alert');
+  var html = '<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.45;color:#1d1b17;max-width:520px">' +
+    '<p style="color:#7a7368;font-size:13px;margin:0 0 10px">' + (test ? 'Test alert · ' : '') + day + '</p>' +
+    (items.length ? '<ul style="padding-left:18px;margin:0 0 14px">' + items.map(function (x) { return '<li style="margin-bottom:6px">' + x.html + '</li>'; }).join('') + '</ul>' :
+      (test ? '<p>Nothing needs attention right now. Alerts will look like this when something does.</p>' : '')) +
+    recap + '<p style="color:#7a7368;font-size:12px;margin-top:18px">Change which alerts you get in Piggy → Settings → Alerts.</p></div>';
+  try {
+    MailApp.sendEmail({ to: to, subject: subj, htmlBody: html, name: 'Piggy' });
+  } catch (e) { return { ok: false, error: authErr_(e) }; }
+  if (!test) {
+    var keep = {};                                  // forget anything older than last month
+    Object.keys(S.log).forEach(function (k) { var kk = +String(k).split('|')[1]; if (kk >= key - 1) keep[k] = S.log[k]; });
+    fresh.forEach(function (k) { keep[k] = day; });
+    S.log = keep;
+    PropertiesService.getScriptProperties().setProperty('runway.sent', JSON.stringify(keep));
+  }
+  return { ok: true, sent: true, to: to, subject: subj, items: items.map(function (x) { return x.short; }), recap: !!recap };
+}
+
+var MCS_ = {};
+function monthCatSpend_(k, c, prefs) { if (!MCS_[k]) MCS_[k] = monthFacts_(k, prefs); return MCS_[k].cat[c] || 0; }
+
+// Last month in a few lines, for the email on the 1st.
+function recapHtml_(key, prefs) {
+  var F = monthFacts_(key, prefs), P = monthFacts_(key - 1, prefs);
+  if (!F.tx.length && !F.inc) return '';
+  var name = MONTHS[key % 12], left = F.budget - F.spent;
+  var top = Object.keys(F.cat).sort(function (a, b) { return F.cat[b] - F.cat[a]; }).slice(0, 3);
+  var over = Object.keys(F.cat).filter(function (c) { var b = F.bud[c]; return b && b.a > 0 && F.cat[c] > b.a + 0.5 && /^(daily living|going out|one-time)$/.test(F.grp[c]); });
+  var chg = P.spent > 0 ? (F.spent - P.spent) / P.spent : null;
+  var row = function (a, b) { return '<tr><td style="padding:3px 14px 3px 0;color:#57524a">' + a + '</td><td style="padding:3px 0;text-align:right;font-weight:600">' + b + '</td></tr>'; };
+  return '<h3 style="font-size:17px;margin:6px 0 8px">' + name + ' recap</h3><table style="border-collapse:collapse;font-size:15px">' +
+    row('Spent', money_(F.spent) + ' of ' + money_(F.budget)) +
+    row(left >= 0 ? 'Left in budget' : 'Over budget', money_(Math.abs(left))) +
+    (F.trip ? row('On trips', money_(F.trip)) : '') +
+    row('Saved', money_(F.saved)) + row('Income', money_(F.inc)) +
+    row('Net', money_(F.inc - F.spent - F.trip - F.saved)) +
+    (chg !== null ? row('vs ' + MONTHS[(key + 11) % 12], (chg >= 0 ? '+' : '') + Math.round(chg * 100) + '% spending') : '') + '</table>' +
+    (top.length ? '<p style="margin:10px 0 0">Biggest: ' + top.map(function (c) { return esc_(c) + ' ' + money_(F.cat[c]); }).join(' · ') + '</p>' : '') +
+    (over.length ? '<p style="margin:6px 0 0">Over budget: ' + over.map(esc_).join(', ') + '</p>' : '<p style="margin:6px 0 0">Every flexible category stayed in budget.</p>');
+}
+
+// ---------------------------------------------------------------- recurring bills ("recurring" tab)
+// Columns: A name | B category | C amount | D day of month | E (not used any more) | F notes | G every | H unit (week/month/year) | I next due
+// The note about this tab sits in K.
+var RECUR_HEAD = ['bill', 'category', 'amount', 'day', 'log automatically', 'notes', 'every', 'unit', 'next due'];
+function recurSheet_(create) {
+  var sh = findSheetCI_(RECUR_TAB);
+  if (!sh && !create) return sh;
+  if (!sh) {
+    sh = SpreadsheetApp.getActive().insertSheet(RECUR_TAB);
+    sh.getRange(1, 1, 1, 9).setValues([RECUR_HEAD]);
+    sh.getRange(1, 11, 2, 1).setValues([['How this tab works'], ['Bills you pay on a schedule (every few weeks, months or years). Piggy asks you to check each one off when it is due.']]);
+    try { sh.setFrozenRows(1); } catch (e) {}
+  } else if (create && !/every/i.test(str_(sh.getRange(1, 7).getValue()))) {
+    var old = sh.getRange(1, 8, 2, 1).getValues();                 // an older tab kept its note in H: move it out of the way
+    if (/how this tab works/i.test(str_(old[0][0]))) { sh.getRange(1, 11, 2, 1).setValues(old); sh.getRange(1, 8, 2, 1).clearContent(); }
+    sh.getRange(1, 7, 1, 3).setValues([['every', 'unit', 'next due']]);
+  }
+  return sh;
+}
+function readRecur_() {
+  var sh = recurSheet_(false);
+  if (!sh) return [];
+  var n = lastRowIn_(sh, 1);
+  if (n < 2) return [];
+  var vals = sh.getRange(2, 1, n - 1, 9).getValues(), out = [];
+  var newCols = /every/i.test(str_(sh.getRange(1, 7).getValue()));
+  for (var i = 0; i < vals.length; i++) {
+    var name = str_(vals[i][0]); if (!name) continue;
+    var a = num_(vals[i][2]), d = num_(vals[i][3]);
+    var ev = newCols ? num_(vals[i][6]) : null, un = newCols ? str_(vals[i][7]).toLowerCase() : '', nx = newCols ? dateStr_(vals[i][8]) : '';
+    un = /^w/.test(un) ? 'w' : /^y/.test(un) ? 'y' : 'm';
+    out.push([name, str_(vals[i][1]).toLowerCase(), a === null ? 0 : a, d === null ? 1 : Math.max(1, Math.min(31, Math.round(d))), /^(y|yes|true|1|auto)/i.test(str_(vals[i][4])), str_(vals[i][5]), i + 2,
+      ev === null ? 1 : Math.max(1, Math.round(ev)), un, nx]);
+  }
+  return out;
+}
+// bill = { name, c, a, day, auto, notes }; old = previous name when renaming
+function saveRecur_(bill, old) {
+  if (!bill || !str_(bill.name)) throw new Error('bad_entry');
+  var sh = recurSheet_(true), from = str_(old || bill.name).toLowerCase(), n = lastRowIn_(sh, 1), row = -1;
+  if (n >= 2) {
+    var names = sh.getRange(2, 1, n - 1, 1).getValues();
+    for (var i = 0; i < names.length; i++) if (str_(names[i][0]).toLowerCase() === from) { row = i + 2; break; }
+  }
+  if (row < 0) row = Math.max(2, n + 1);
+  var unit = bill.unit === 'w' ? 'week' : bill.unit === 'y' ? 'year' : 'month', nx = bill.start ? parseDate_(String(bill.start)) : null;
+  sh.getRange(row, 1, 1, 9).setValues([[str_(bill.name), str_(bill.c), Number(bill.a) || 0, Number(bill.day) || 1, 'no', str_(bill.notes), Math.max(1, Number(bill.every) || 1), unit, nx || '']]);
+  sh.getRange(row, 3).setNumberFormat('$#,##0.00');
+  if (nx) sh.getRange(row, 9).setNumberFormat('m/d/yyyy');
+  return { ok: true, row: row };
+}
+function deleteRecur_(name) {
+  var sh = recurSheet_(false), want = str_(name).toLowerCase();
+  if (sh && lastRowIn_(sh, 1) >= 2) {
+    var names = sh.getRange(2, 1, lastRowIn_(sh, 1) - 1, 1).getValues();
+    for (var i = names.length - 1; i >= 0; i--) if (str_(names[i][0]).toLowerCase() === want) sh.deleteRow(i + 2);
+  }
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------- trips ("trips" tab)
+// Columns: A name | B start | C end | D budget | E notes | F budget by category ("travel: 1500; food: 400")
+
+function tripsSheet_(create) {
+  var ss = SpreadsheetApp.getActive();
+  var sh = findSheetCI_(TRIPS_TAB);
+  if (sh || !create) return sh;
+  sh = ss.insertSheet(TRIPS_TAB);
+  sh.getRange(1, 1, 1, 6).setValues([['trip', 'start', 'end', 'budget', 'notes', 'budget by category']]);
+  sh.getRange(1, 7, 3, 1).setValues([
+    ['How this tab works'],
+    ['Each row is a trip. Expenses belong to a trip when the "trip" column in an expenses tab has its name.'],
+    ['Trip spending is shown separately in the app, outside your monthly budget.']
+  ]);
+  try { sh.setFrozenRows(1); } catch (e) {}
+  return sh;
+}
+
+function readTrips_(fixes) {
+  var sh = tripsSheet_(false);
+  if (!sh || sh.getLastRow() < 2) return [];
+  var vals = sh.getRange(2, 1, sh.getLastRow() - 1, 6).getValues(), out = [];
+  for (var i = 0; i < vals.length; i++) {
+    var name = str_(vals[i][0]);
+    if (!name) continue;
+    [1, 2].forEach(function (c) { if (fixes && legacyDate_(vals[i][c])) fixes.push({ sh: sh, r: i + 2, c: c + 1, v: dayToCell_(dateStr_(vals[i][c])), fmt: 'm/d/yyyy' }); });
+    var bgt = num_(vals[i][3]);
+    out.push([name, dateStr_(vals[i][1]), dateStr_(vals[i][2]), bgt === null ? 0 : bgt, str_(vals[i][4]), i + 2, str_(vals[i][5])]);
+  }
+  return out;
+}
+
+// trip = { name, start, end, budget, notes }; old = previous name when renaming
+function saveTrip_(trip, old) {
+  if (!trip || !str_(trip.name)) throw new Error('bad_entry');
+  var sh = tripsSheet_(true), name = str_(trip.name), from = str_(old || name).toLowerCase();
+  var n = lastRowIn_(sh, 1), row = -1;
+  if (n >= 2) {
+    var names = sh.getRange(2, 1, n - 1, 1).getValues();
+    for (var i = 0; i < names.length; i++) if (str_(names[i][0]).toLowerCase() === from) { row = i + 2; break; }
+  }
+  if (row < 0) row = Math.max(2, n + 1);
+  var start = parseDate_(trip.start), end = parseDate_(trip.end);
+  if (!str_(sh.getRange(1, 6).getValue())) sh.getRange(1, 6).setValue('budget by category');
+  sh.getRange(row, 1, 1, 6).setValues([[name, start || '', end || '', Number(trip.budget) || '', str_(trip.notes), planText_(trip.plan)]]);
+  sh.getRange(row, 2, 1, 2).setNumberFormat('m/d/yyyy');
+  sh.getRange(row, 4).setNumberFormat('$#,##0.00');
+  if (old && str_(old).toLowerCase() !== name.toLowerCase()) retagAll_(str_(old), name);
+  return { ok: true, row: row };
+}
+
+// {travel: 1500, food: 400} -> "travel: 1500; food: 400" (a string is kept as it is)
+function planText_(plan) {
+  if (!plan) return '';
+  if (typeof plan === 'string') return plan;
+  return Object.keys(plan).filter(function (k) { return Number(plan[k]) > 0; })
+    .map(function (k) { return k + ': ' + Math.round(Number(plan[k]) * 100) / 100; }).join('; ');
+}
+
+function deleteTrip_(name) {
+  var sh = tripsSheet_(false), want = str_(name).toLowerCase();
+  if (sh && sh.getLastRow() >= 2) {
+    var names = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+    for (var i = names.length - 1; i >= 0; i--) if (str_(names[i][0]).toLowerCase() === want) sh.deleteRow(i + 2);
+  }
+  retagAll_(str_(name), '');
+  return { ok: true };
+}
+
+// Rename (or clear) a trip everywhere it's used.
+function retagAll_(from, to) {
+  var want = from.toLowerCase();
+  logSheets_().forEach(function (l) {
+    var vals = l.sh.getDataRange().getValues(), tc = tripColFound_(vals);
+    if (tc < 0) return;
+    for (var i = headerIndex_(vals) + 1; i < vals.length; i++) {
+      if (str_(vals[i][tc]).toLowerCase() === want) l.sh.getRange(i + 1, tc + 1).setValue(to);
+    }
+  });
+}
+
+// Mark entries as part of a trip (or take them out). refs are the same as for update/delete.
+function tagEntries_(trip, refs, untag) {
+  var done = 0, missed = 0;
+  function apply(ref, value) {
+    var sh = findLog_(ref.k, ref.y, false);
+    if (!sh) { missed++; return; }
+    try {
+      var row = locate_(sh, ref), col = ensureTripHeader_(sh);
+      sh.getRange(row, col + 1).setValue(value);
+      done++;
+    } catch (e) { missed++; }
+  }
+  refs.forEach(function (r) { apply(r, str_(trip)); });
+  untag.forEach(function (r) { apply(r, ''); });
+  return { ok: true, n: done, missed: missed };
+}
+
+// ---------------------------------------------------------------- spending tabs: trips go in the travel row
+// Your "2026 spending" tab adds up each category with
+//   =SUMIFS('expenses 2026'!$D:$D, 'expenses 2026'!$A:$A, B$1, 'expenses 2026'!$C:$C, $A9)
+// This adds "and the trip column is empty" to each of those, and makes the "travel" row
+//   travel entries not on a trip  +  everything tagged with a trip (any category)
+// so a trip meal logged as "food" shows under travel, not food, and totals / monthly profit stay complete.
+// It makes a backup copy of the tab first and is safe to run again (it skips anything already done).
+function reEsc_(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function colLetter_(n) { var s = ''; n++; while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+function excludeTrips_(apply) {
+  var ss = SpreadsheetApp.getActive(), out = { ok: true, applied: apply, tabs: [] };
+  ss.getSheets().forEach(function (sh) {
+    var y = gridName_(sh.getName());
+    if (!y || /before trips/i.test(sh.getName())) return;
+    var log = findLog_('e', y, false);
+    if (!log) return;
+    var lv = log.getDataRange().getValues(), tc = tripColFound_(lv);
+    if (tc < 0) return;
+    var ln = log.getName(), q = "'" + ln.replace(/'/g, "''") + "'!", T = colLetter_(tc);
+    var qre = "'?" + reEsc_(ln.replace(/'/g, "''")) + "'?!";
+    var re = new RegExp('^=SUMIFS\\(\\s*' + qre + '\\$D:\\$D\\s*,\\s*' + qre + '\\$A:\\$A\\s*,\\s*([A-Z]{1,3}\\$1)\\s*,\\s*' + qre + '\\$C:\\$C\\s*,\\s*(\\$A\\d+)\\s*\\)\\s*(\\+\\s*\\$?[A-Z]{1,3}\\$?\\d+\\s*)?$', 'i');
+    // what an earlier version (1.9) put in a "trips" row
+    var oldTrips = new RegExp('^=SUMIFS\\(\\s*' + qre + '\\$D:\\$D\\s*,\\s*' + qre + '\\$A:\\$A\\s*,\\s*([A-Z]{1,3}\\$1)\\s*,\\s*' + qre + '\\$' + T + ':\\$' + T + '\\s*,\\s*"<>"\\s*\\)\\s*$', 'i');
+    var rng = sh.getDataRange(), f = rng.getFormulas(), vals = rng.getValues();
+    var changes = [], dropped = [], travelRow = -1, oldRow = -1, stop = vals.length;
+    for (var i = 0; i < vals.length; i++) {
+      var lab = str_(vals[i][0]).toLowerCase();
+      if (lab === 'summary') { stop = i; break; }
+      if (travelRow < 0 && lab === 'travel') travelRow = i;
+      if (oldRow < 0 && lab === 'trips') oldRow = i;
+    }
+    var months = [];
+    for (var j = 0; j < (vals[0] || []).length; j++) if (monthHeader_(vals[0][j]) >= 0) months.push(j);
+    function catF(colRef, aRef) { return '=SUMIFS(\n  ' + q + '$D:$D,\n  ' + q + '$A:$A, ' + colRef + ',\n  ' + q + '$C:$C, ' + aRef + ',\n  ' + q + '$' + T + ':$' + T + ', ""\n)'; }
+    for (i = 0; i < stop; i++) {
+      if (i === travelRow) continue;
+      for (j = 0; j < f[i].length; j++) {
+        var m = f[i][j] && f[i][j].match(re);
+        if (m) {
+          if (m[3]) dropped.push(colLetter_(j) + (i + 1) + ': ' + m[3].replace(/\s+/g, ' ').trim());
+          changes.push({ r: i + 1, c: j + 1, f: catF(m[1], m[2]) });
+        } else if (i === oldRow && f[i][j] && (m = f[i][j].match(oldTrips))) {
+          // undo 1.9's "trips" row: back to a normal "trip expenses" category row
+          changes.push({ r: i + 1, c: j + 1, f: catF(m[1], '$A' + (i + 1)) });
+        }
+      }
+    }
+    var travelCells = [];
+    if (travelRow >= 0) months.forEach(function (j2) {
+      var col = colLetter_(j2) + '$1', cur = f[travelRow][j2] || '';
+      var want = '=SUMIFS(\n  ' + q + '$D:$D,\n  ' + q + '$A:$A, ' + col + ',\n  ' + q + '$C:$C, $A' + (travelRow + 1) + ',\n  ' + q + '$' + T + ':$' + T + ', ""\n)' +
+        ' + SUMIFS(\n  ' + q + '$D:$D,\n  ' + q + '$A:$A, ' + col + ',\n  ' + q + '$' + T + ':$' + T + ', "<>"\n)';
+      if (cur === want) return;
+      var mm = cur.match(re);
+      if (mm && mm[3]) dropped.push(colLetter_(j2) + (travelRow + 1) + ': ' + mm[3].replace(/\s+/g, ' ').trim());
+      travelCells.push({ r: travelRow + 1, c: j2 + 1, f: want });
+    });
+    var info = { tab: sh.getName(), log: ln, tripCol: T, changed: changes.length, travelRow: travelRow >= 0 ? travelRow + 1 : 0,
+      travelCells: travelCells.length, dropped: dropped, undoTrips: oldRow >= 0 ? oldRow + 1 : 0, backup: '' };
+    if (apply && (changes.length || travelCells.length)) {
+      var bname = sh.getName() + ' (before trips)';
+      if (!ss.getSheetByName(bname)) { ss.insertSheet(bname, ss.getSheets().length, { template: sh }); info.backup = bname; }
+      if (oldRow >= 0) sh.getRange(oldRow + 1, 1).setValue('trip expenses');
+      changes.concat(travelCells).forEach(function (c) { sh.getRange(c.r, c.c).setFormula(c.f); });
+    }
+    out.tabs.push(info);
+  });
+  return out;
+}
+
+// Fold the old "trip expenses" category into "travel": the trip column now says which purchases
+// were on a trip, so one category is enough. For each year whose expenses tab has a trip column:
+//   1. entries in "trip expenses" become "travel" (they stay in the month they were bought)
+//   2. the "trip expenses" row comes out of that year's spending tab
+//   3. the category is removed from that year's budget tab and the app's budget
+//   4. it's taken off the expense-category dropdown list
+function retireTripExpenses_(apply) {
+  var OLD = 'trip expenses', NEW = 'travel', out = { ok: true, applied: apply, years: [] };
+  logSheets_().forEach(function (l) {
+    if (l.k !== 'e') return;
+    var vals = l.sh.getDataRange().getValues();
+    if (tripColFound_(vals) < 0) return;
+    var hdr = headerIndex_(vals), rows = [];
+    for (var i = hdr + 1; i < vals.length; i++) if (str_(vals[i][2]).toLowerCase() === OLD) rows.push(i + 1);
+    var spend = null;
+    SpreadsheetApp.getActive().getSheets().forEach(function (sh) { if (!spend && gridName_(sh.getName()) === l.y && !/before trips/i.test(sh.getName())) spend = sh; });
+    var srow = 0;
+    if (spend) {
+      var sv = spend.getDataRange().getValues();
+      for (var r = 0; r < sv.length; r++) { var lab = str_(sv[r][0]).toLowerCase(); if (lab === 'summary') break; if (lab === OLD) { srow = r + 1; break; } }
+    }
+    var tab = yearBudgetTab_(l.y), brow = 0;
+    if (tab) { var bv = tab.getDataRange().getValues(); for (var b = 0; b < bv.length; b++) if (str_(bv[b][0]).toLowerCase() === OLD) { brow = b + 1; break; } }
+    // the dropdown list behind the category column
+    var dd = null;
+    try {
+      var rule = l.sh.getRange(hdr + 2, 3).getDataValidation();
+      if (rule && rule.getCriteriaType() === SpreadsheetApp.DataValidationCriteria.VALUE_IN_RANGE) {
+        var rg = rule.getCriteriaValues()[0], lv = rg.getValues();
+        for (var di = 0; di < lv.length; di++) if (str_(lv[di][0]).toLowerCase() === OLD) { dd = { rg: rg, vals: lv, i: di }; break; }
+      }
+    } catch (e) {}
+    var info = { year: l.y, tab: l.sh.getName(), entries: rows.length, spendTab: spend ? spend.getName() : '', spendRow: srow,
+      budgetTab: tab ? tab.getName() : '', budgetRow: brow, dropdown: !!dd };
+    if (apply) {
+      rows.forEach(function (rr) { l.sh.getRange(rr, 3).setValue(NEW); });
+      if (dd) {                                     // take it out of the list and close the gap
+        var list = dd.vals.map(function (x) { return x[0]; });
+        list.splice(dd.i, 1); list.push('');
+        dd.rg.setValues(list.map(function (x) { return [x]; }));
+      }
+      var bud = { mode: 'year', s: l.y * 12, c: OLD, a: 0, g: '', remove: true };
+      try { setBudget_(bud); mirrorBudgets_([bud]); } catch (e) { info.budgetErr = String(e.message || e); }
+      if (srow) spend.deleteRow(srow);
+    }
+    if (rows.length || srow || brow || dd) out.years.push(info);
+  });
+  return out;
+}
+
+// ---------------------------------------------------------------- writing log rows
+
+function add_(t) {
+  check_(t);
+  var sh = findLog_(t.k, t.y, true);
+  ensureDateHeader_(sh);
+  var row = placeRow_(sh, t.m);
+  writeRow_(sh, row, t);
+  return { ok: true, row: row };
+}
+
+function update_(ref, t) {
+  check_(t);
+  var sh = findLog_(ref.k, ref.y, false);
+  if (!sh) throw new Error('not_found');
+  var row = locate_(sh, ref);
+  if (t.k !== ref.k || +t.y !== +ref.y || +t.m !== +ref.m) {
+    // Moved to another month, year or between income/expense: re-file it properly.
+    sh.deleteRow(row);
+    return add_(t);
+  }
+  ensureDateHeader_(sh);
+  writeRow_(sh, row, t);
+  return { ok: true, row: row };
+}
+
+function delete_(ref) {
+  var sh = findLog_(ref.k, ref.y, false);
+  if (!sh) throw new Error('not_found');
+  sh.deleteRow(locate_(sh, ref));
+  return { ok: true };
+}
+
+// Decide where a new entry for month `m` goes. Logs are newest-first with months in
+// descending order, so the entry goes at the top of its month's block. A blank
+// pre-made row for that month (month filled in, nothing else) is used as-is.
+function placeRow_(sh, m) {
+  var vals = sh.getDataRange().getValues();
+  var hdr = headerIndex_(vals);
+  var first = -1, target = -1;
+  for (var i = hdr + 1; i < vals.length; i++) {
+    var mi = monthIndex_(vals[i][0]);
+    if (mi < 0) continue;
+    if (first < 0) first = i;
+    if (mi <= m) { target = i; break; }
+  }
+  if (first < 0) return Math.max(hdr + 3, lastFilledRow_(vals) + 1);   // empty log: keep the spacer row under the header
+  if (target < 0) return lastLogRow_(vals, hdr) + 1;                   // older than everything: goes at the bottom
+  var r = target + 1;
+  var tr = vals[target];
+  if (monthIndex_(tr[0]) === m && blank_(tr[1]) && blank_(tr[2]) && num_(tr[3]) === null) return r;
+  if (target === first) {
+    // Inserting above the very first data row would push it outside formula ranges that
+    // start there (e.g. SUMIFS over D4:D700). Insert below it, move its contents down,
+    // and write the new entry into the original first row.
+    var w = logWidth_(vals);
+    sh.insertRowsAfter(r, 1);
+    sh.getRange(r, 1, 1, w).copyTo(sh.getRange(r + 1, 1, 1, w));
+    sh.getRange(r, 1, 1, w).clearContent();
+    return r;
+  }
+  sh.insertRowBefore(r);
+  return r;
+}
+
+function writeRow_(sh, row, t) {
+  var vals = sh.getRange(1, 1, Math.min(10, Math.max(1, sh.getLastRow())), Math.max(8, sh.getLastColumn() || 8)).getValues();
+  var dcol = dateCol_(vals);
+  allowCategory_(sh, row, t.c);
+  sh.getRange(row, 1, 1, 5).setValues([[MONTHS[t.m], t.v || '', t.c || '', Number(t.a), t.n || '']]);
+  var d = parseDate_(t.d);
+  if (d) sh.getRange(row, dcol + 1).setValue(d).setNumberFormat('m/d/yyyy');
+  else if (t.d === '') sh.getRange(row, dcol + 1).setValue('');
+  if (t.tr !== undefined && t.tr !== null) {
+    var tc = t.tr ? ensureTripHeader_(sh) : tripColFound_(vals);
+    if (tc >= 0) sh.getRange(row, tc + 1).setValue(str_(t.tr));
+  }
+  // paid from savings / owed back / paid back: the column is made the first time it's needed
+  [['fs', 'from savings'], ['ow', 'owed back'], ['pb', 'paid back']].forEach(function (x) {
+    var v = t[x[0]];
+    if (v === undefined || v === null) return;
+    var empty = v === '' || v === 0;
+    var col = empty ? headerCol_(vals, x[1]) : ensureColHeader_(sh, x[1]);
+    if (col < 0) return;
+    var cell = sh.getRange(row, col + 1);
+    if (empty) cell.setValue('');
+    else if (x[0] === 'pb') { var pd = parseDate_(v); cell.setValue(pd || v).setNumberFormat('m/d/yyyy'); }
+    else if (x[0] === 'ow') cell.setValue(Number(v)).setNumberFormat('$#,##0.00');
+    else cell.setValue(str_(v));
+  });
+}
+
+// A named column in the header row of a log tab: found, or added in the first free unmerged
+// header cell after the date and trip columns.
+function ensureColHeader_(sh, name) {
+  var width = Math.max(12, sh.getLastColumn() || 12);
+  var vals = sh.getRange(1, 1, Math.min(10, Math.max(2, sh.getLastRow())), width).getValues();
+  var found = headerCol_(vals, name);
+  if (found >= 0) return found;
+  var h = headerIndex_(vals), start = Math.max(dateCol_(vals), tripColFound_(vals)) + 1;
+  for (var c = start; c < start + 14; c++) {
+    var cell = sh.getRange(h + 1, c + 1), merged = false;
+    try { merged = cell.isPartOfMerge(); } catch (e) {}
+    if (!merged && blank_(vals[h] ? vals[h][c] : '')) { cell.setValue(name); return c; }
+  }
+  throw new Error('no_room_for_column');
+}
+
+// If the category column has a dropdown that doesn't include this category, add it to the
+// dropdown's list (when there's room) so the sheet doesn't reject the entry.
+function allowCategory_(sh, row, cat) {
+  try {
+    var cell = sh.getRange(row, 3), rule = cell.getDataValidation();
+    if (!rule || !cat) return;
+    var C = SpreadsheetApp.DataValidationCriteria, type = rule.getCriteriaType(), args = rule.getCriteriaValues();
+    var want = String(cat).toLowerCase();
+    if (type === C.VALUE_IN_RANGE) {
+      var rg = args[0], vals = rg.getValues(), empty = null;
+      for (var i = 0; i < vals.length; i++) for (var j = 0; j < vals[i].length; j++) {
+        if (str_(vals[i][j]).toLowerCase() === want) return;
+        if (!empty && blank_(vals[i][j])) empty = [i, j];
+      }
+      if (empty) { rg.getCell(empty[0] + 1, empty[1] + 1).setValue(cat); return; }
+    } else if (type === C.VALUE_IN_LIST) {
+      var list = args[0] || [];
+      for (var k = 0; k < list.length; k++) if (String(list[k]).toLowerCase() === want) return;
+      cell.setDataValidation(rule.copy().requireValueInList(list.concat([cat]), args[1] !== false).build());
+      return;
+    } else return;
+    cell.setDataValidation(rule.copy().setAllowInvalid(true).build());
+  } catch (e) { /* best effort */ }
+}
+
+function locate_(sh, ref) {
+  var vals = sh.getDataRange().getValues();
+  var fp = ref.fp || {};
+  function same(r) {
+    return r && monthIndex_(r[0]) === +fp.m && str_(r[1]) === String(fp.v || '') &&
+      str_(r[2]) === String(fp.c || '') && Math.abs((num_(r[3]) || 0) - Number(fp.a)) < 0.005;
+  }
+  var r0 = +ref.r;
+  if (r0 >= 1 && same(vals[r0 - 1])) return r0;
+  var best = -1;
+  for (var i = 0; i < vals.length; i++) {
+    if (same(vals[i]) && (best < 0 || Math.abs(i + 1 - r0) < Math.abs(best - r0))) best = i + 1;
+  }
+  if (best < 0) throw new Error('not_found');
+  return best;
+}
+
+function findLog_(kind, year, create) {
+  var logs = logSheets_(), prev = null, other = null;
+  for (var i = 0; i < logs.length; i++) {
+    var l = logs[i];
+    if (l.k === kind && l.y === +year) return l.sh;
+    if (l.k === kind && l.y < year && (!prev || l.y > prev.y)) prev = l;
+    if (l.k !== kind && l.y === +year) other = l;
+  }
+  if (!create) return null;
+  return newYearLog_(kind, +year, prev, other);
+}
+
+// New year's tab: copy last year's tab so it keeps your layout, formatting, dropdowns and
+// header formulas, point those formulas at the new year, then clear out the entries.
+function newYearLog_(kind, year, prev, other) {
+  var ss = SpreadsheetApp.getActive();
+  var name = (kind === 'i' ? 'income ' : 'expenses ') + year;
+  // Put the new tabs at the front, expenses before income.
+  var index = 0;
+  if (other) index = kind === 'i' ? other.sh.getIndex() : other.sh.getIndex() - 1;
+  var sh;
+  if (prev) {
+    sh = ss.insertSheet(name, index, { template: prev.sh });
+    var vals = sh.getDataRange().getValues();
+    var hdr = headerIndex_(vals);
+    // header formulas: 'income 2026'!B1 → 'income 2027'!B1, DATE(2026,…) → DATE(2027,…)
+    var top = sh.getRange(1, 1, hdr + 1, sh.getLastColumn() || 1);
+    var f = top.getFormulas();
+    for (var r = 0; r < f.length; r++) for (var c = 0; c < f[r].length; c++) {
+      if (f[r][c] && f[r][c].indexOf(String(prev.y)) >= 0) {
+        top.getCell(r + 1, c + 1).setFormula(f[r][c].split(String(prev.y)).join(String(year)));
+      }
+    }
+    var last = sh.getLastRow(), w = logWidth_(vals);
+    if (last >= hdr + 2) sh.getRange(hdr + 2, 1, last - hdr - 1, w).clearContent();
+  } else {
+    sh = ss.insertSheet(name, index);
+    sh.getRange(2, 1, 1, 6).setValues([['month', 'store/vendor', kind === 'i' ? 'income category' : 'expense category', 'amount', 'notes', 'date']]);
+    sh.getRange('D:D').setNumberFormat('$#,##0.00');
+  }
+  ensureYear_(year);                 // that year's budget tab and spending tab, if missing
+  return sh;
+}
+
+function ensureDateHeader_(sh) {
+  var vals = sh.getRange(1, 1, Math.min(10, Math.max(1, sh.getLastRow())), 8).getValues();
+  var h = headerIndex_(vals);
+  if (h >= 0 && h < vals.length && dateColFound_(vals) < 0 && blank_(vals[h][5])) sh.getRange(h + 1, 6).setValue('date');
+}
+
+// The "trip" column: an existing "trip" header, or the first free header cell after "date"
+// that isn't part of a merged block (your note box in G1:H2 is skipped).
+function ensureTripHeader_(sh) {
+  var width = Math.max(10, sh.getLastColumn() || 10);
+  var vals = sh.getRange(1, 1, Math.min(10, Math.max(2, sh.getLastRow())), width).getValues();
+  var found = tripColFound_(vals);
+  if (found >= 0) return found;
+  var h = headerIndex_(vals), start = dateCol_(vals) + 1;
+  for (var c = start; c < start + 12; c++) {
+    var cell = sh.getRange(h + 1, c + 1);
+    var merged = false;
+    try { merged = cell.isPartOfMerge(); } catch (e) {}
+    if (!merged && blank_(vals[h] ? vals[h][c] : '')) { cell.setValue('trip'); return c; }
+  }
+  throw new Error('no_room_for_trip_column');
+}
+
+// Fills in today's date in the date column when you type a new current-month entry in the sheet.
+function onEdit(e) {
+  try {
+    var sh = e.range.getSheet();
+    var n = logName_(sh.getName());
+    if (!n) return;
+    var today = todayParts_();
+    if (n.y !== today.y) return;
+    var c0 = e.range.getColumn();
+    if (c0 > 4) return;
+    var head = sh.getRange(1, 1, Math.min(10, Math.max(1, sh.getLastRow())), 8).getValues();
+    var dcol = dateCol_(head);
+    var r0 = e.range.getRow(), cnt = Math.min(e.range.getNumRows(), 50);
+    for (var r = Math.max(headerIndex_(head) + 2, r0); r < r0 + cnt; r++) {
+      var row = sh.getRange(r, 1, 1, 8).getValues()[0];
+      if (monthIndex_(row[0]) === today.m && num_(row[3]) !== null && blank_(row[dcol])) {
+        sh.getRange(r, dcol + 1).setValue(cellDate_(today.y, today.m, today.d)).setNumberFormat('m/d/yyyy');
+      }
+    }
+  } catch (err) { /* never block typing */ }
+}
+
+// ---------------------------------------------------------------- the Runway menu (desktop browser only)
+
+function onOpen() {
+  try {
+    SpreadsheetApp.getUi().createMenu('Runway')
+      .addItem('Import a budget tab…', 'runwayImportBudget')
+      .addItem('Re-read my budget tabs', 'runwayRebuildBudget')
+      .addItem('Put trips in the travel row of my spending tabs', 'runwayExcludeTrips')
+      .addItem('Turn on email alerts', 'runwaySetUpAlerts')
+      .addToUi();
+  } catch (e) {}
+}
+
+// You can also run this one straight from the Apps Script editor: pick it in the function list → Run.
+function runwayExcludeTrips() {
+  var r = excludeTrips_(true), msg = r.tabs.length ? r.tabs.map(function (t) {
+    return '“' + t.tab + '”: ' + t.changed + ' category formulas updated' + (t.travelRow ? ', travel row ' + t.travelRow + ' now includes everything tagged with a trip' : '') + (t.dropped.length ? ', removed hand-added trip totals (' + t.dropped.join(', ') + ')' : '') + (t.backup ? ' (backup: “' + t.backup + '”)' : '');
+  }).join('\n') : 'No spending tab with a matching expenses tab and trip column was found.';
+  try { SpreadsheetApp.getUi().alert(msg); } catch (e) { Logger.log(msg); }
+  return r;
+}
+
+function runwayImportBudget() {
+  var ui = SpreadsheetApp.getUi();
+  var tabs = budgetTabs_(), now = todayParts_();
+  var guess = '';
+  tabs.forEach(function (t) { if (t.y === now.y) guess = t.name; });
+  if (!guess && tabs.length) guess = tabs[tabs.length - 1].name;
+  var res = ui.prompt('Import a budget tab',
+    'Which tab should I read?\n\nFound: ' + (tabs.map(function (t) { return t.name; }).join(', ') || 'none') +
+    '\n\nIts amounts start in January of that tab’s year. Earlier months keep what they have.',
+    ui.ButtonSet.OK_CANCEL);
+  if (res.getSelectedButton() !== ui.Button.OK) return;
+  var name = str_(res.getResponseText()) || guess;
+  try {
+    var r = importBudgetTab_(name);
+    ui.alert('Imported ' + r.n + ' categories from “' + name + '”, starting January ' + r.y + '.\n\nSync in the app to see them.');
+  } catch (e) {
+    ui.alert(String(e.message) === 'no_tab' ? 'No tab called “' + name + '”.' : 'I couldn’t find a list of categories and amounts on “' + name + '”.');
+  }
+}
+
+function runwayRebuildBudget() {
+  var ui = SpreadsheetApp.getUi();
+  var tabs = budgetTabs_();
+  var ok = ui.alert('Re-read my budget tabs',
+    'This refreshes “' + BUDGET_TAB + '” from: ' + (tabs.map(function (t) { return t.name; }).join(', ') || 'no budget tabs found') +
+    '.\n\nChanges you made in the app are kept. Continue?', ui.ButtonSet.YES_NO);
+  if (ok !== ui.Button.YES) return;
+  var r = rebuildBudget_();
+  ui.alert(r.ok ? 'Done: ' + r.n + ' rows (' + r.kept + ' of your own changes kept).\n\nSync in the app to pull them in.'
+                : 'I couldn’t read a budget from those tabs. Nothing was changed.');
+}
+
+// ---------------------------------------------------------------- helpers
+
+function check_(t) {
+  if (!t || (t.k !== 'e' && t.k !== 'i')) throw new Error('bad_entry');
+  if (!(+t.y > 2000) || !(+t.m >= 0 && +t.m <= 11) || isNaN(Number(t.a))) throw new Error('bad_entry');
+  t.y = +t.y; t.m = +t.m;
+}
+
+function findSheetCI_(name) {
+  var want = String(name).trim().toLowerCase(), s = SpreadsheetApp.getActive().getSheets();
+  for (var i = 0; i < s.length; i++) if (s[i].getName().trim().toLowerCase() === want) return s[i];
+  return null;
+}
+
+// Last row with something in column `col` (ignores notes written further right).
+function lastRowIn_(sh, col) {
+  var n = sh.getLastRow();
+  if (n < 1) return 0;
+  var v = sh.getRange(1, col, n, 1).getValues();
+  for (var i = v.length - 1; i >= 0; i--) if (!blank_(v[i][0])) return i + 1;
+  return 0;
+}
+
+function headerIndex_(vals) {
+  for (var i = 0; i < Math.min(vals.length, 10); i++) if (str_(vals[i][0]).toLowerCase() === 'month') return i;
+  return 1;
+}
+
+function headerCol_(vals, name) {
+  var h = headerIndex_(vals);
+  if (!vals[h]) return -1;
+  for (var j = 0; j < vals[h].length; j++) if (str_(vals[h][j]).toLowerCase() === name) return j;
+  return -1;
+}
+function dateColFound_(vals) { return headerCol_(vals, 'date'); }
+function tripColFound_(vals) { return headerCol_(vals, 'trip'); }
+function dateCol_(vals) { var j = dateColFound_(vals); return j < 0 ? 5 : j; }
+function logWidth_(vals) {
+  return Math.max(6, dateCol_(vals) + 1, tripColFound_(vals) + 1, headerCol_(vals, 'from savings') + 1, headerCol_(vals, 'owed back') + 1, headerCol_(vals, 'paid back') + 1);
+}
+
+function lastLogRow_(vals, hdr) {
+  var last = hdr + 2;
+  for (var i = hdr + 1; i < vals.length; i++) if (monthIndex_(vals[i][0]) >= 0) last = i + 1;
+  return last;
+}
+
+function lastFilledRow_(vals) {
+  for (var i = vals.length - 1; i >= 0; i--) if (!blank_(vals[i][0]) || !blank_(vals[i][3])) return i + 1;
+  return 0;
+}
+
+function monthIndex_(v) {
+  var s = str_(v).toLowerCase();
+  if (s.length < 3 || s.length > 9) return -1;
+  var i = MON3.indexOf(s.slice(0, 3));
+  return i >= 0 && MONTHS[i].toLowerCase().indexOf(s) === 0 ? i : (s === 'sept' ? 8 : -1);
+}
+
+function monthHeader_(v) {
+  if (typeof v !== 'string') return -1;
+  var s = v.trim().toLowerCase();
+  if (s.length < 3 || s.length > 9) return -1;
+  var i = MON3.indexOf(s.slice(0, 3));
+  return i >= 0 && (MONTHS[i].toLowerCase().indexOf(s) === 0 || s === 'sept') ? i : -1;
+}
+
+// Month value → year*12 + monthIndex. Accepts a date, "Oct 2026", "October 2026", "10/2026", "2026-10".
+function monthKey_(v) {
+  if (v instanceof Date && !isNaN(v)) { var p = cellDay_(v).split('-'); return +p[0] * 12 + (+p[1] - 1); }
+  var s = str_(v).toLowerCase(), m;
+  if (!s) return null;
+  if ((m = s.match(/^([a-z]+)\.?\s+(\d{4})$/))) { var i = monthIndex_(m[1]); return i < 0 ? null : +m[2] * 12 + i; }
+  if ((m = s.match(/^(\d{1,2})\/(\d{4})$/))) return +m[2] * 12 + (+m[1] - 1);
+  if ((m = s.match(/^(\d{4})-(\d{1,2})(-\d{1,2})?$/))) return +m[1] * 12 + (+m[2] - 1);
+  if ((m = s.match(/^(\d{1,2})\/\d{1,2}\/(\d{4})$/))) return +m[2] * 12 + (+m[1] - 1);
+  return null;
+}
+
+function num_(v) {
+  if (typeof v === 'number') return isFinite(v) ? v : null;
+  if (v === null || v === undefined || v instanceof Date) return null;
+  var s = String(v).trim();
+  if (!s) return null;
+  var t = s.replace(/[\s$]/g, '');
+  var neg = /^\(.*\)$/.test(t) || /^-/.test(t);
+  s = t.replace(/[(),-]/g, '');
+  if (!/^\d*\.?\d+$/.test(s)) return null;
+  var n = parseFloat(s);
+  return neg ? -n : n;
+}
+
+function str_(v) { return v === null || v === undefined ? '' : String(v).trim(); }
+function blank_(v) { return str_(v) === ''; }
+
+function dateStr_(v) {
+  if (v instanceof Date && !isNaN(v)) return cellDay_(v);
+  var s = str_(v), m;
+  if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/))) return s;
+  if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/))) {
+    var y = +m[3] < 100 ? 2000 + +m[3] : +m[3];
+    return y + '-' + ('0' + m[1]).slice(-2) + '-' + ('0' + m[2]).slice(-2);
+  }
+  return '';
+}
+
+function parseDate_(s) {
+  var m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? cellDate_(+m[1], +m[2] - 1, +m[3]) : null;
+}

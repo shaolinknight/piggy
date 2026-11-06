@@ -747,7 +747,15 @@ canvas.confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:n
 .meter i,.bar i{transition:width .55s cubic-bezier(.2,.8,.2,1)}
 button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 .tx:active,.scrow:active,.crow:active,.mghead:active{transform:none;background:var(--p2)}
-@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none !important;transition:none !important}}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important}
+  /* nothing slides, grows or counts, but popups and messages still fade in and out */
+  #scrim{transition:opacity .18s ease !important}
+  #sheet,#sheet.on{transform:none !important}
+  #sheet{opacity:0;transition:opacity .18s ease,visibility 0s linear .18s !important}
+  #sheet.on{opacity:1;transition:opacity .18s ease,visibility 0s !important}
+  #toast{transform:none !important;transition:opacity .2s ease !important}
+}
 .morebtn{display:flex;align-items:center;gap:6px;margin-top:10px;color:var(--t2);font-size:13px;font-weight:600}
 .mgroup{padding:0;overflow:hidden}
 .mghead{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:4px 10px;width:100%;text-align:left;padding:13px 16px}
@@ -788,6 +796,9 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 .pchoice b{display:block;font-size:17px;font-weight:700}
 .pchoice small{display:block;color:var(--t2);font-size:14px;margin-top:2px;line-height:1.35}
 .pchoice em{font-style:normal;font-size:24px;color:var(--t3)}
+.strow{display:grid;grid-template-columns:minmax(0,1fr) 132px;gap:12px;align-items:center;padding:5px 0}
+.strow label{font-size:16px;font-weight:600;overflow-wrap:anywhere}
+.strow input{width:100%;min-height:44px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--p1);padding:10px 12px 10px 26px}
 .pico{flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--acd);color:var(--ac);font-weight:800;font-size:20px}
 .pchips{display:flex;gap:8px;margin-top:10px}
 .pchips .chip{height:38px;font-size:14px;padding:0 16px}
@@ -1163,8 +1174,11 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
   /* Plan: three working columns */
   .phd .ppill{padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600;background:var(--p2)}
   .ppill.bad{color:var(--bad)}.ppill.ok{color:var(--ok)}
-  .pcols3{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
-  .pcols3 .pcol{min-width:0}
+  .pcols2{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
+  .pcols2 .pcol{min-width:0}
+  .pcols2 .pcol>:first-child{margin-top:0}
+  .pwsegs{position:static;width:auto;max-width:520px;margin:0 0 16px}
+  .pwdraft{margin-bottom:12px}
   .ptable{padding:0;overflow:hidden}
   .ptable .ghead{padding:14px 18px;margin:0;border-bottom:1px solid var(--b1)}
   .btn.sm{min-height:36px;padding:0 14px;font-size:14px}
@@ -1173,8 +1187,8 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
   .ptr em{font-style:normal;font-size:13px;font-weight:600;color:var(--ac);text-align:right}
   .pth{border-top:0;padding-top:10px;padding-bottom:8px;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--t3)}
   .ptot{background:var(--bg);font-weight:700}
-  .pcols3 .pcoming{margin-top:0}
-  .pcols3 .ppay{margin-top:0}
+  .pcols2 .pcoming{margin-top:0}
+  .pcols2 .ppay{margin-top:0}
   .ptable .ghead .btn{width:auto;flex:none}
   .ptable .ghead h3{margin:0}
   /* Trends: report grid */
@@ -1187,7 +1201,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 @media (min-width:1100px){
   .dcols{grid-template-columns:minmax(0,2fr) minmax(280px,1fr)}
   .acols{grid-template-columns:minmax(0,1fr) minmax(320px,380px)}
-  .pcols3{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,1.1fr)}
+  .pcols2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .tcols{grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr)}
 }
 @media (min-width:960px) and (max-width:1279px){
@@ -1228,7 +1242,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.29';
+var VERSION = '2.30';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1349,43 +1363,6 @@ function loadFont(key) {
   document.head.appendChild(l);
 }
 
-// ------------------------------------------------------------------ demo data (real totals from your sheet)
-var DEMO = {
-  e2026: [
-    'activities=83;barber=27;car payment=3000;dates=80.96;food=98.66;gas=116;gifts=154.3;groceries=486.01;gym=21.46;health care=156.6;misc.=7.94;other/self-care=294.95;rent=650;savings=600;spotify=12.88;supplies=2035.86;tithing=380;travel=49;travel savings=900;wilson diamonds=15',
-    'activities=130;car insurance=899;car payment=465;clothes=237.72;dates=15.5;food=104.07;gas=181;gifts=100.8;groceries=186.63;gym=21.46;health care=156.6;misc.=544.18;other/self-care=693.61;rent=650;spotify=13.96;supplies=83.5;tithing=420;wilson diamonds=15',
-    'activities=265.43;barber=27;car payment=561.9;clothes=82.2;dates=61.87;food=104.39;gas=192.41;groceries=276.27;gym=21.46;health care=156.6;other savings=158;other/self-care=111.05;rent=650;savings=1008;spotify=13.96;supplies=17.18;tithing=400;wilson diamonds=15',
-    'activities=226.6;barber=27;car payment=561.9;clothes=303.61;food=174.02;gas=132;gifts=45;groceries=239.98;gym=21.46;health care=156.6;other/self-care=558.48;rent=650;spotify=13.96;supplies=5;tithing=300;travel=271.39;travel savings=400;trip expenses=231.43;wilson diamonds=15',
-    'activities=86;car payment=561.9;clothes=91.34;food=244.19;gas=329;groceries=161.7;gym=21.46;health care=156.6;other/self-care=423.96;rent=650;spotify=13.96;supplies=226.43;tithing=425;trip expenses=507.82;wilson diamonds=15',
-    'activities=177.48;car payment=561.9;clothes=325.96;food=236.91;gas=288.6;gifts=15.6;groceries=219.41;gym=21.46;health care=156.6;other/self-care=110.96;rent=650;spotify=13.96;supplies=199.7;tithing=380;wilson diamonds=15',
-    'activities=146.25;barber=27;car payment=561.9;clothes=143.98;food=211.07;gas=205.2;groceries=157.57;gym=21.46;health care=156.6;other/self-care=182.84;rent=650;spotify=13.96;supplies=84.9;tithing=290;travel=344.8;wilson diamonds=15',
-    'activities=156.29;car payment=561.9;car wash=11;clothes=394.06;dates=11.77;food=252.5;gas=217.01;gifts=28.99;groceries=308.83;gym=21.46;health care=156.6;other/self-care=174.02;rent=650;spotify=13.96;supplies=340.62;tithing=300;travel=361.84;wilson diamonds=15',
-    'activities=166.09;barber=27;car payment=561.9;clothes=63.94;dates=108.86;food=102.58;gas=336.01;gifts=20.36;groceries=291.96;gym=21.46;health care=156.6;misc.=311.59;rent=650;spotify=13.96;supplies=143.42;tithing=480;travel=1396.83;wilson diamonds=15'
-  ],
-  oct2026: 'amazon|supplies|47.93;sushi up|gifts|66.5;asian market|groceries|59.7;costco|food|1.63;costco|gas|67;smiths|groceries|2.05;taco bell|food|12.03;in n out|food|8.24;geico|car insurance|1051;ally|car payment|561.9;wilson diamonds|wilson diamonds|15;supplemental insurance|health care|41.6;chm|health care|115;spotify|spotify|13.96;vasa|gym|21.46;venmo - percy|rent|650',
-  e2025: [
-    'activities=54.82;barber=26.4;clothes=483.23;dates=67.47;food=88.5;gas=192.01;groceries=338.08;gym=21.46;health care=139.6;misc.=1.99;other/self-care=248.79;rent=620.76;savings=500;spotify=12.88;supplies=115.87;tithing=260;travel=230.97;wilson diamonds=15',
-    'activities=42.07;clothes=69.6;dates=27.5;food=105.81;gas=116;groceries=228.37;gym=81.45;health care=41.6;misc.=100;other/self-care=169.89;rent=621;spotify=12.88;supplies=53.18;tithing=280;wilson diamonds=15',
-    'activities=180.25;barber=26;food=120.46;gas=201.5;gifts=15.41;groceries=327.48;gym=21.46;health care=139.6;misc.=1.99;other/self-care=193.25;rent=613.29;spotify=12.88;supplies=296.37;tithing=295;travel=1454.36;wilson diamonds=15',
-    'activities=119.96;barber=26;car wash=12;clothes=60.6;dates=41.38;food=106.25;gas=167;gifts=739.94;groceries=105.59;gym=21.46;health care=139.6;misc.=526.18;other/self-care=70;rent=608;savings=500;spotify=12.88;supplies=90.07;tithing=521.8;travel=295.27;travel savings=500;wilson diamonds=15',
-    'activities=167;barber=26;dates=39.89;food=140.94;gas=121;gifts=106.91;groceries=308.09;gym=21.46;health care=139.6;misc.=75.75;rent=626;savings=300;spotify=12.88;supplies=53.97;tithing=380;travel=272.2;travel savings=600;trip expenses=1561.19;wilson diamonds=15',
-    'activities=149.75;barber=26;car wash=12;clothes=341.5;dates=9.21;food=201.05;gas=185.01;gifts=22.99;groceries=335.5;gym=21.46;health care=139.6;other/self-care=6.5;rent=644.28;savings=400;spotify=12.88;supplies=195.6;tithing=380;travel savings=400;wilson diamonds=15',
-    'activities=445;barber=26;clothes=243.27;dates=92.13;food=396.15;gas=122.01;groceries=124.97;gym=21.46;health care=139.6;rent=1115;spotify=12.88;supplies=307.39;tithing=280;wilson diamonds=15',
-    'activities=324.96;car wash=12;dates=82.36;food=158.83;gas=163.39;gifts=31.35;groceries=371.9;gym=21.46;health care=139.6;other/self-care=75.2;rent=713;spotify=12.88;supplies=89.59;tithing=420;travel=120;travel savings=400;wilson diamonds=15',
-    'activities=136;barber=27;clothes=238.85;dates=36.36;food=65.32;gas=111;groceries=183.05;gym=21.46;health care=139.6;misc.=75.2;other/self-care=149.62;rent=650;spotify=12.88;supplies=524.67;tithing=420;travel=401.16;travel savings=700;trip expenses=2153.87;wilson diamonds=15',
-    'activities=172.62;barber=27;clothes=177.62;dates=19.06;food=191.32;gas=173;gifts=187.59;groceries=275.28;gym=21.46;health care=139.6;misc.=75.2;other/self-care=45;rent=650;spotify=12.88;tithing=220;travel=186.05;travel savings=500;wilson diamonds=15',
-    'activities=99.97;barber=27;clothes=121.18;dates=24.28;food=69.91;gas=125;gifts=240.41;groceries=210.38;gym=21.46;health care=139.6;misc.=100.5;other/self-care=80.2;rent=650;spotify=12.88;supplies=20.4;tithing=163;travel=986;travel savings=200;wilson diamonds=15',
-    'activities=46.34;barber=27;clothes=141.54;dates=8.16;food=106.1;gas=118;gifts=194.29;groceries=159.43;gym=128.79;health care=139.6;misc.=68.9;other/self-care=19.74;rent=650;spotify=12.88;supplies=268.13;tithing=380;travel=496;travel savings=500;wilson diamonds=15'
-  ],
-  i2026: { paychecks: [3475.83,2838.27,2838.27,2819.14,2160.33,2824.07,2824.06,3074.38,3324.67], freelance: [0,800,800,0,1650,1300,800,1300,1300], other: [1218.03,1267.84,1008,560,301,0,214,0,0] },
-  i2025: { paychecks: [2283.3,2539.32,2676.94,4418.95,3271.94,3483.92,2540.72,3911.74,3932.15,3271.59,3134.8,3238.25], other: [0,0,0,518,300,0,0,325,0,0,200,400] },
-  grid2024: [
-    ['income', 'all income', [2727.67,3458,4104.18,7194.21,2688.98,4172.3,3550.02,3552.13,3261.55,3930.27,3213.72,2561.56]],
-    ['expenses', 'all spending', [2456.65,2707.66,4394.3,6121.76,2346.19,4080.81,4214.33,3329.83,3428.66,3419.49,3320.25,3036.19]]
-  ],
-  budget: 'income|work paychecks|2200;income|freelance|800;recurring expenses|tithing|310;recurring expenses|rent|650;recurring expenses|spotify|12.88;recurring expenses|gym|22;recurring expenses|wilson diamonds|15;recurring expenses|health care|160;recurring expenses|car payment|400;recurring expenses|car insurance|200;recurring savings|savings|300;recurring savings|investing|0;recurring savings|retirement|0;recurring savings|travel savings|0;recurring savings|other savings|0;daily living|groceries|300;daily living|gas|200;daily living|clothes|100;daily living|supplies|70;going out|food|100;going out|activities|100;going out|dates|50;one-time|barber|27;one-time|car wash|10;one-time|gifts|0;one-time|travel|0;one-time|other/self-care|100;one-time|misc.|0'
-};
-
 // ------------------------------------------------------------------ storage adapter
 var STORE = (window.storage && typeof window.storage.get === 'function') ? {
   get: function (k) {
@@ -1411,6 +1388,7 @@ var NOW = new Date();
 function fresh() {
   return { v: 1, demo: true, tx: [], budget: [], outbox: [], lastSync: 0, syncErr: '', seq: 1, grids: [],
     trips: [], seed: null, recur: [], recurDone: {}, order: { groups: [], cats: {} }, catGroup: {}, goals: [], recapSeen: {}, alerts: { on: false },
+    welcomed: false,
     cfg: { url: '', pass: '', pal: 'coastline', mode: 'auto', style: 'classic', corners: 'soft', cards: 'outline', density: 'comfy', icon: 'piggy', iconc: 'gold', appname: 'Piggy', fsize: 'm' } };
 }
 
@@ -1467,36 +1445,57 @@ function lock(key, fn) {
   return true;
 }
 
-// ------------------------------------------------------------------ demo build
+// ------------------------------------------------------------------ sample data
+// Invented numbers, built around today's date, for people looking around before they start or connect.
 function buildDemo() {
-  var tx = [], seq = 0;
-  function aggr(y, list) {
-    list.forEach(function (str, m) {
-      str.split(';').forEach(function (pair) {
-        var p = pair.split('=');
-        tx.push({ id: 'd' + (seq++), k: 'e', y: y, m: m, v: '', c: p[0], a: +p[1], n: 'monthly total', d: '', r: 0, demo: 1 });
-      });
+  var tx = [], seq = 0, cy = NOW.getFullYear(), cm = NOW.getMonth(), today = NOW.getDate();
+  var base = ymKey(cy, cm);
+  // category, group, a usual month, how much it moves around, day it lands (0 = spread through the month)
+  var EXP = [
+    ['rent', 'bills', 1250, 0, 1], ['utilities', 'bills', 135, 22, 8], ['phone', 'bills', 55, 0, 12], ['internet', 'bills', 60, 0, 15], ['car insurance', 'bills', 120, 0, 20],
+    ['tithing', 'giving', 320, 30, 2],
+    ['groceries', 'daily living', 430, 70, 0], ['gas', 'daily living', 150, 35, 0], ['supplies', 'daily living', 60, 25, 0],
+    ['eating out', 'going out', 170, 55, 0], ['fun', 'going out', 90, 40, 0],
+    ['gifts', 'one-time', 45, 40, 0], ['clothes', 'one-time', 70, 50, 0],
+    ['savings', 'savings', 400, 0, 3]
+  ];
+  var INC = [['paycheck', 3100, 150], ['side income', 280, 220]];
+  var wob = function (i, k) { return (((i * 37 + k * 53) % 41) - 20) / 20; };      // steady, repeatable "randomness" between -1 and 1
+  var PLACES = { groceries: ['Fresh Market', 'Corner Grocer', 'Bulk Mart'], gas: ['Gas & Go', 'Fuel Stop'], supplies: ['Home Goods', 'Pharmacy'], 'eating out': ['Pizza Place', 'Taco Truck', 'Noodle Bar', 'Coffee Shop'], fun: ['Movie Night', 'Mini Golf', 'Bowling'], gifts: ['Gift Shop'], clothes: ['Thrift Store'] };
+  for (var back = 14; back >= 0; back--) {
+    var k = base - back, y = ymY(k), m = ymM(k);
+    EXP.forEach(function (e, ci) {
+      var v = Math.max(0, Math.round((e[2] + e[3] * wob(back, ci)) * 100) / 100);
+      if (!v) return;
+      if (back === 0 && e[4] === 0) {                                // this month: a few real-looking entries
+        var parts = Math.max(1, Math.min(3, Math.round(e[2] / 140))), done = 0;
+        for (var p = 0; p < parts; p++) {
+          var day = Math.max(1, Math.min(today, 2 + Math.round((today - 2) * (p + 1) / (parts + 0.5))));
+          var amt = Math.round(v * (today / daysIn(y, m)) / parts * (0.8 + 0.4 * ((p + ci) % 3) / 2) * 100) / 100;
+          var pl = PLACES[e[0]] || [e[0]];
+          tx.push({ id: 'd' + (seq++), k: 'e', y: y, m: m, v: pl[(p + ci) % pl.length], c: e[0], a: amt, n: '', d: y + '-' + pad(m + 1) + '-' + pad(day), r: 6 + seq, demo: 1 });
+        }
+        return;
+      }
+      if (back === 0 && e[4] > today) return;                        // a bill not due yet this month
+      tx.push({ id: 'd' + (seq++), k: 'e', y: y, m: m, v: back === 0 ? e[0] : '', c: e[0], a: v, n: back === 0 ? '' : 'monthly total', d: back === 0 ? y + '-' + pad(m + 1) + '-' + pad(Math.max(1, Math.min(e[4] || 1, today))) : '', r: back === 0 ? 6 + seq : 0, demo: 1 });
+    });
+    INC.forEach(function (e, ci) {
+      var v = Math.max(0, Math.round(e[1] + e[2] * wob(back, ci + 20)));
+      if (!v || (back === 0 && today < 5 && ci === 0)) return;
+      tx.push({ id: 'd' + (seq++), k: 'i', y: y, m: m, v: '', c: e[0], a: v, n: 'monthly total', d: '', r: 0, demo: 1 });
     });
   }
-  aggr(2026, DEMO.e2026);
-  aggr(2025, DEMO.e2025);
-  DEMO.oct2026.split(';').forEach(function (row, i) {
-    var p = row.split('|');
-    tx.push({ id: 'd' + (seq++), k: 'e', y: 2026, m: 9, v: p[0], c: p[1], a: +p[2], n: '', d: '', r: 6 + i, demo: 1 });
-  });
-  [['i2026', 2026], ['i2025', 2025]].forEach(function (pair) {
-    var src = DEMO[pair[0]];
-    Object.keys(src).forEach(function (cat) {
-      src[cat].forEach(function (a, m) {
-        if (a) tx.push({ id: 'd' + (seq++), k: 'i', y: pair[1], m: m, v: '', c: cat, a: a, n: 'monthly total', d: '', r: 0, demo: 1 });
-      });
-    });
+  // one trip, last summer-ish: a few travel entries tagged to it
+  var tk = base - 7, ty = ymY(tk), tm = ymM(tk);
+  [['Hotel', 'travel', 420], ['Gas & Go', 'gas', 65], ['Seafood Shack', 'eating out', 88]].forEach(function (t) {
+    tx.push({ id: 'd' + (seq++), k: 'e', y: ty, m: tm, v: t[0], c: t[1], a: t[2], n: '', d: ty + '-' + pad(tm + 1) + '-12', r: 6 + seq, demo: 1, tr: 'Beach weekend' });
   });
   S.tx = tx;
-  S.grids = [{ y: 2024, rows: DEMO.grid2024 }];
-  S.trips = [{ name: 'Japan', start: '2025-11-28', end: '2025-12-10', budget: 3500, notes: 'tokyo + osaka', row: 0, demo: 1, plan: { travel: 2400, food: 500, activities: 400, clothes: 200 } }];
-  tx.forEach(function (t) { if (t.y === 2025 && (t.m === 10 || t.m === 11) && t.c === 'travel') t.tr = 'Japan'; });
-  S.budget = DEMO.budget.split(';').map(function (row) { var p = row.split('|'); return { s: 0, g: p[0], c: p[1], a: +p[2], row: 0 }; });
+  S.grids = [];
+  S.trips = [{ name: 'Beach weekend', start: ty + '-' + pad(tm + 1) + '-11', end: ty + '-' + pad(tm + 1) + '-14', budget: 700, notes: 'sample trip', row: 0, demo: 1, plan: { travel: 450, 'eating out': 120, gas: 80 } }];
+  S.budget = EXP.map(function (e) { return { s: 0, g: e[1], c: e[0], a: e[2], row: 0 }; })
+    .concat(INC.map(function (e) { return { s: 0, g: 'income', c: e[0], a: e[1], row: 0 }; }));
   S.demo = true;
 }
 
@@ -1811,6 +1810,7 @@ function renderSync() {
   var dot = $('syncDot'), txt = $('syncTxt'), cls = '', label;
   var n = S.outbox.length;
   if (S.demo) { label = 'Demo'; }
+  else if (localMode()) { label = 'On this phone'; cls = 'ok'; }
   else if (SYNCING) { label = 'Syncing…'; cls = 'wait'; }
   else if (S.syncErr && n) { label = n + ' waiting'; cls = 'err'; }
   else if (S.syncErr) { label = 'Sync issue'; cls = 'err'; }
@@ -2019,6 +2019,18 @@ function celebrations() {
 // ---- motion: numbers count to their new value, bars grow from where they were
 var REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 var NUMS = {};
+// With "reduce motion" on nothing slides, grows or counts, but changes still fade so they aren't abrupt.
+function fadeIn(el, ms, from) {
+  if (!el || !el.animate) return;
+  try { el.animate([{ opacity: from === undefined ? 0 : from }, { opacity: 1 }], { duration: ms || 200, easing: 'ease-out' }); } catch (e) {}
+}
+// a number fades out and back in with its new value, instead of counting through the numbers between
+function fadeSwap(el, oldText, newText) {
+  if (!el.animate || window.__instantNumbers) { el.textContent = newText; return; }
+  el.textContent = oldText;
+  var a = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: 'ease-in', fill: 'forwards' });
+  a.onfinish = function () { el.textContent = newText; a.cancel(); fadeIn(el, 220); };
+}
 // Numbers on screen remember what they last showed. When something changes they count up or
 // down to the new value, the row gives a little pulse, and the main number shows how much it moved.
 // While a sheet is open (adding entries) the page behind keeps the old values, and everything
@@ -2085,6 +2097,12 @@ function flipRows(fn) {
 }
 // a row leaves (slides out and fades), then the rest close the gap smoothly
 function leaveThen(el, fn, dir) {
+  if (REDUCED && el && el.animate && !window.__instantNumbers) {            // fades away, no sliding
+    if (typeof SHEET_BUSY !== 'undefined') SHEET_BUSY = Math.max(SHEET_BUSY, Date.now() + 500);
+    var fa = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-in', fill: 'forwards' });
+    fa.onfinish = function () { fn(); };
+    return;
+  }
   if (REDUCED || !el || !el.animate) { flipRows(fn); return; }
   if (typeof SHEET_BUSY !== 'undefined') SHEET_BUSY = Math.max(SHEET_BUSY, Date.now() + 700);
   var a = el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(' + (dir || -28) + 'px)' }], { duration: 200, easing: 'ease-in', fill: 'forwards' });
@@ -2092,12 +2110,13 @@ function leaveThen(el, fn, dir) {
 }
 // entries you just added get a little entrance the first time you see them — on whichever screen that is
 var FRESH = [], FRESH_IO = null;
-function markFresh(t) { if (t && !REDUCED) FRESH.push({ id: t.id, after: pick(t), at: Date.now() }); }
+function markFresh(t) { if (t) FRESH.push({ id: t.id, after: pick(t), at: Date.now() }); }
 function freshEl(f) {
   var t = resolveTx(f.id, f.after); if (!t) return null;
   return document.querySelector('#view [data-fk="' + String(t.id).replace(/"/g, '\\"') + '"]');
 }
 function growIn(el) {
+  if (REDUCED) { fadeIn(el, 450); return; }
   var h = el.offsetHeight; if (!h || !el.animate) return;
   el.style.overflow = 'hidden';
   var a = el.animate([{ height: '0px', opacity: 0 }, { height: h + 'px', opacity: 1 }], { duration: 380, easing: EASE_OUT });
@@ -2125,8 +2144,8 @@ function playFresh(delay) {
 // 3. a new tab slides in from the side you're heading to
 var TAB_ORDER = ['month', 'activity', 'plan', 'trends'];
 function slideView(dir) {
-  if (REDUCED) return;
   var v = $('view'); if (!v || !v.animate) return;
+  if (REDUCED) { fadeIn(v, 240); return; }
   v.animate([{ opacity: 0, transform: 'translateX(' + (dir * 22) + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: EASE_OUT });
 }
 // 4. a sheet opened from a row grows out of that row
@@ -2182,8 +2201,8 @@ window.addEventListener('scroll', function () { if (!MINI_RAF) MINI_RAF = reques
 })();
 // A new screen fades in instead of snapping.
 function viewIn() {
-  if (REDUCED) return;
   var v = $('view'); if (!v) return;
+  if (REDUCED) { fadeIn(v, 220); return; }
   v.classList.remove('vin'); void v.offsetWidth; v.classList.add('vin');
   clearTimeout(viewIn.t); viewIn.t = setTimeout(function () { v.classList.remove('vin'); }, 260);
 }
@@ -2317,9 +2336,9 @@ function animateNumbers(fromClose) {
   var els = document.querySelectorAll('#view [data-count]'), moved = [];
   for (var i = 0; i < els.length; i++) (function (el) {
     var k = el.getAttribute('data-ck'), to = +el.getAttribute('data-count'), from = NUMS[k];
-    if (hold) { if (from !== undefined && from !== to && !REDUCED) el.textContent = fmtCount(el, from); return; }
+    if (hold) { if (from !== undefined && from !== to && !(REDUCED && window.__instantNumbers)) el.textContent = fmtCount(el, from); return; }
     NUMS[k] = to;
-    if (REDUCED) return;
+    if (REDUCED) { if (from !== undefined && from !== to) fadeSwap(el, fmtCount(el, from), fmtCount(el, to)); return; }
     if (from === to) {
       // redrawn mid-count (a sync landed): keep counting on the new element instead of jumping to the end
       var a0 = ANIMS[k];
@@ -2341,7 +2360,8 @@ function animateNumbers(fromClose) {
     var k = b.getAttribute('data-bar'), want = b.style.width, was = BARS[k];
     if (hold) { if (was !== undefined && was !== want && !REDUCED) { b.style.transition = 'none'; b.style.width = was; } return; }
     BARS[k] = want;
-    if (REDUCED || was === want) return;
+    if (REDUCED) { if (was !== undefined && was !== want) fadeIn(b, 300, 0.3); return; }
+    if (was === want) return;
     b.style.transition = 'none'; b.style.width = was || '0%';
     void b.offsetWidth;
     b.style.transition = ''; requestAnimationFrame(function () { b.style.width = want; });
@@ -2561,7 +2581,7 @@ function inOutHtml(key, s, bt, isCur) {
 }
 
 function demoBanner() {
-  return S.demo ? '<div class="banner"><span>Showing real totals from your sheet as a preview. Connect it to go live.</span><button data-act="settings" data-v="conn">Connect</button></div>' : '';
+  return S.demo ? '<div class="banner"><span>These are made-up sample numbers.</span><button data-act="welcome" id="demo_start">Get started</button></div>' : '';
 }
 
 // ------------------------------------------------------------------ month view
@@ -4053,10 +4073,18 @@ function planHomeWide(cur, t, inc, left, pct, n, P, nextJan) {
   Object.keys(bm).forEach(function (c) { if (!bm[c].rm) g[bm[c].g] = (g[bm[c].g] || 0) + bm[c].a; });
   var h = '<div class="dhead phd"><h1 class="dtitle">Plan</h1><span class="dsub">' + MONTHS[ymM(cur)] + ' budget <b>' + money(t.spend) + '</b> to spend · <b>' + money(t.save) + '</b> to savings · income <b>' + money(inc) + '</b></span>' +
     '<span class="ppill ' + (left < 0 ? 'bad' : 'ok') + '">' + Math.round(pct * 100) + '% of income planned · ' + (left >= 0 ? money(left) + ' unplanned' : money(-left) + ' over') + '</span></div>';
-  h += '<div class="pcols3"><div class="pcol">';
-  if (n) h += '<section class="card pdraft"><div><b>' + n + ' unsaved change' + (n === 1 ? '' : 's') + '</b><span>' + (P.mode === 'fix' ? 'Correcting ' : 'For ') + planMonthName(P.key) + '</span></div>' +
+  // 2.30: the same four sections as on a phone, so only one part of the plan is on screen at a time
+  var sec = UI.psec || 'month';
+  if (n) h += '<section class="card pdraft pwdraft"><div><b>' + n + ' unsaved change' + (n === 1 ? '' : 's') + '</b><span>' + (P.mode === 'fix' ? 'Correcting ' : 'For ') + planMonthName(P.key) + '</span></div>' +
     '<button class="btn pri" data-act="pgo" data-v="resume">Continue</button><button class="btn" data-act="pdiscard" id="p_discard">Discard</button></section>';
-  h += '<div class="pchoices" style="margin-bottom:12px">' + billsChoiceHtml() + '</div>';
+  h += '<div class="seg psegs pwsegs" role="tablist">' + [['month', 'This month'], ['ahead', 'Ahead'], ['trips', 'Trips'], ['goals', 'Goals']].map(function (x) {
+    return '<button class="' + (sec === x[0] ? 'on' : '') + '" data-act="psec" data-v="' + x[0] + '" role="tab" aria-selected="' + (sec === x[0]) + '">' + x[1] + '</button>';
+  }).join('') + '</div><div class="ppane" data-p="' + sec + '">';
+  var whatif = '<div class="pchoices"><button class="pchoice" data-act="pgo" data-v="whatif"><span class="pico">?</span><span><b>Try a what-if</b><small>What if I spent like my average, or made a different income? Nothing saves unless you choose.</small></span><em>›</em></button></div>';
+  if (sec === 'ahead') return h + '<div class="pcols2"><div class="pcol">' + planComingHtml() + planChangesHtml() + '</div><div class="pcol">' + planUsualHtml() + whatif + '</div></div></div>';
+  if (sec === 'trips') return h + '<div id="p_trips">' + trendTrips() + '</div></div>';
+  if (sec === 'goals') return h + '<div class="pcols2"><div class="pcol">' + goalsCardHtml(true) + '</div><div class="pcol">' + planHistoryHtml() + '</div></div></div>';
+  h += '<div class="pcols2"><div class="pcol"><div class="pchoices" style="margin-bottom:12px">' + billsChoiceHtml() + '</div>';
   h += '<section class="card ptable"><div class="ghead"><h3>This month</h3><button class="btn pri sm" data-act="pgo" data-v="now">Change a budget</button></div>' +
     '<div class="ptr pth" aria-hidden="true"><span>Group</span><span>Budget</span><span></span></div>';
   var tot = 0;
@@ -4067,11 +4095,7 @@ function planHomeWide(cur, t, inc, left, pct, n, P, nextJan) {
   });
   h += '<div class="ptr ptot"><span>Total</span><b>' + money(tot) + '</b><span></span></div>';
   if (g.inc) h += '<button class="ptr" data-act="pgogrp" data-v="inc"><span>Income</span><b>' + money(g.inc) + '</b><em>Edit</em></button>';
-  h += '</section>' + planRealityHtml() + '</div><div class="pcol">' + planPayHtml();
-  h += '<div class="pchoices"><button class="pchoice" data-act="pgo" data-v="whatif"><span class="pico">?</span><span><b>Try a what-if</b><small>What if I spent like my average, or made a different income? Nothing saves unless you choose.</small></span><em>›</em></button></div>';
-  h += '<div class="psect" id="p_trips">Trips</div>' + trendTrips();
-  h += '</div><div class="pcol">' + planComingHtml() + planChangesHtml() + planUsualHtml() + '<div style="margin-top:12px">' + goalsCardHtml(true) + planHistoryHtml() + '</div></div></div>';
-  return h;
+  return h + '</section></div><div class="pcol">' + planRealityHtml() + planPayHtml() + '</div></div></div>';
 }
 
 // ---- editing: groups you open, categories you tap
@@ -4468,7 +4492,7 @@ function planApplyIncome() {
 function savePlan(mode) {
   var P = planState(), list = [];
   var needsV5 = mode === 'month' || mode === 'year' || Object.keys(P.vals).some(function (c) { return P.vals[c].rm; });
-  if (!S.demo && needsV5 && (S.scriptV || 0) < 5) {
+  if (needsV5 && sheetOld(5)) {
     toast('Update the script in your sheet first (Code.gs version 5) — it’s needed for this kind of save.');
     return;
   }
@@ -5809,7 +5833,7 @@ function iconPickerHtml() {
   var nm = appName(), custom = APP_NAMES.indexOf(nm) < 0;
   h += '<div class="flabel" style="margin-top:16px">Home Screen name</div><div class="chips" style="margin-bottom:8px">' + APP_NAMES.map(function (n) {
     return '<button class="chip' + (nm === n ? ' on' : '') + '" data-act="appname" data-v="' + esc(n) + '">' + esc(n) + '</button>';
-  }).join('') + '</div><div class="field" style="margin:0 0 8px"><label for="an_custom">Or your own (up to 12 letters fits under the icon)</label><input id="an_custom" maxlength="14" value="' + (custom ? esc(nm) : '') + '" placeholder="e.g. Brandon’s Budget"></div>';
+  }).join('') + '</div><div class="field" style="margin:0 0 8px"><label for="an_custom">Or your own (up to 12 letters fits under the icon)</label><input id="an_custom" maxlength="14" value="' + (custom ? esc(nm) : '') + '" placeholder="e.g. Our Budget"></div>';
   h += '<button class="btn" style="width:100%;margin-top:4px" data-act="iconlink" id="icon_link">Copy link to add with this icon</button>';
   h += '<details class="itip"><summary>ⓘ <span>How to switch the Home Screen icon</span></summary><div class="hint">The Home Screen app and Safari keep separate settings, so an icon picked here isn’t seen by Safari. Tap <b>Copy link…</b>, remove the app from your Home Screen, paste the link into Safari, then Share → Add to Home Screen. Connect again with your URL and passcode — everything comes back from your sheet.</div></details></div>';
   return h;
@@ -6301,7 +6325,7 @@ function closeSheet() {
     y0 = null;
     var p = el(); p.className = ''; p.style.transform = '';
     var ap1 = $('app'); ap1.style.transition = 'transform .45s ' + EASE_IOS; ap1.style.transform = ''; setTimeout(function () { ap1.style.transition = ''; }, 460);
-    if (armed) { armed = false; if (S.demo) toast('Connect your sheet in Settings to sync'); else { sync(); toast('Syncing…'); } }
+    if (armed) { armed = false; if (S.demo || localMode()) toast(localMode() ? 'Your data is on this phone — connect a sheet in Settings to sync' : 'Connect your sheet in Settings to sync'); else { sync(); toast('Syncing…'); } }
   });
 })();
 
@@ -6351,6 +6375,10 @@ function renderSheet() {
   } else if (SHEET.kind === 'edit') {
     var et = findTx(SHEET.arg);
     h += '<div class="shead"><h2>Edit entry</h2><button data-act="close">Close</button></div>' + (et ? txForm(et, false) : '<div class="hint">This entry is gone.</div>');
+  } else if (SHEET.kind === 'welcome') {
+    h += welcomeHtml();
+  } else if (SHEET.kind === 'starter') {
+    h += starterHtml();
   } else if (SHEET.kind === 'settings') {
     h += settingsHtml();
   } else if (SHEET.kind === 'cat') {
@@ -6594,11 +6622,67 @@ function moveCatGroup(c, gid) {
 
 function isOpen(sec, dflt) { return UI.open[sec] === undefined ? !!dflt : UI.open[sec]; }
 
+// ------------------------------------------------------------------ first run: no sheet needed
+function localMode() { return !!S && !S.demo && !S.cfg.url; }                 // using Piggy on this phone only
+function sheetOld(n) { return !S.demo && !!S.cfg.url && (S.scriptV || 0) < n; }  // connected to a script that's too old for this
+var ICO_PHONE = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>';
+var ICO_SHEET = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 3.5v17"/></svg>';
+var ICO_EYE = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+function welcomeHtml() {
+  return '<div class="shead"><h2>Welcome to ' + esc(appName()) + '</h2><button data-act="wlook">Later</button></div>' +
+    '<div class="sub" style="margin:-6px 0 14px">A calm place to plan your spending and see where it goes. Pick how you’d like to start.</div>' +
+    '<div class="pchoices">' +
+    '<button class="pchoice" data-act="wlocal" id="w_local"><span class="pico">' + ICO_PHONE + '</span><span><b>Start on this phone</b><small>No spreadsheet needed. Everything stays on this device, and you can connect a Google Sheet later, with your entries coming along.</small></span><em>›</em></button>' +
+    '<button class="pchoice" data-act="wconnect" id="w_connect"><span class="pico">' + ICO_SHEET + '</span><span><b>Use a Google Sheet</b><small>Keep your data in a sheet you own. Setup takes about ten minutes, once, and we’ll walk you through it.</small></span><em>›</em></button>' +
+    '<button class="pchoice" data-act="wlook" id="w_look"><span class="pico">' + ICO_EYE + '</span><span><b>Look around first</b><small>Explore with made-up sample numbers. Nothing here is real.</small></span><em>›</em></button></div>';
+}
+// the few categories most budgets start with: [group, name]
+var STARTER = [['bills', 'rent'], ['bills', 'utilities'], ['bills', 'phone'], ['bills', 'internet'], ['bills', 'insurance'],
+  ['daily living', 'groceries'], ['daily living', 'gas'], ['going out', 'eating out'], ['going out', 'fun'], ['savings', 'savings']];
+function starterHtml() {
+  var h = '<div class="shead"><h2>Your starting budget</h2><button data-act="stskip" id="st_skip">Skip</button></div>' +
+    '<div class="sub" style="margin:-6px 0 12px">Fill in what you know and leave the rest blank. You can change any of it later in Plan.</div>' +
+    '<div class="field"><label for="st_inc">Money coming in each month</label><div class="dw"><span class="cur" aria-hidden="true">$</span><input id="st_inc" inputmode="decimal" autocomplete="off" placeholder="0"></div></div>';
+  var last = '';
+  STARTER.forEach(function (x, i) {
+    if (x[0] !== last) { last = x[0]; h += '<div class="flabel" style="margin-top:12px">' + esc(x[0].charAt(0).toUpperCase() + x[0].slice(1)) + '</div>'; }
+    h += '<div class="strow"><label for="st_' + i + '">' + esc(x[1]) + '</label><div class="dw"><span class="cur" aria-hidden="true">$</span><input id="st_' + i + '" inputmode="decimal" autocomplete="off" placeholder="0"></div></div>';
+  });
+  return h + '<div class="btns" style="margin-top:14px"><button class="btn pri" data-act="stsave" id="st_save">Save my budget</button></div>';
+}
+function startLocal() {
+  S.demo = false; S.welcomed = true;
+  S.tx = []; S.budget = []; S.grids = []; S.trips = []; S.recur = []; S.goals = []; S.outbox = []; S.plan = null; S.syncErr = '';
+  save(); closeSheet(); render(); window.scrollTo(0, 0);
+  setTimeout(function () { openSheet('starter'); }, 320);
+}
+function saveStarter() {
+  var s0 = ymKey(NOW.getFullYear(), 0), list = [], v;
+  v = parseAmt(($('st_inc') || {}).value || '');
+  if (!isNaN(v) && v > 0) list.push({ mode: 'from', s: s0, g: GROUP_NAME.inc, c: 'paycheck', a: v, remove: false });
+  STARTER.forEach(function (x, i) {
+    v = parseAmt(($('st_' + i) || {}).value || '');
+    if (!isNaN(v) && v > 0) list.push({ mode: 'from', s: s0, g: x[0], c: x[1], a: v, remove: false });
+  });
+  if (list.length) {
+    list.forEach(function (b) { applyBudgetOp(S.budget, b); });
+    S.outbox.push({ oid: nid('o'), op: 'budgets', list: list });
+  }
+  save(); closeSheet(); render();
+  toast(list.length ? 'Budget saved — add your first purchase with +' : 'Okay — add your first purchase with +');
+}
+var PASS_WORDS = ['maple', 'river', 'quartz', 'amber', 'cedar', 'ember', 'harbor', 'meadow', 'otter', 'pebble', 'summit', 'willow', 'falcon', 'lantern', 'orchard', 'thistle', 'juniper', 'marble', 'saddle', 'copper'];
+function makePass() {
+  var r = new Uint32Array(4);
+  try { (window.crypto || window.msCrypto).getRandomValues(r); } catch (e) { for (var i = 0; i < 4; i++) r[i] = Math.floor(Math.random() * 4294967295); }
+  return PASS_WORDS[r[0] % PASS_WORDS.length] + '-' + PASS_WORDS[r[1] % PASS_WORDS.length] + '-' + PASS_WORDS[r[2] % PASS_WORDS.length] + '-' + (10 + r[3] % 90);
+}
+
 function settingsHtml() {
   var conn = !S.demo && S.cfg.url;
   var h = '<div class="shead"><h2>Settings</h2><button data-act="close">Done</button></div>';
   if (SHEET.arg === 'conn') { UI.open.conn = true; SHEET.arg = null; }
-  h += '<div class="sgrp">Your sheet</div><details class="set" data-sec="conn"' + (isOpen('conn', !conn) ? ' open' : '') + '><summary>Google Sheet<span>' + (conn ? 'Connected · synced ' + ago(S.lastSync) : 'Not connected') + '</span></summary><div class="inner">';
+  h += '<div class="sgrp">Your sheet</div><details class="set" data-sec="conn"' + (isOpen('conn', !conn) ? ' open' : '') + '><summary>Google Sheet<span>' + (conn ? 'Connected · synced ' + ago(S.lastSync) : localMode() ? 'On this phone' : 'Not connected') + '</span></summary><div class="inner">';
   if (S.syncErr) h += '<div class="hint" style="color:var(--bad);margin-bottom:10px">' + esc(S.syncErr) + '</div>';
   h += '<div class="field"><label for="c_url">Web app URL</label><input id="c_url" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec" value="' + esc(S.cfg.url) + '"></div>';
   h += '<div class="field"><label for="c_pass">Passcode</label><input id="c_pass" type="password" value="' + esc(S.cfg.pass) + '" placeholder="same as PASSCODE in the script"></div>';
@@ -6612,11 +6696,17 @@ function settingsHtml() {
       '<div class="field" style="margin-bottom:8px"><label for="sv_tab">Tab name</label><input id="sv_tab" value="' + esc(UI.svTab || 'test for next year') + '" autocomplete="off"></div>' +
       '<button class="btn" style="width:100%" data-act="spendview" id="sv_go">Build the new layout</button>' + (UI.svMsg ? '<div class="spendsum">' + UI.svMsg + '</div>' : '');
   }
-  h += '<div class="bsec" style="margin-top:16px">One-time setup</div><ol class="steps">' +
-    '<li>Open your budget sheet → <b>Extensions → Apps Script</b>.</li>' +
-    '<li>Delete what’s there, paste in <code>Code.gs</code>, and change <code>PASSCODE</code> to a phrase of your choice. Save.</li>' +
+  var pp = UI.genPass || (UI.genPass = makePass());
+  h += '<div class="bsec" style="margin-top:16px">' + (conn ? 'Set up another sheet' : 'Set up a Google Sheet') + '</div>' +
+    (localMode() ? '<div class="hint" style="margin-bottom:8px">You’re using ' + esc(appName()) + ' on this phone. When you connect a sheet, everything you’ve entered goes into it.</div>' : '') +
+    '<ol class="steps">' +
+    '<li>Make a new, empty sheet: <a href="https://sheets.new" target="_blank" rel="noopener">sheets.new</a>. (An existing budget sheet works too.)</li>' +
+    '<li>In it, open <b>Extensions → Apps Script</b>. Delete what’s there.</li>' +
+    '<li>Tap <b>Copy the script</b> below and paste it in. It already has your passcode: <code id="gp">' + esc(pp) + '</code>. Press Save.</li>' +
     '<li><b>Deploy → New deployment</b> → type <b>Web app</b>. Execute as <b>Me</b>, access <b>Anyone</b>. Approve the permission prompt.</li>' +
-    '<li>Copy the web app URL, paste it above with your passcode, tap Connect.</li></ol></div></details>';
+    '<li>Copy the web app URL, paste it above, and tap Connect.</li></ol>' +
+    '<button class="btn" style="width:100%" data-act="copyscript" id="cp_script">' + (UI.scriptCopied ? 'Copy the script again' : 'Copy the script') + '</button>' +
+    '<div class="hint" style="margin-top:8px">Piggy only reads and writes this one sheet. Nobody else can see it unless you share it.</div></div></details>';
 
   h += backupHtml() + '<div class="sgrp">Reminders &amp; shortcuts</div>' + alertsHtml();
   h += '<details class="set" data-sec="quick"' + (isOpen('quick') ? ' open' : '') + '><summary>Quick add<span>' + (S.cfg.launchAdd ? 'Opens to a new entry' : 'Off') + '</span></summary><div class="inner">' +
@@ -6797,7 +6887,7 @@ function submitForm() {
   if (isNew && !v.d) { err.textContent = 'Pick a date.'; err.style.color = 'var(--bad)'; return; }
   if (v.ow && (v.a < 0 || v.ow > v.a + 0.005)) { err.textContent = 'What others owe can’t be more than the purchase.'; err.style.color = 'var(--bad)'; return; }
   if (v.ow && UI.split && isNew) { err.textContent = 'Use either “split across categories” or “someone owes me” on one purchase, not both.'; err.style.color = 'var(--bad)'; return; }
-  if ((v.fs || v.ow) && !S.demo && (S.scriptV || 0) < 13) { err.textContent = 'Update the script in your sheet (Code.gs version 13) to use “paid with savings” or “owed”.'; err.style.color = 'var(--bad)'; return; }
+  if ((v.fs || v.ow) && sheetOld(13)) { err.textContent = 'Update the script in your sheet (Code.gs version 13) to use “paid with savings” or “owed”.'; err.style.color = 'var(--bad)'; return; }
   var parts = isNew && v.k === 'e' && UI.split ? splitParts().filter(function (p) { return p.c || p.a; }) : [];
   if (parts.length) {
     if (v.a < 0) { err.textContent = 'Refunds can’t be split.'; err.style.color = 'var(--bad)'; return; }
@@ -7331,7 +7421,7 @@ function connect() {
       save();
       return sync().then(function (ok) { if (ok) toast('Connected to “' + res.name + '”'); });
     }).catch(function (e) {
-      if (S.demo) { S.cfg.url = prev.url; S.cfg.pass = prev.pass; }
+      if (S.demo || !prev.url) { S.cfg.url = prev.url; S.cfg.pass = prev.pass; }
       S.syncErr = errText(e);
       save();
       renderSheet();
@@ -7345,7 +7435,7 @@ function disconnect() {
   S.cfg.url = ''; S.cfg.pass = ''; S.outbox = []; S.syncErr = ''; S.plan = null;
   buildDemo();
   save(); render(); renderSheet();
-  toast('Disconnected — showing preview data');
+  toast('Disconnected — showing sample data');
 }
 
 // Two-step confirm: first tap arms, second confirms, disarms after 3 s.
@@ -7531,8 +7621,8 @@ document.addEventListener('click', function (e) {
       render(); break;
     case 'pkeep':
       var PK = planState(), ky = ymY(PK.key);
-      if (S.demo) { toast('Connect your sheet to save a ' + ky + ' budget tab.'); break; }
-      if ((S.scriptV || 0) < 10) { toast('Update the script in your sheet first (Code.gs version 10).'); break; }
+      if (S.demo || localMode()) { toast('Connect your sheet to save a ' + ky + ' budget tab.'); break; }
+      if (sheetOld(10)) { toast('Update the script in your sheet first (Code.gs version 10).'); break; }
       S.outbox = S.outbox.filter(function (op) { return !(op.op === 'yeartab' && op.y === ky); });
       S.outbox.push({ oid: nid('o'), op: 'yeartab', y: ky });
       PK.step = 'home'; UI.popen = {}; save(); render(); window.scrollTo(0, 0);
@@ -7620,9 +7710,10 @@ document.addEventListener('click', function (e) {
       window.scrollTo(0, 0); break;
     case 'psec':
       if (UI.psec === v) break;
-      var pdir = ['month', 'ahead', 'goals'].indexOf(v) > ['month', 'ahead', 'goals'].indexOf(UI.psec || 'month') ? 1 : -1;
+      var pord = ['month', 'ahead', 'trips', 'goals'], pdir = pord.indexOf(v) > pord.indexOf(UI.psec || 'month') ? 1 : -1;
       UI.psec = v; render(); window.scrollTo(0, 0);
-      var pp = document.querySelector('.ppane'); if (pp && pp.animate && !REDUCED) pp.animate([{ opacity: 0, transform: 'translateX(' + pdir * 18 + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: EASE_OUT });
+      var pp = document.querySelector('.ppane'); if (pp && REDUCED) fadeIn(pp, 200);
+      else if (pp && pp.animate) pp.animate([{ opacity: 0, transform: 'translateX(' + pdir * 18 + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: EASE_OUT });
       break;
     case 'pgogrp':
       var pg2 = planState();
@@ -7788,7 +7879,7 @@ document.addEventListener('click', function (e) {
       break;
     case 'psconfirm': lock('plan', function () { savePlan(planState().mode === 'fix' ? 'fix' : (UI.pscope || 'from')); }); break;
     case 'rebuild':
-      if (S.demo) { toast('Connect your sheet first.'); break; }
+      if (S.demo || localMode()) { toast('Connect your sheet first.'); break; }
       if ((S.scriptV || 0) < 5) { toast('Update the script in your sheet first (Code.gs version 5).'); break; }
       if (!S.outbox.some(function (o) { return o.op === 'rebuild'; })) S.outbox.push({ oid: nid('o'), op: 'rebuild' });
       save(); toast('Re-reading your budget tabs\u2026'); flushSoon();
@@ -7831,6 +7922,26 @@ document.addEventListener('click', function (e) {
       break;
     case 'add': openSheet('add', newTxDraft('e')); break;
     case 'settings': openSheet('settings', v); break;
+    case 'welcome': openSheet('welcome'); break;
+    case 'wlocal': startLocal(); break;
+    case 'wconnect': closeSheet(); S.welcomed = true; save(); setTimeout(function () { openSheet('settings', 'conn'); }, 320); break;
+    case 'wlook': S.welcomed = true; save(); closeSheet(); break;
+    case 'stsave': saveStarter(); break;
+    case 'stskip': closeSheet(); toast('Okay — add your first purchase with +'); break;
+    case 'copyscript':
+      var gp0 = UI.genPass || (UI.genPass = makePass());
+      fetch('script.txt', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('missing'); return r.text(); }).then(function (t) {
+        var out = t.replace("var PASSCODE = 'CHANGE-ME';", "var PASSCODE = '" + gp0 + "';");
+        if (out === t) throw new Error('placeholder');
+        var done = function () {
+          UI.scriptCopied = true;
+          var pf = $('c_pass'); if (pf && !pf.value) pf.value = gp0;
+          toast('Script copied — your passcode is in it');
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(out).then(done, function () { window.prompt('Copy the script', out); done(); });
+        else { window.prompt('Copy the script', out); done(); }
+      }).catch(function () { toast('Couldn’t load the script. Check your connection and try again.'); });
+      break;
     case 'close':
       var wasSettings = SHEET && SHEET.kind === 'settings';
       if (SHEET && SHEET.kind === 'bulk' && UI.bulkOne) { UI.bulk = null; UI.bulkOne = false; }
@@ -7838,7 +7949,7 @@ document.addEventListener('click', function (e) {
       if (wasSettings && !S.demo && S.cfg.url && (S.scriptV || 0) >= 10 && S.prefsPulled && prefsHash() !== S.prefsSent) flushSoon();
       break;
     case 'sync':
-      if (S.demo) { openSheet('settings', 'conn'); break; }
+      if (S.demo || localMode()) { openSheet('settings', 'conn'); break; }
       openSheet('status');
     // falls through: opening the status also syncs
     case 'syncnow':
@@ -8429,6 +8540,7 @@ function boot() {
     var wantAdd = '';
     try { wantAdd = new URLSearchParams(location.search).get('add') || ''; } catch (e) {}
     if (wantAdd || S.cfg.launchAdd) openSheet('add', newTxDraft(/^i/.test(wantAdd) ? 'i' : 'e'));
+    if (S.demo && !S.cfg.url && !S.welcomed && !S.tx.some(function (t) { return !t.demo; }) && !window.__noWelcome && !wantAdd) setTimeout(function () { if (!SHEET) openSheet('welcome'); }, 400);
     if (!S.demo) sync().then(function () { setTimeout(celebrations, 600); setTimeout(maybeHeadsUp, 900); }, function () { setTimeout(maybeHeadsUp, 900); });
   });
 }

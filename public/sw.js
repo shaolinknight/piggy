@@ -6,7 +6,7 @@
 // Hosts like Cloudflare redirect "/index.html" to "/". Safari refuses to show a page that a service
 // worker answers with a redirected response, so the page is always fetched as "./" and every copy
 // is re-made as a plain response before it is stored or served.
-var CACHE = 'piggy-shell-3';
+var CACHE = 'piggy-shell-4';
 var PAGE = './';
 var FILES = ['./manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
@@ -42,6 +42,7 @@ self.addEventListener('fetch', function (e) {
   var req = e.request, url = new URL(req.url);
   if (req.method !== 'GET') return;
   if (/script\.google(usercontent)?\.com$/.test(url.hostname)) return;          // your sheet: always live
+  if (/\/script\.txt$/.test(url.pathname)) return;                                // the script people copy: always the latest
 
   // the app page: stored copy now, fresh copy for next time
   if (req.mode === 'navigate' || (url.origin === location.origin && /\/(index\.html)?$/.test(url.pathname))) {
