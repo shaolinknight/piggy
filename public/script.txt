@@ -1,5 +1,5 @@
 /**
- * PIGGY — connector between the Piggy app and your Google Sheet.   (script version 18)
+ * PIGGY — connector between the Piggy app and your Google Sheet.   (script version 19)
  *
  * Paste this whole file into your sheet's  Extensions → Apps Script  editor (a new, empty sheet is fine),
  * change PASSCODE below, then Deploy → New deployment → Web app
@@ -44,7 +44,7 @@ var RECUR_TAB = 'recurring';             // the tab that lists your trips (creat
 var BUDGET_SOURCE = '';              // '' = find your budget tabs automatically.
                                      // Or name one tab to always read from, e.g. '2026 budget'.
 
-var VERSION = 18;
+var VERSION = 19;
 var VIEW_MARK = 'runway spending view';
 var GOALS_TAB = 'goals';
 var PREFS_TAB = 'app settings';
@@ -1240,8 +1240,48 @@ function savePrefs_(prefs) {
     sh.getRange(1, 1).setValue('Runway keeps a copy of its settings here (colours, icon, category order). Leave this cell alone; delete the tab to forget them.');
   }
   prefs.at = prefs.at || new Date().getTime();
+  var was = readPrefs_();
+  keepUnchanged_(prefs, was);
+  mergeDone_(prefs, was);
+  if (was && +was.at >= +prefs.at) prefs.at = +was.at + 1;      // newest copy always has the newest time
   sh.getRange(2, 1).setValue(JSON.stringify(prefs));
   return { ok: true, at: prefs.at };
+}
+
+// A device sends all its settings but says which ones it changed ("chg"); the rest stay as the sheet has them,
+// so a phone changing its colours can't undo a category move made on a laptop a minute ago.
+function keepUnchanged_(p, old) {
+  var list = p.chg; delete p.chg;
+  if (!old || !Array.isArray(list)) return;
+  var chg = {}; list.forEach(function (k) { chg[k] = 1; });
+  Object.keys(old).forEach(function (k) {
+    if (k === 'at' || k === 'hu' || k === 'bc' || k === 'bmo' || k === 'dv' || DONE_MAPS.indexOf(k) >= 0) return;
+    if (k === 'cfg') { var oc = old.cfg || {}, nc = p.cfg || {}; Object.keys(oc).forEach(function (x) { if (!chg['cfg.' + x]) nc[x] = oc[x]; }); p.cfg = nc; return; }
+    if (!chg[k]) p[k] = old[k];
+  });
+}
+
+// Things done on one device (bills checked off, weekly check-ins, "it's fine", reminders put away) are kept
+// when another device sends its settings, so a phone that hasn't caught up can't undo them.
+var DONE_MAPS = ['bm', 'bl', 'ck', 'co', 'ds'];
+function mergeDone_(p, old) {
+  if (!old) return;
+  DONE_MAPS.forEach(function (k) {
+    var mine = p[k] && typeof p[k] === 'object' ? p[k] : {}, was = old[k] && typeof old[k] === 'object' ? old[k] : {};
+    Object.keys(was).forEach(function (x) { if (mine[x] === undefined) mine[x] = was[x]; });
+    p[k] = mine;
+  });
+  ['hu', 'bc', 'bmo'].forEach(function (k) { if ((+old[k] || 0) > (+p[k] || 0)) p[k] = old[k]; });
+  // which app version each device runs, newest report wins
+  var dv = p.dv && typeof p.dv === 'object' ? p.dv : {}, odv = old.dv && typeof old.dv === 'object' ? old.dv : {};
+  Object.keys(odv).forEach(function (id) { if (!dv[id] || (+(odv[id] || {}).at || 0) > (+(dv[id] || {}).at || 0)) dv[id] = odv[id]; });
+  p.dv = dv;
+  // forget old ones
+  var t = todayParts_(), now = new Date(t.y, t.m, t.d), ago = function (n) { var d = new Date(now.getTime() - n * 86400000); return d.getFullYear() + '-' + pad2_(d.getMonth() + 1) + '-' + pad2_(d.getDate()); };
+  var y400 = ago(400), d120 = ago(120), kcut = t.y * 12 + t.m - 4;
+  ['bm', 'bl'].forEach(function (k) { Object.keys(p[k]).forEach(function (x) { if (String(x).split('|').pop() < y400) delete p[k][x]; }); });
+  Object.keys(p.ck).forEach(function (x) { if (x < d120) delete p.ck[x]; });
+  Object.keys(p.co).forEach(function (x) { var q = String(x).split('|'); if (q.length > 2 && +q[0] * 12 + +q[1] < kcut) delete p.co[x]; });
 }
 
 // Move a category to another group in the app budget tab (every row for it).

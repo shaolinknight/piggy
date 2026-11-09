@@ -216,6 +216,22 @@ main{padding:0 16px 72px}
 .sugg button{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;font-size:13px;padding:5px 10px;border-radius:999px;border:1px solid var(--b2);background:var(--p1);color:var(--t2)}
 .hint{font-size:13px;color:var(--t3);margin-top:4px}
 /* sheet */
+/* 2.31: more color — a two-tone top card and a color for each budget group */
+.card.hero{background:linear-gradient(135deg,var(--ha,var(--p1)) 0%,var(--hb,var(--p1)) 100%);--p2:var(--hp,var(--p2))}
+.mgroup{--gc:var(--ac)}
+.mgroup[data-g=bills]{--gc:var(--gb,var(--ac))}.mgroup[data-g=give]{--gc:var(--gg,var(--ac))}.mgroup[data-g=daily]{--gc:var(--gd,var(--ac))}
+.mgroup[data-g=out]{--gc:var(--go,var(--ac))}.mgroup[data-g=once]{--gc:var(--gn,var(--ac))}.mgroup[data-g=save]{--gc:var(--gs,var(--ac))}
+.mgroup .bar i:not(.over):not(.good){background:var(--gc)}
+.mgname b::before,.lgroup .lname b::before{content:'';display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--gc);margin-right:8px;vertical-align:1px}
+#tour{position:fixed;inset:0;z-index:60}
+#tour .tspot{position:fixed;box-shadow:0 0 0 9999px rgba(10,12,16,.62);transition:left .3s ease,top .3s ease,width .3s ease,height .3s ease;pointer-events:none;outline:2px solid rgba(255,255,255,.85);outline-offset:2px}
+#tour .tbub{position:fixed;background:var(--p1);color:var(--t1);border-radius:18px;padding:16px 16px 12px;box-shadow:0 12px 40px rgba(0,0,0,.35);max-width:calc(100vw - 32px)}
+#tour .tstep{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ac)}
+#tour h3{font-family:var(--fdisp);font-size:1.25rem;margin:4px 0 6px;line-height:1.2}
+#tour p{margin:0 0 12px;color:var(--t2);line-height:1.45}
+#tour .tdots{display:flex;gap:6px;margin-bottom:10px}#tour .tdots i{width:6px;height:6px;border-radius:3px;background:var(--b2);transition:width .2s}#tour .tdots i.on{width:18px;background:var(--ac)}
+#tour .tbtns{display:flex;align-items:center;justify-content:space-between;gap:8px}#tour .tbtns>span{display:flex;gap:8px}#tour .tbtns .btn{min-width:84px}
+@media (prefers-reduced-motion: reduce){#tour .tspot{transition:none !important}}
 #scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .2s}
 #scrim.on{opacity:1;pointer-events:auto}
 #sheet{position:fixed;z-index:41;left:0;right:0;bottom:0;margin:0 auto;max-width:520px;max-height:92vh;overflow:auto;
@@ -233,6 +249,9 @@ details.set{background:var(--p1);border:1px solid var(--cb);box-shadow:var(--csh
 details.set>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;font-weight:600}
 details.set>summary::-webkit-details-marker{display:none}
 details.set>summary span{font-weight:500;color:var(--t2);font-size:13px;text-align:right;min-width:0;overflow-wrap:anywhere}
+button.setlink{display:flex;width:100%;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;font-weight:600;text-align:left;background:var(--p1);border:1px solid var(--cb);box-shadow:var(--csh);border-radius:var(--r);margin:0 0 10px;cursor:pointer}
+button.setlink .sl2{font-weight:500;color:var(--t2);font-size:13px;text-align:right}
+html[data-corners=round] button.setlink{padding:16px 20px}
 details.set .inner{padding:0 16px 16px}
 /* sub-sections inside a settings section (Appearance) */
 details.sub{border-top:1px solid var(--b1)}
@@ -358,7 +377,12 @@ table.tb td:first-child{white-space:normal;overflow-wrap:anywhere;padding-right:
 #picker{position:fixed;inset:0;z-index:45;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch;
   padding:0 16px calc(24px + env(safe-area-inset-bottom));transform:translateY(102%);visibility:hidden;transition:transform .22s ease,visibility 0s .22s}
 #picker.on{transform:none;visibility:visible;transition:transform .22s ease}
-.pkhead{position:sticky;top:0;z-index:2;display:flex;gap:10px;align-items:center;background:var(--bg);padding:calc(12px + env(safe-area-inset-top)) 0 10px;max-width:520px;margin:0 auto}
+#picker{display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
+.pktop{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;width:100%;max-width:520px;margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 0 4px}
+.pktop b{font-family:var(--fdisp);font-size:1.15rem}.pktop button{display:none}
+#pk_body{flex:1 1 auto;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;width:100%;padding-bottom:12px}
+#pk_body.q{display:flex;flex-direction:column;justify-content:flex-end}
+.pkhead{flex:0 0 auto;display:flex;gap:10px;align-items:center;background:var(--bg);width:100%;max-width:520px;margin:0 auto;padding:10px 0 calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--b1)}
 .pkhead input{flex:1;min-width:0;min-height:46px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--p1);padding:0 14px;font-size:16px}
 .pkhead button{color:var(--ac);font-weight:600;padding:8px 4px}
 #pk_body{max-width:520px;margin:0 auto}
@@ -386,12 +410,12 @@ html[data-density=compact] .bar{height:5px;margin-top:4px}
 html[data-density=compact] .mbar{margin-bottom:8px}
 html[data-density=compact] .field{margin-bottom:9px}
 /* appearance pickers */
-.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 6px}
 .sw{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;border-radius:var(--r2);border:2px solid transparent;font-size:11px;font-weight:600;color:var(--t2);min-width:0}
 .sw.on{border-color:var(--t1);color:var(--t1)}
 .sw i{position:relative;display:block;width:40px;height:40px;border-radius:12px;border:1px solid rgba(0,0,0,.12);overflow:hidden}
 .sw i b{position:absolute;left:0;bottom:0;width:60%;height:60%;border-top-right-radius:10px}
-.sw i em{position:absolute;right:5px;top:5px;width:10px;height:10px;border-radius:50%}
+.sw i .swg{position:absolute;right:4px;top:4px;display:grid;grid-template-columns:7px 7px;gap:2px}.sw i .swg em{width:7px;height:7px;border-radius:50%}
 .stylegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .stylecard{text-align:left;padding:10px 12px;border-radius:var(--r2);border:1px solid var(--b1);background:var(--bg);min-width:0}
 .stylecard.on{border:2px solid var(--ac);background:var(--acd)}
@@ -939,7 +963,8 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
   #picker{inset:auto;left:50%;top:50%;width:560px;max-width:calc(100vw - 48px);height:min(720px,86vh);border-radius:22px;padding:0 20px 20px;
     transform:translate(-50%,-47%) scale(.98);opacity:0;border:1px solid var(--b1);box-shadow:0 24px 64px rgba(0,0,0,.28);transition:transform .2s ease,opacity .2s ease,visibility 0s .2s}
   #picker.on{transform:translate(-50%,-50%);opacity:1;transition:transform .2s ease,opacity .2s ease}
-  .pkhead{padding-top:16px}
+  .pkhead{order:-1;padding:16px 0 10px;border-top:0}.pktop{display:none}
+  #pk_body.q{justify-content:flex-start}
   #toast{left:272px;right:32px}
   .kbd{display:inline-block}
 }
@@ -1084,6 +1109,10 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 .bamt{position:relative;display:block}
 .bamt .cur{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--t3);font-weight:600}
 .bamt input{width:100%;box-sizing:border-box;min-height:42px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--p1);padding:0 10px 0 22px;font-size:16px;font-weight:600;text-align:right}
+.cedit{display:grid;gap:0 12px;grid-template-columns:minmax(0,1fr)}.cpos{display:flex;align-items:center;gap:8px}.cpos .btn{flex:1;min-width:0;padding:0 10px}.cpos>span{flex:0 0 auto;color:var(--t2);font-size:.86rem;min-width:52px;text-align:center}
+.covw{margin-bottom:10px}.covw>b{display:block;font-size:.8rem;color:var(--t2);margin-bottom:6px}.covw>div{display:flex;flex-wrap:wrap;gap:6px}
+.ciline{display:flex;gap:10px;align-items:flex-start;padding:7px 0;line-height:1.4}.ciline+.ciline{border-top:1px solid var(--b1)}.cii{flex:0 0 22px;text-align:center;font-weight:700}.cii.up{color:var(--warn)}.cii.dn{color:var(--ok)}
+.bcand{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--b2)}.bcand>span{font-size:.82rem;color:var(--t3);margin-right:2px}.bcand .chip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bbtns{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .bbtns .btn{flex:1 1 90px;min-height:42px;width:auto}
 .bbtns .bskip{flex:1 0 100%;text-align:center;font-size:13px;color:var(--t3)}
@@ -1242,7 +1271,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.30';
+var VERSION = '2.32';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1257,64 +1286,50 @@ var GROUPS = [
 var FLEX = { daily: 1, out: 1, once: 1 };
 var INCOME_CATS = ['paychecks', 'freelance', 'other'];
 
+// 2.32: twelve colorways, each from a season or a landscape, spread around the color wheel. Besides the base colors each has a two-tone tint for the top card (ha, hb) and a color per budget group (gb bills, gg giving,
+// gd daily living, go going out, gn one-time, gs savings). Every text color clears 4.5:1 on the surfaces it sits on, in light and dark.
 var PALETTES = {
+  ember: { name: 'Ember',
+    light: { bg:'#f6e9e7',p1:'#fdfbfb',p2:'#efe1df',b1:'#e2d7d5',b2:'#cabcba',t1:'#231715',t2:'#614f4c',t3:'#766360',ac:'#b3261e',acd:'#f4d9d7',bf:'#ffffff',ok:'#2b6f30',bad:'#b3261e',warn:'#8a5100',s1:'#d94a2b',s2:'#b6811b',s3:'#3f6e8c',ha:'#ffd9cc',hb:'#ffe9b8',gb:'#3f6e8c',gg:'#a8326e',gd:'#c4512b',go:'#b6811b',gn:'#7a4fb0',gs:'#3c8a4e' },
+    dark:  { bg:'#1b0e0b',p1:'#261512',p2:'#321e1b',b1:'#392623',b2:'#4d3835',t1:'#f1ebea',t2:'#cdbebc',t3:'#ac9c9a',ac:'#f17b74',acd:'#47211f',bf:'#210908',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#e06b52',s2:'#e5b14d',s3:'#72a2c0',ha:'#48281e',hb:'#3e341d',gb:'#79a6c3',gg:'#d36a9f',gd:'#dc7f60',go:'#e6b556',gn:'#9a79c3',gs:'#78c48a' } },
+  harvest: { name: 'Autumn Harvest',
+    light: { bg:'#f7eee6',p1:'#fdfcfb',p2:'#f0e7dd',b1:'#e3dbd4',b2:'#cbc2b8',t1:'#231c15',t2:'#61574c',t3:'#73685e',ac:'#a3461a',acd:'#f4e0d7',bf:'#ffffff',ok:'#296b2f',bad:'#b3261e',warn:'#8a5100',s1:'#c8621f',s2:'#7d3c78',s3:'#5f7a1f',ha:'#fbd9b8',hb:'#ecd5ea',gb:'#7d3c78',gg:'#b23c52',gd:'#5f7a1f',go:'#c8621f',gn:'#b8860b',gs:'#2f7a6b' },
+    dark:  { bg:'#1c130b',p1:'#261c12',p2:'#32261b',b1:'#3b2e21',b2:'#4f4133',t1:'#f1edea',t2:'#cdc4bc',t3:'#aca39a',ac:'#f29c73',acd:'#472c1f',bf:'#211008',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#e48a4e',s2:'#bd75b7',s3:'#b2d65c',ha:'#48331e',hb:'#3e1d3c',gb:'#c07cbb',gg:'#ce6e80',gd:'#b6d864',go:'#e58f57',gn:'#f4c248',gs:'#73c9b8' } },
+  golden: { name: 'Golden Hour',
+    light: { bg:'#f9f3e4',p1:'#fefdfa',p2:'#f3ecdb',b1:'#e5e0d2',b2:'#cec8b5',t1:'#231f15',t2:'#615c4c',t3:'#736d5e',ac:'#8a5a00',acd:'#f4ead7',bf:'#ffffff',ok:'#2b6f30',bad:'#b3261e',warn:'#8a5100',s1:'#c38600',s2:'#2f6fb0',s3:'#c0504d',ha:'#ffe7a8',hb:'#d6e6fa',gb:'#2f6fb0',gg:'#c0504d',gd:'#3d8a5a',go:'#ca8000',gn:'#8a5cc0',gs:'#1f8a8a' },
+    dark:  { bg:'#1c170b',p1:'#262112',p2:'#322c1b',b1:'#3e361d',b2:'#53492f',t1:'#f1efea',t2:'#cdc8bc',t3:'#aca79a',ac:'#f7c76e',acd:'#47391f',bf:'#211808',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#ffc033',s2:'#5e99d4',s3:'#ca6b68',ha:'#483d1e',hb:'#1d2c3e',gb:'#669ed6',gg:'#cc7270',gd:'#79c495',go:'#ffb83d',gn:'#9b73c9',gs:'#61dbdb' } },
+  spring: { name: 'Spring Meadow',
+    light: { bg:'#edf5e7',p1:'#fcfdfb',p2:'#e6eedf',b1:'#dae1d5',b2:'#c1caba',t1:'#1b2315',t2:'#55614c',t3:'#64705b',ac:'#39761d',acd:'#e0f4d7',bf:'#ffffff',ok:'#2b6f30',bad:'#b3261e',warn:'#8a5100',s1:'#5aa02c',s2:'#e0558c',s3:'#b78900',ha:'#dff3c8',hb:'#ffdbe8',gb:'#2f7fc0',gg:'#d84f8a',gd:'#4c9a2a',go:'#bf8400',gn:'#8a5cc8',gs:'#1f8a7a' },
+    dark:  { bg:'#121a0c',p1:'#1b2513',p2:'#24311c',b1:'#2c3824',b2:'#3f4c36',t1:'#edf1ea',t2:'#c3cdbc',t3:'#a2ac9a',ac:'#9fe87d',acd:'#2b471f',bf:'#102108',ok:'#7bc47f',bad:'#ff938a',warn:'#f0b35a',s1:'#8dd35f',s2:'#e0528a',s3:'#ffcc33',ha:'#34481e',hb:'#3e1d29',gb:'#63a4d9',gg:'#dc6096',gd:'#88d567',go:'#ffc33d',gn:'#976ece',gs:'#61dbc9' } },
+  forest: { name: 'Deep Forest',
+    light: { bg:'#eaf3ee',p1:'#fbfdfc',p2:'#e2ece6',b1:'#d7dfdb',b2:'#bdc7c1',t1:'#15231b',t2:'#4c6155',t3:'#5b7064',ac:'#1d5e3a',acd:'#d7f4e4',bf:'#ffffff',ok:'#2b6f30',bad:'#b3261e',warn:'#8a5100',s1:'#2e8a52',s2:'#b07a1e',s3:'#6b4a2e',ha:'#cfe8d6',hb:'#efe0c4',gb:'#2f6f9a',gg:'#9a4a6e',gd:'#2e8a52',go:'#c47a1e',gn:'#6b4a2e',gs:'#4f7f2a' },
+    dark:  { bg:'#0e1812',p1:'#16231b',p2:'#1f2d25',b1:'#27352d',b2:'#3a4840',t1:'#eaf1ed',t2:'#bccdc3',t3:'#9aaca2',ac:'#82e3ad',acd:'#1f4731',bf:'#082113',ok:'#7bc47f',bad:'#ff8f85',warn:'#f0b35a',s1:'#66cc8e',s2:'#e1ac51',s3:'#c29670',ha:'#1e482a',hb:'#3e331d',gb:'#6ba8d2',gg:'#c07c9b',gd:'#6ecf94',go:'#e5a657',gn:'#c59b77',gs:'#98cf6d' } },
   coastline: { name: 'Coastline',
-    light: { bg:'#e9f7f7',p1:'#f9fefe',p2:'#dbeced',b1:'#d3e4e4',b2:'#b8cccd',t1:'#131d1d',t2:'#4b5859',t3:'#5e6c6d',ac:'#006a6a',acd:'#cfebeb',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#19a0a0',s2:'#bf4306',s3:'#8254c4' },
-    dark:  { bg:'#0a1414',p1:'#121b1c',p2:'#192526',b1:'#202d2d',b2:'#2e3c3d',t1:'#e8f0f1',t2:'#b4c1c1',t3:'#8f9b9c',ac:'#5fccc8',acd:'#1b3332',bf:'#001817',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#149d99',s2:'#db5d2c',s3:'#9a6cdf' } },
-  forest: { name: 'Forest',
-    light: { bg:'#ecf7ee',p1:'#fafefa',p2:'#dfece1',b1:'#d6e4d8',b2:'#bdccbf',t1:'#151d17',t2:'#4e5850',t3:'#616c63',ac:'#235430',acd:'#d7ebda',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#04893e',s2:'#864900',s3:'#735acc' },
-    dark:  { bg:'#0d140e',p1:'#141c16',p2:'#1c261e',b1:'#232d25',b2:'#323c34',t1:'#eaf0eb',t2:'#b7c1b8',t3:'#929b93',ac:'#8bc993',acd:'#243225',bf:'#011705',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#23a447',s2:'#9d580c',s3:'#7879ec' } },
-  cobalt: { name: 'Cobalt',
-    light: { bg:'#eef4fd',p1:'#fbfdff',p2:'#e1e8f4',b1:'#d9e0ec',b2:'#c0c8d5',t1:'#171b21',t2:'#50555f',t3:'#646973',ac:'#1a48bc',acd:'#d1e5ff',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#3c6ad3',s2:'#9c640d',s3:'#118568' },
-    dark:  { bg:'#0e1218',p1:'#161a20',p2:'#1e232b',b1:'#262a33',b2:'#343943',t1:'#ebeff4',t2:'#b9bec7',t3:'#9498a1',ac:'#79a9ff',acd:'#222e43',bf:'#051027',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#4b85ee',s2:'#bc7806',s3:'#18a07e' } },
-  ivory: { name: 'Ivory',
-    light: { bg:'#faf3e5',p1:'#fffcf7',p2:'#f0e7d5',b1:'#e8dfcd',b2:'#d0c6b2',t1:'#1f1a10',t2:'#5b5446',t3:'#6f685a',ac:'#4f3720',acd:'#f3e1d0',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#9e6200',s2:'#127ca3',s3:'#942578' },
-    dark:  { bg:'#161107',p1:'#1e190f',p2:'#282215',b1:'#30291c',b2:'#3f382a',t1:'#f2eee6',t2:'#c4bdb0',t3:'#9e988b',ac:'#e3cfa5',acd:'#352d1c',bf:'#1b0f00',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#ab8211',s2:'#0396c6',s3:'#ae4090' } },
-  desert: { name: 'Desert',
-    light: { bg:'#fdf1e4',p1:'#fffcf7',p2:'#f5e5d4',b1:'#ecddcc',b2:'#d6c4b1',t1:'#21190f',t2:'#5f5346',t3:'#736759',ac:'#9e511e',acd:'#faded0',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#9e6200',s2:'#0388a5',s3:'#8c399e' },
-    dark:  { bg:'#181007',p1:'#20180e',p2:'#2b2115',b1:'#33281c',b2:'#433729',t1:'#f4ede5',t2:'#c7bcaf',t3:'#a1968a',ac:'#e7a875',acd:'#392a1e',bf:'#210b00',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#c17501',s2:'#1898b7',s3:'#9b49ae' } },
-  sunset: { name: 'Sunset',
-    light: { bg:'#fef0ec',p1:'#fffbfa',p2:'#f5e3df',b1:'#eddbd6',b2:'#d6c2bd',t1:'#211816',t2:'#5f524e',t3:'#736562',ac:'#c64e31',acd:'#ffdacf',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#9e6200',s2:'#0274c7',s3:'#118659' },
-    dark:  { bg:'#180f0d',p1:'#201714',p2:'#2b201d',b1:'#332724',b2:'#433632',t1:'#f5ecea',t2:'#c8bab7',t3:'#a29592',ac:'#f69370',acd:'#3f271f',bf:'#230802',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#c17501',s2:'#188ceb',s3:'#0da26b' } },
-  lavender: { name: 'Lavender Field',
-    light: { bg:'#f5f1fd',p1:'#fdfcff',p2:'#eae5f4',b1:'#e1ddec',b2:'#c9c4d5',t1:'#1c1921',t2:'#57535f',t3:'#6a6773',ac:'#6f4fa1',acd:'#e8dffb',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#8254c4',s2:'#2d8810',s3:'#0388a5' },
-    dark:  { bg:'#131018',p1:'#1a1820',p2:'#24212b',b1:'#2b2832',b2:'#3b3743',t1:'#efedf4',t2:'#bfbcc7',t3:'#9a96a1',ac:'#c6b1f0',acd:'#302a3b',bf:'#150b24',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#9a6cdf',s2:'#48a132',s3:'#0e8ba8' } },
-  glacier: { name: 'Glacier',
-    light: { bg:'#ebf5fa',p1:'#fafdff',p2:'#ddeaf0',b1:'#d5e2e8',b2:'#bccad0',t1:'#151c1f',t2:'#4d575b',t3:'#616b6f',ac:'#006d91',acd:'#d1e9f5',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#127ca3',s2:'#c13e2e',s3:'#699f08' },
-    dark:  { bg:'#0c1316',p1:'#141b1e',p2:'#1c2428',b1:'#232c30',b2:'#313b3f',t1:'#eaf0f2',t2:'#b6bfc4',t3:'#919a9e',ac:'#97d6ea',acd:'#1c3138',bf:'#001621',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#1798b7',s2:'#dd5847',s3:'#8e60d2' } },
+    light: { bg:'#e6f6f6',p1:'#fbfdfd',p2:'#deefef',b1:'#d4e2e2',b2:'#b9cbca',t1:'#152323',t2:'#4c6160',t3:'#5b706f',ac:'#00696a',acd:'#d7f3f4',bf:'#ffffff',ok:'#2c7332',bad:'#b3261e',warn:'#8a5100',s1:'#12a19c',s2:'#e2622d',s3:'#7a5bd0',ha:'#cdeeed',hb:'#fde0cf',gb:'#2f6fd0',gg:'#c0478a',gd:'#129a8f',go:'#e2702d',gn:'#7a5bd0',gs:'#2e9d4a' },
+    dark:  { bg:'#0b1b1b',p1:'#122625',p2:'#1b3231',b1:'#223a39',b2:'#354e4d',t1:'#eaf1f0',t2:'#bccdcc',t3:'#9aacac',ac:'#6ef6f7',acd:'#1f4747',bf:'#082021',ok:'#7bc47f',bad:'#ff938a',warn:'#f0b35a',s1:'#48eae5',s2:'#e6794c',s3:'#7e60d2',ha:'#1e4847',hb:'#3e2a1d',gb:'#6192db',gg:'#ce6fa3',gd:'#51ebde',go:'#e78b55',gn:'#8568d4',gs:'#69d384' } },
+  frost: { name: 'Winter Frost',
+    light: { bg:'#e9eff3',p1:'#fbfcfd',p2:'#e1e8ec',b1:'#d7dce0',b2:'#bcc3c7',t1:'#151d23',t2:'#4c5861',t3:'#5e6a73',ac:'#2b5c8a',acd:'#d7e6f4',bf:'#ffffff',ok:'#2c7332',bad:'#b3261e',warn:'#8a5100',s1:'#4a86c0',s2:'#b3324e',s3:'#6a7f95',ha:'#dbe9f6',hb:'#ece6f5',gb:'#2b5c8a',gg:'#b3324e',gd:'#3a8fb0',go:'#6a5fb8',gn:'#7f8fa3',gs:'#2f8a74' },
+    dark:  { bg:'#0d1419',p1:'#151d23',p2:'#1f282e',b1:'#272f35',b2:'#394249',t1:'#eaeef1',t2:'#bcc6cd',t3:'#9aa5ac',ac:'#83b4e2',acd:'#1f3447',bf:'#081521',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#689aca',s2:'#d26078',s3:'#8899aa',ha:'#1e3448',hb:'#2b1d3e',gb:'#6ba0d1',gg:'#d5687f',gd:'#6db4cf',go:'#8279c3',gn:'#8e9cae',gs:'#6eceb7' } },
+  cobalt: { name: 'Cobalt Lake',
+    light: { bg:'#e4eaf9',p1:'#fafbfd',p2:'#dce2f2',b1:'#d2d8e4',b2:'#b6bdcd',t1:'#151923',t2:'#4c5361',t3:'#606776',ac:'#1e4fd8',acd:'#d7dff4',bf:'#ffffff',ok:'#2b6f30',bad:'#b3261e',warn:'#8a5100',s1:'#2f63e0',s2:'#c17c0d',s3:'#119e7f',ha:'#d6e2ff',hb:'#ffedc7',gb:'#1e4fd8',gg:'#d24f8c',gd:'#109e7b',go:'#d0730e',gn:'#8a5cf0',gs:'#2f9e44' },
+    dark:  { bg:'#0b101c',p1:'#121826',p2:'#1b2232',b1:'#1e283d',b2:'#313a51',t1:'#eaecf1',t2:'#bcc1cd',t3:'#9aa0ac',ac:'#7194f4',acd:'#1f2947',bf:'#080f21',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#4d7ae5',s2:'#f2ae40',s3:'#47ebc7',ha:'#1e2a48',hb:'#3e341d',gb:'#557be7',gg:'#d8659a',gd:'#4feec7',go:'#f3a149',gn:'#804eef',gs:'#6ad37d' } },
   midnight: { name: 'Midnight',
-    light: { bg:'#eaf4ff',p1:'#f9fdff',p2:'#dce9fe',b1:'#d4e0f6',b2:'#bac8e0',t1:'#141b26',t2:'#4c5666',t3:'#60697b',ac:'#1c3e81',acd:'#d8e5fd',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#366bd3',s2:'#986603',s3:'#118568' },
-    dark:  { bg:'#0b121d',p1:'#131a25',p2:'#1b2331',b1:'#222a39',b2:'#30394a',t1:'#e9eff9',t2:'#b5bece',t3:'#9099a8',ac:'#ebc669',acd:'#352d18',bf:'#1b0f00',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#a98410',s2:'#b93917',s3:'#1392d4' } },
-  canyon: { name: 'Canyon',
-    light: { bg:'#fff0e9',p1:'#fffbf8',p2:'#f8e3da',b1:'#efdbd2',b2:'#d9c2b8',t1:'#231813',t2:'#61514a',t3:'#75655e',ac:'#9c3917',acd:'#ffdcd1',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#9e6200',s2:'#0388a5',s3:'#8c399e' },
-    dark:  { bg:'#190f0a',p1:'#211712',p2:'#2d1f19',b1:'#342620',b2:'#45352e',t1:'#f6ece8',t2:'#c9bab3',t3:'#a4958e',ac:'#e99169',acd:'#3d281f',bf:'#230900',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#c17501',s2:'#1898b7',s3:'#9b49ae' } },
-  meadow: { name: 'Meadow',
-    light: { bg:'#f1f6ea',p1:'#fcfef9',p2:'#e4ebdc',b1:'#dce2d4',b2:'#c4caba',t1:'#191c14',t2:'#53574c',t3:'#666b5f',ac:'#4d7002',acd:'#ddeacf',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#59800b',s2:'#8254c4',s3:'#0394a6' },
-    dark:  { bg:'#10130b',p1:'#181b13',p2:'#21251a',b1:'#282c22',b2:'#373b30',t1:'#edf0e9',t2:'#bbc0b5',t3:'#969a90',ac:'#b6da70',acd:'#29321a',bf:'#0d1500',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#74980b',s2:'#9a6cdf',s3:'#179aac' } },
-  harbor: { name: 'Harbor',
-    light: { bg:'#eef5fa',p1:'#fafdff',p2:'#e0e9f0',b1:'#d8e1e8',b2:'#bfc9d0',t1:'#171b1f',t2:'#50565b',t3:'#636a6f',ac:'#2e4b60',acd:'#d3e8f7',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#0c79b3',s2:'#b74c05',s3:'#4ba435' },
-    dark:  { bg:'#0e1216',p1:'#151a1e',p2:'#1e2428',b1:'#252b30',b2:'#333a3f',t1:'#ebeff2',t2:'#b8bfc4',t3:'#93999e',ac:'#a1c3db',acd:'#20303b',bf:'#001425',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#0a93d4',s2:'#d95f19',s3:'#9543a7' } },
-  sakura: { name: 'Cherry Blossom',
-    light: { bg:'#fbf0f5',p1:'#fffbfd',p2:'#f2e3e9',b1:'#eadbe1',b2:'#d3c2c9',t1:'#20181b',t2:'#5d5256',t3:'#71656a',ac:'#a73b6d',acd:'#fed9e6',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#b53d82',s2:'#08a28f',s3:'#93690d' },
-    dark:  { bg:'#170f12',p1:'#1f171a',p2:'#292024',b1:'#31272b',b2:'#41353a',t1:'#f3ecef',t2:'#c5babf',t3:'#a09599',ac:'#f6a0c1',acd:'#3b272f',bf:'#220713',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#b33e86',s2:'#13a692',s3:'#b27f02' } },
-  espresso: { name: 'Espresso',
-    light: { bg:'#fff0e7',p1:'#fffbf8',p2:'#f6e4d8',b1:'#eedcd0',b2:'#d8c3b5',t1:'#221812',t2:'#605249',t3:'#74665c',ac:'#5c3824',acd:'#f6dfd3',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#9e6200',s2:'#0388a5',s3:'#8c399e' },
-    dark:  { bg:'#190f09',p1:'#211711',p2:'#2c2018',b1:'#34271f',b2:'#44362c',t1:'#f5ede7',t2:'#c8bbb2',t3:'#a3958d',ac:'#d5af91',acd:'#392a1e',bf:'#210b00',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#c17501',s2:'#1898b7',s3:'#9b49ae' } },
-  aurora: { name: 'Aurora',
-    light: { bg:'#e9f7f3',p1:'#f9fefc',p2:'#daede7',b1:'#d2e4df',b2:'#b8cdc6',t1:'#131d1a',t2:'#4b5955',t3:'#5e6d68',ac:'#00755a',acd:'#d2ebe1',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#138568',s2:'#8254c4',s3:'#93690d' },
-    dark:  { bg:'#0a1411',p1:'#121c19',p2:'#192622',b1:'#202d29',b2:'#2e3d39',t1:'#e8f1ee',t2:'#b4c1bd',t3:'#8f9c98',ac:'#80e2b9',acd:'#1d332a',bf:'#00180c',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#0ea175',s2:'#9a6cdf',s3:'#b27f02' } },
-  storm: { name: 'Storm',
-    light: { bg:'#f2f3f6',p1:'#fcfdfe',p2:'#e6e8eb',b1:'#dee0e3',b2:'#c5c7cb',t1:'#191b1c',t2:'#545558',t3:'#67696c',ac:'#26292e',acd:'#d9e5f9',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#388cf0',s2:'#065da0',s3:'#93690d' },
-    dark:  { bg:'#111213',p1:'#18191b',p2:'#212325',b1:'#292a2d',b2:'#38393c',t1:'#edeef0',t2:'#bcbec0',t3:'#97989b',ac:'#e1e5eb',acd:'#252e3d',bf:'#0f1216',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#3c8ff4',s2:'#6e53c5',s3:'#a68510' } },
-  vineyard: { name: 'Vineyard',
-    light: { bg:'#faf0f6',p1:'#fffbfe',p2:'#f1e3ec',b1:'#e9dbe3',b2:'#d1c2cc',t1:'#1f181d',t2:'#5c5258',t3:'#70656c',ac:'#722756',acd:'#f7dcea',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#b23e87',s2:'#05893e',s3:'#0274c7' },
-    dark:  { bg:'#160f14',p1:'#1e171b',p2:'#292025',b1:'#30272d',b2:'#40363c',t1:'#f3ecf0',t2:'#c4bac0',t3:'#9f959b',ac:'#df97c0',acd:'#392831',bf:'#200717',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#cd57a1',s2:'#0fa44d',s3:'#188ceb' } },
-  citrus: { name: 'Citrus Grove',
-    light: { bg:'#faf3e5',p1:'#fffcf7',p2:'#f0e7d5',b1:'#e8dfcd',b2:'#d0c6b2',t1:'#1f1a10',t2:'#5b5446',t3:'#6f685a',ac:'#9d6400',acd:'#f4e2c9',bf:'#ffffff',ok:'#2f7a35',bad:'#b3261e',warn:'#8a5100',s1:'#9b640b',s2:'#0274c7',s3:'#ae4090' },
-    dark:  { bg:'#161107',p1:'#1e190f',p2:'#282215',b1:'#30291c',b2:'#3f382a',t1:'#f2eee6',t2:'#c4bdb0',t3:'#9e988b',ac:'#f0c551',acd:'#372d13',bf:'#1b0f00',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#a88410',s2:'#188ceb',s3:'#c959a9' } }
+    light: { bg:'#e7e9f6',p1:'#fbfbfd',p2:'#dfe1ef',b1:'#d5d7e2',b2:'#babcca',t1:'#151723',t2:'#4c4f61',t3:'#606376',ac:'#1f3a7a',acd:'#d7e0f4',bf:'#ffffff',ok:'#296b2f',bad:'#b3261e',warn:'#8a5100',s1:'#3556b0',s2:'#af8413',s3:'#b0386a',ha:'#d4ddf3',hb:'#f5e7bf',gb:'#3556b0',gg:'#b0386a',gd:'#128a7a',go:'#c17b10',gn:'#6b4fc4',gs:'#3b8f3b' },
+    dark:  { bg:'#0b0e1b',p1:'#121526',p2:'#1b1e32',b1:'#232639',b2:'#35384d',t1:'#eaebf1',t2:'#bcbecd',t3:'#9a9cac',ac:'#7d9de8',acd:'#1f2b47',bf:'#080f21',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#6280d0',s2:'#ebbe47',s3:'#ce6490',ha:'#1e2a48',hb:'#3e361d',gb:'#6a86d2',gg:'#d06c96',gd:'#54e9d5',go:'#f0af4c',gn:'#856ece',gs:'#76c676' } },
+  lavender: { name: 'Lavender Fields',
+    light: { bg:'#ede6f6',p1:'#fcfbfd',p2:'#e5deef',b1:'#dad4e2',b2:'#c0b9cb',t1:'#1b1523',t2:'#554c61',t3:'#696076',ac:'#6a43c2',acd:'#e0d7f4',bf:'#ffffff',ok:'#296b2f',bad:'#b3261e',warn:'#8a5100',s1:'#7c55d6',s2:'#4f9a6a',s3:'#dd5a92',ha:'#e4d8fb',hb:'#d6eedd',gb:'#4f62d6',gg:'#d0548e',gd:'#4f9a6a',go:'#d96922',gn:'#7c55d6',gs:'#2f9a8a' },
+    dark:  { bg:'#120b1b',p1:'#1a1226',p2:'#241b32',b1:'#2c223a',b2:'#3f354e',t1:'#edeaf1',t2:'#c3bccd',t3:'#a29aac',ac:'#a084e1',acd:'#2b1f47',bf:'#100821',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#805bd7',s2:'#78ba90',s3:'#dc568e',ha:'#2c1e48',hb:'#1d3e27',gb:'#6273da',gg:'#d5679b',gd:'#7fbd95',go:'#e58e58',gn:'#8763d9',gs:'#6bd2c2' } },
+  blossom: { name: 'Cherry Blossom',
+    light: { bg:'#f8e5ed',p1:'#fdfbfc',p2:'#f1dde5',b1:'#e3d3da',b2:'#ccb7c0',t1:'#23151b',t2:'#614c55',t3:'#766069',ac:'#ac2f68',acd:'#f4d7e4',bf:'#ffffff',ok:'#2b6f30',bad:'#b3261e',warn:'#8a5100',s1:'#d6488a',s2:'#2f8f7a',s3:'#7b5bd0',ha:'#ffd6e7',hb:'#d5efe8',gb:'#4f6fd0',gg:'#d6488a',gd:'#2f8f7a',go:'#d56d21',gn:'#7b5bd0',gs:'#5a9a2a' },
+    dark:  { bg:'#1c0b12',p1:'#26121a',p2:'#321b24',b1:'#3c202c',b2:'#50323f',t1:'#f1eaed',t2:'#cdbcc3',t3:'#ac9aa2',ac:'#e67fae',acd:'#471f31',bf:'#210813',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#da5894',s2:'#65cdb6',s3:'#7f60d2',ha:'#481e2f',hb:'#1d3e36',gb:'#6682d6',gg:'#dc619a',gd:'#6dcfba',go:'#e59358',gn:'#8668d4',gs:'#96d567' } },
+  dune: { name: 'Desert Rose',
+    light: { bg:'#f4e9eb',p1:'#fdfbfb',p2:'#ede1e3',b1:'#e0d7d8',b2:'#c8bcbe',t1:'#231517',t2:'#614c50',t3:'#766064',ac:'#9c3d4f',acd:'#f4d7dd',bf:'#ffffff',ok:'#296b2f',bad:'#b3261e',warn:'#8a5100',s1:'#c45a6a',s2:'#5f8a6e',s3:'#b88237',ha:'#f5d6d6',hb:'#f0e2c8',gb:'#4a6f9a',gg:'#9c3d4f',gd:'#5f8a6e',go:'#b88237',gn:'#8a6a9a',gs:'#3f8a6a' },
+    dark:  { bg:'#190d0f',p1:'#241417',p2:'#2f1e21',b1:'#362629',b2:'#4a383b',t1:'#f1eaeb',t2:'#cdbcbf',t3:'#ac9a9d',ac:'#dc8999',acd:'#471f26',bf:'#21080d',ok:'#7bc47f',bad:'#ff8a80',warn:'#f0b35a',s1:'#c96977',s2:'#86ac93',s3:'#d0a262',ha:'#481e1e',hb:'#3e331d',gb:'#7c9cc0',gg:'#c97484',gd:'#8cb099',go:'#d3a669',gn:'#a48bb1',gs:'#7ac2a3' } }
 };
 // older color names → their closest new scene
-var PAL_MOVE = { tide: 'coastline', ember: 'canyon', grove: 'meadow', plum: 'vineyard', ocean: 'cobalt', indigo: 'cobalt', sunflower: 'citrus', sand: 'desert', slate: 'harbor', mono: 'storm', rose: 'sakura', olive: 'meadow', lagoon: 'coastline', berry: 'vineyard', terracotta: 'canyon', cocoa: 'espresso', coral: 'sunset', mint: 'aurora' };
+var PAL_MOVE = { tide: 'coastline', ember: 'ember', grove: 'forest', plum: 'lavender', ocean: 'cobalt', indigo: 'midnight', sunflower: 'golden', sand: 'dune', slate: 'frost', mono: 'frost', rose: 'blossom', olive: 'spring', lagoon: 'coastline', berry: 'blossom', terracotta: 'harvest', cocoa: 'harvest', coral: 'ember', mint: 'spring',
+  forest: 'forest', desert: 'dune', glacier: 'frost', canyon: 'harvest', harbor: 'frost', sakura: 'blossom', espresso: 'harvest', aurora: 'coastline', storm: 'frost', vineyard: 'lavender', citrus: 'golden',
+  linen: 'harvest', ivory: 'golden', sunset: 'ember', meadow: 'spring' };
 
 // Typography packs: display font (big numbers, titles) + body font. Loaded only when used.
 var STYLES = {
@@ -1333,20 +1348,18 @@ var STYLES = {
 };
 // Ready-made looks: a color, a type style, corners and cards that go together.
 var COMBOS = {
-  original:  { name: 'Original',     pal: 'coastline',       style: 'classic',   corners: 'soft',  cards: 'outline' },
-  nightflight: { name: 'Night flight', pal: 'midnight', style: 'grotesk',   corners: 'soft',  cards: 'raised' },
-  ledger:    { name: 'Bookkeeper',   pal: 'ivory',      style: 'ledger',    corners: 'sharp', cards: 'outline' },
-  postcard:  { name: 'Postcard',     pal: 'canyon', style: 'newsprint', corners: 'round', cards: 'raised' },
-  botanical: { name: 'Botanical',    pal: 'forest',     style: 'bookish',   corners: 'soft',  cards: 'flat' },
-  candy:     { name: 'Candy',        pal: 'sunset',      style: 'playful',   corners: 'round', cards: 'raised' },
-  gallery:   { name: 'Gallery',      pal: 'storm',       style: 'elegant',   corners: 'sharp', cards: 'flat' },
-  studio:    { name: 'Studio',       pal: 'cobalt',     style: 'techno',    corners: 'soft',  cards: 'outline' },
-  seaside:   { name: 'Seaside',      pal: 'glacier',     style: 'geometric', corners: 'round', cards: 'flat' },
-  cabin:     { name: 'Cabin',        pal: 'espresso',      style: 'editorial', corners: 'soft',  cards: 'raised' },
-  bloom:     { name: 'Bloom',        pal: 'lavender',   style: 'friendly',  corners: 'round', cards: 'outline' },
-  jam:       { name: 'Jam',          pal: 'vineyard',      style: 'modern',    corners: 'soft',  cards: 'raised' },
-  fresh:     { name: 'Fresh',        pal: 'aurora',       style: 'geometric', corners: 'round', cards: 'outline' },
-  harvest:   { name: 'Harvest',      pal: 'citrus',  style: 'newsprint', corners: 'soft',  cards: 'flat' }
+  original:  { name: 'Original',     pal: 'coastline', style: 'classic',   corners: 'soft',  cards: 'outline' },
+  studio:    { name: 'Studio',       pal: 'cobalt',    style: 'techno',    corners: 'soft',  cards: 'raised' },
+  postcard:  { name: 'Postcard',     pal: 'harvest',   style: 'newsprint', corners: 'round', cards: 'raised' },
+  ledger:    { name: 'Bookkeeper',   pal: 'golden',    style: 'ledger',    corners: 'sharp', cards: 'outline' },
+  candy:     { name: 'Candy',        pal: 'blossom',   style: 'playful',   corners: 'round', cards: 'raised' },
+  botanical: { name: 'Botanical',    pal: 'forest',    style: 'bookish',   corners: 'soft',  cards: 'flat' },
+  bloom:     { name: 'Bloom',        pal: 'lavender',  style: 'friendly',  corners: 'round', cards: 'outline' },
+  nightflight: { name: 'Night flight', pal: 'midnight', style: 'grotesk',  corners: 'soft',  cards: 'raised' },
+  fireside:  { name: 'Fireside',     pal: 'ember',     style: 'editorial', corners: 'soft',  cards: 'raised' },
+  fresh:     { name: 'Fresh',        pal: 'spring',    style: 'geometric', corners: 'round', cards: 'outline' },
+  alpine:    { name: 'Alpine',       pal: 'frost',     style: 'modern',    corners: 'sharp', cards: 'flat' },
+  mesa:      { name: 'Mesa',         pal: 'dune',      style: 'elegant',   corners: 'soft',  cards: 'flat' }
 };
 var CORNERS = { sharp: ['Sharp', '6px', '4px'], soft: ['Soft', '16px', '12px'], round: ['Round', '24px', '18px'] };
 var CARDS = { outline: 'Outline', flat: 'Flat', raised: 'Raised' };
@@ -1397,7 +1410,7 @@ function save() {
   return STORE.set(KEY, JSON.stringify(S));
 }
 
-function nid(prefix) { S.seq = (S.seq || 1) + 1; return (prefix || 'L') + S.seq + '_' + Date.now().toString(36); }
+function nid(prefix) { S.seq = (S.seq || 1) + 1; return (prefix || 'L') + S.seq + '_' + Date.now().toString(36) + (prefix === 'o' ? Math.random().toString(36).slice(2, 7) : ''); }   // 2.32: change ids can't collide between devices
 
 // ------------------------------------------------------------------ helpers
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -1748,6 +1761,7 @@ function applyTheme() {
   var v = dark ? pal.dark : pal.light, st = document.documentElement.style;
   Object.keys(v).forEach(function (k) { st.setProperty('--' + k, v[k]); });
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+  st.setProperty('--hp', dark ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.62)');
   var sty = STYLES[S.cfg.style] || STYLES.classic, cor = CORNERS[S.cfg.corners] || CORNERS.soft;
   loadFont(S.cfg.style);
   st.setProperty('--fdisp', sty.disp); st.setProperty('--fbody', sty.body);
@@ -1857,14 +1871,14 @@ function checkinData() {
   var week = S.tx.filter(function (t) { return t.k === 'e' && t.d && t.d >= W.start && t.d <= W.end; });
   var catMed = {};
   week.forEach(function (t) {
-    if (ok[t.id]) return;
+    if (ok[t.id] || ok[txSig(t)]) return;
     var c = low(t.c), key = ymKey(t.y, t.m), g = groupOf(c, key);
     if (FLEX[g]) {
       var xs = S.tx.filter(function (x) { return x !== t && x.k === 'e' && low(x.c) === c && x.a > 0; }).map(function (x) { return x.a; }).sort(function (p, q) { return p - q; });
       var med = xs.length >= 3 ? xs[Math.floor(xs.length / 2)] : 0, bud = budgetOf(c, key);
       if (t.a >= 100 && ((med > 0 && t.a > med * 3) || (!med && bud > 0 && t.a > bud))) items.push({ t: t, why: 'Bigger than usual for ' + c });
     }
-    var dup = week.filter(function (x) { return x !== t && !ok[x.id] && x.v && low(x.v) === low(t.v) && Math.abs(x.a - t.a) < 0.005 && Math.abs(parseD(x.d) - parseD(t.d)) <= 2 * 86400000; });
+    var dup = week.filter(function (x) { return x !== t && !ok[x.id] && !ok[txSig(x)] && x.v && low(x.v) === low(t.v) && Math.abs(x.a - t.a) < 0.005 && Math.abs(parseD(x.d) - parseD(t.d)) <= 2 * 86400000; });
     if (dup.length && !items.some(function (it) { return it.t === dup[0]; })) items.push({ t: t, why: 'Same store and amount twice — a duplicate?' });
     if (g !== 'save' && !t.tr && budgetOf(c, key) <= 0 && !isYearly(c)) items.push({ t: t, why: c + ' has no budget' });
     var tp = !t.tr && g !== 'bills' && g !== 'save' && tripFor(t.d);
@@ -1892,12 +1906,33 @@ function checkinCardHtml() {
     '<p>You spent <b>' + money(D.tot) + '</b> on everyday things' + (cmp ? ' — ' + cmp : '') + '.' + (D.items.length ? ' <b>' + D.items.length + '</b> thing' + (D.items.length === 1 ? '' : 's') + ' to look at.' : ' Nothing looks off.') + '</p>' +
     '<div class="btns" style="margin-top:10px"><button class="btn" data-act="checkin" id="ci_open">' + (D.items.length ? 'Review' : 'See the week') + '</button><button class="btn pri" data-act="cidone" id="ci_done">Looks good ✓</button></div></section>';
 }
+// 2.31: a little look forward — what's left a day, bills in the next 7 days, and last week vs the one before
+function checkinAheadHtml(D) {
+  var cur = nowYM(), bt = budgetTotals(cur), ms = monthStats(cur), dim = daysIn(ymY(cur), ymM(cur)), day = NOW.getDate(), daysLeft = dim - day + 1;
+  var left = bt.flex - ms.flex, rows = [];
+  var prev = parseD(D.W.start); prev.setDate(prev.getDate() - 7);
+  var pe = new Date(prev); pe.setDate(pe.getDate() + 6);
+  var pw = weekSpend(dstr(prev), dstr(pe)).tot;
+  if (pw > 0 && D.tot > 0) {
+    var dd = D.tot - pw, pct = Math.round(Math.abs(dd) / pw * 100);
+    rows.push('<div class="ciline"><span class="cii ' + (dd > 0 ? 'up' : 'dn') + '" aria-hidden="true">' + (dd > 0 ? '↑' : '↓') + '</span><span>' + (Math.abs(dd) < 1 ? 'About the same as the week before' : money(Math.abs(dd)) + ' ' + (dd > 0 ? 'more' : 'less') + ' than the week before (' + pct + '%)') + '</span></div>');
+  }
+  if (bt.flex > 0) rows.push('<div class="ciline"><span class="cii" aria-hidden="true">📅</span><span>' + (left > 0 ? '<b>' + money(left) + '</b> left for everyday spending in ' + MONTHS[ymM(cur)] + ' — about <b>' + money(left / daysLeft) + '</b> a day for the ' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's') + ' left'
+    : '<b>' + money(-left) + '</b> over the everyday budget for ' + MONTHS[ymM(cur)]) + '</span></div>');
+  var today = todayStr(), wk = addDaysStr(today, 7), due = [];
+  recurBills().forEach(function (b) { billDates(b, today, wk, true).forEach(function (d) { var st = billState(b, d); if (st.s !== 'paid' && st.s !== 'skip') due.push({ b: b, d: d }); }); });
+  due.sort(function (p, q) { return p.d < q.d ? -1 : 1; });
+  if (due.length) rows.push('<div class="ciline"><span class="cii" aria-hidden="true">🧾</span><span>Due in the next 7 days: ' + due.slice(0, 3).map(function (x) { return esc(x.b.name) + ' <b>' + money(x.b.a) + '</b> ' + shortDate(x.d); }).join(' · ') + (due.length > 3 ? ' · +' + (due.length - 3) + ' more' : '') + '</span></div>');
+  if (!rows.length) return '';
+  return '<section class="card"><div class="ghead"><h3>Looking ahead</h3></div>' + rows.join('') + '</section>';
+}
 function checkinSheetHtml() {
   var D = checkinData();
   var h = '<div class="shead"><h2>Week of ' + D.W.label + '</h2><button data-act="close">Done</button></div>';
   h += '<section class="card"><div class="kpis">' + kpi('Everyday spending', money(D.tot), D.typical ? 'typical week ' + money(D.typical) : 'this week') +
     kpi('Biggest', D.top.length ? esc(D.top[0].c) : '—', D.top.length ? money(D.top[0].a) : 'nothing yet') + '</div>' +
     (D.top.length > 1 ? '<div class="l2" style="margin-top:8px">Then ' + D.top.slice(1).map(function (x) { return esc(x.c) + ' ' + money(x.a); }).join(' · ') + '</div>' : '') + '</section>';
+  h += checkinAheadHtml(D);
   h += '<section class="card"><div class="ghead"><h3>Worth a second look</h3><span>' + D.items.length + '</span></div>';
   if (!D.items.length) h += '<div class="l2">Nothing — everything looks right.</div>';
   D.items.forEach(function (it) {
@@ -2502,6 +2537,9 @@ function attnItems(key) {
     if (D.tot || D.items.length) out.push({ id: 'checkin', pri: 5, ico: '📅', t: 'Weekly check-in · ' + D.W.label, sub: 'You spent ' + money(D.tot) + (D.items.length ? ' · ' + D.items.length + ' thing' + (D.items.length === 1 ? '' : 's') + ' to look at' : ' · nothing looks off'),
       act: 'checkin', go: D.items.length ? 'Review' : 'See' });
   }
+  var od = S.cfg.url && !S.demo ? oldDevices() : [];
+  if (od.length && dis['olddev'] !== today) out.push({ id: 'olddev', pri: 2, ico: '🔄', tone: 'warn', t: 'Your ' + esc(od[0].n || 'other device') + ' has an older Piggy (' + esc(od[0].v) + ')',
+    sub: 'Open Piggy there and pull down to refresh, so both stay in step', act: 'olddevx', go: 'OK' });
   var ow = owedOpen();
   if (ow.length) {
     var otot = ow.reduce(function (a, x) { return a + (+x.ow); }, 0);
@@ -2727,7 +2765,7 @@ function monthGroupHtml(g, rows, gs, gb, pace) {
   else right = gs - gb > 0.5 ? '<span class="over"><span data-count="' + (gs - gb) + '" data-ck="gover' + g.id + '" data-good="down">' + money(gs - gb) + '</span> over</span>'
     : '<span data-count="' + (gb - gs) + '" data-ck="gleft' + g.id + '" data-good="up">' + money(gb - gs) + '</span> left';
   if (isWide()) {
-    var lh = '<section class="mgroup lgroup' + (open ? ' open' : '') + '"><button class="mghead lrow" data-act="mgrp" data-v="' + g.id + '" aria-expanded="' + open + '">' +
+    var lh = '<section class="mgroup lgroup' + (open ? ' open' : '') + '" data-g="' + g.id + '"><button class="mghead lrow" data-act="mgrp" data-v="' + g.id + '" aria-expanded="' + open + '">' +
       '<span class="lname"><b>' + g.name + '</b>' + (over && g.id !== 'save' && g.id !== 'give' ? '<small class="over">' + over + ' over</small>' : '') + '</span>' +
       '<span class="lnum" data-count="' + gs + '" data-ck="gs' + g.id + '">' + money(gs) + '</span><span class="lnum lbud">' + money(gb) + '</span>' +
       '<span class="lnum lleft mgright">' + right + '</span>' +
@@ -2737,7 +2775,7 @@ function monthGroupHtml(g, rows, gs, gb, pace) {
     rows.forEach(function (row) { lh += slimCatRow(row, g.id, pace); });
     return lh + '</div>' + (g.id === 'bills' ? billsFootHtml() : '') + '</div></div></section>';
   }
-  var h = '<section class="card mgroup' + (open ? ' open' : '') + '"><button class="mghead" data-act="mgrp" data-v="' + g.id + '" aria-expanded="' + open + '">' +
+  var h = '<section class="card mgroup' + (open ? ' open' : '') + '" data-g="' + g.id + '"><button class="mghead" data-act="mgrp" data-v="' + g.id + '" aria-expanded="' + open + '">' +
     '<span class="mgname"><b>' + g.name + '</b><small><span data-count="' + gs + '" data-ck="gs' + g.id + '">' + money(gs) + '</span> of ' + money(gb) + (over && g.id !== 'save' && g.id !== 'give' ? ' · <span class="over">' + over + ' over</span>' : '') + '</small></span>' +
     '<span class="mgright">' + right + '</span><i class="chev' + (open ? ' up' : '') + '"></i>' +
     '<span class="bar mgbar"><i class="' + (g.id === 'save' || g.id === 'give' ? (pct >= 1 && gb > 0 ? 'good' : '') : g.id === 'bills' ? (pct >= 0.999 ? 'good' : '') : pct > 1 ? 'over' : '') + '" data-bar="g' + g.id + '" style="width:' + Math.min(100, pct * 100).toFixed(1) + '%"></i>' +
@@ -3269,9 +3307,17 @@ function openPicker() {
   PICK = { kind: v.k, key: ymKey(v.y, v.m), sel: v.c, q: '', creating: false };
   renderPicker();
   $('picker').classList.add('on');
-  $('picker').scrollTop = 0;
+  $('pk_body').scrollTop = 0;
 }
-function closePicker() { PICK = null; $('picker').classList.remove('on'); }
+function closePicker() { PICK = null; $('picker').classList.remove('on'); var pk = $('picker'); pk.style.height = ''; pk.style.top = ''; }
+// keep the bottom search bar above the keyboard
+function fitPicker() {
+  var pk = $('picker'), vv = window.visualViewport;
+  if (!PICK || !vv || !pk || window.matchMedia('(min-width: 960px)').matches) return;
+  var z = parseFloat(document.body.style.zoom) || 1;           // larger text zooms the page
+  pk.style.height = (vv.height / z) + 'px'; pk.style.top = (vv.offsetTop / z) + 'px';
+  var b = $('pk_body'); if (b && PICK.q) b.scrollTop = b.scrollHeight;
+}
 
 function pickerCats() {
   var seen = {}, out = [];
@@ -3286,9 +3332,12 @@ function pkItem(c) {
 }
 
 function renderPicker() {
-  var h = '<div class="pkhead"><input id="pk_q" type="search" placeholder="Search or type a new one" value="' + esc(PICK.q) + '" autocomplete="off"><button data-act="pkclose">Cancel</button></div>';
-  h += '<div id="pk_body">' + pickerBody() + '</div>';
+  // 2.32: on a phone the search sits at the bottom, in reach of a thumb (on a computer it stays on top)
+  var h = '<div class="pktop"><b>' + (PICK.kind === 'i' ? 'Income category' : 'Category') + '</b><button data-act="pkclose">Cancel</button></div>';
+  h += '<div id="pk_body"' + (PICK.q ? ' class="q"' : '') + '>' + pickerBody() + '</div>';
+  h += '<div class="pkhead"><input id="pk_q" type="search" enterkeyhint="done" placeholder="Search or type a new one" value="' + esc(PICK.q) + '" autocomplete="off"><button data-act="pkclose">Cancel</button></div>';
   $('picker').innerHTML = h;
+  fitPicker();
 }
 
 function pickerBody() {
@@ -3516,7 +3565,7 @@ var HU_PENDING = false;
 var BILLS_PENDING = false, BILLS_CHECK = true, BILL_LATER = {}, HIDDEN_AT = 0;
 function maybeBills() {
   if (!S || S.demo || !S.cfg.url || !recurBills().length || !BILLS_CHECK || window.__noBillPrompt) { BILLS_PENDING = false; return; }
-  if (SHEET || PICK || UI.edit) { BILLS_PENDING = true; return; }
+  if (SHEET || PICK || UI.edit || TOUR) { BILLS_PENDING = true; return; }
   BILLS_PENDING = false; BILLS_CHECK = false;
   var cur = nowYM(), monthStart = (S.bmo || 0) < cur;
   var list = billsToCheck(monthStart).filter(function (x) { return !BILL_LATER[billKey(x.b, x.d)]; });
@@ -3536,12 +3585,31 @@ function billsSheetHtml() {
       '<label class="bamt"><span class="sr">Amount for ' + esc(x.b.name) + '</span><span class="cur" aria-hidden="true">$</span><input inputmode="decimal" id="bp_' + i + '" value="' + fmtAmt(x.b.a) + '"></label>' +
       '<div class="bbtns"><button class="btn pri" data-act="billpaid" data-v="' + esc(x.b.name) + '" data-d="' + x.d + '" data-i="' + i + '">Paid</button>' +
       '<button class="btn" data-act="billlater" data-v="' + esc(k) + '">Not yet</button>' +
-      '<button class="linkbtn bskip" data-act="billskip" data-v="' + esc(x.b.name) + '" data-d="' + x.d + '">Didn’t need to pay</button></div></div>';
+      '<button class="linkbtn bskip" data-act="billskip" data-v="' + esc(x.b.name) + '" data-d="' + x.d + '">Didn’t need to pay</button></div>' +
+      billCandHtml(x.b, x.d) + '</div>';
   });
   h += '</section>';
   if (list.length > 1) h += '<button class="btn" style="width:100%;margin-top:4px" data-act="billall">Mark all ' + list.length + ' as paid</button>';
   h += '<div class="hint" style="text-align:center;margin-top:10px">“Paid” adds the bill to your entries. <button class="linkbtn" data-act="recur">Add or change bills</button></div>';
   return h;
+}
+// 2.31: already logged it yourself (another store name, another amount)? Pick that entry instead of adding a second one.
+function billCands(b, d) {
+  var span = billMonthly(b) ? 20 : billUnit(b) === 'w' ? 3 : Math.min(20, Math.floor(billPeriodDays(b) / 2));
+  var lo = addDaysStr(d, -span), hi = addDaysStr(d, span), taken = {};
+  Object.keys(S.blink || {}).forEach(function (k) { taken[S.blink[k]] = 1; });
+  return S.tx.filter(function (t) {
+    if (t.k !== 'e' || t.a <= 0 || low(t.c) !== low(b.c) || taken[txSig(t)]) return false;
+    var td = t.d || (t.y + '-' + pad(t.m + 1) + '-15');
+    return td >= lo && td <= hi;
+  }).sort(function (p, q) { return Math.abs(p.a - b.a) - Math.abs(q.a - b.a); }).slice(0, 2);
+}
+function billCandHtml(b, d) {
+  var c = billCands(b, d);
+  if (!c.length) return '';
+  return '<div class="bcand"><span>Already logged it?</span>' + c.map(function (t) {
+    return '<button class="chip" data-act="billlink" data-v="' + esc(b.name) + '" data-d="' + d + '" data-sig="' + esc(txSig(t)) + '">' + esc(t.v || t.c) + ' · ' + money(t.a, true) + (t.d ? ' · ' + shortDate(t.d) : '') + '</button>';
+  }).join('') + '</div>';
 }
 // the Paid button turns into a check that draws itself, then the row slides away and the rest move up
 function drawCheck(btn) {
@@ -3592,7 +3660,7 @@ function maybeHeadsUp() {
   if (!S || S.demo) return;
   var cur = nowYM();
   if ((S.hu || 0) >= cur) { HU_PENDING = false; if (!SHEET) maybeBills(); return; }
-  if (SHEET || PICK || UI.edit) { HU_PENDING = true; return; }
+  if (SHEET || PICK || UI.edit || TOUR) { HU_PENDING = true; return; }
   HU_PENDING = false;
   var it = headsUpItems(), last = recapData(cur - 1), showLast = !!last.s.n && !(S.recapSeen || {})[cur - 1];
   S.hu = cur;
@@ -4585,8 +4653,9 @@ function goalEditHtml(name) {
     '<div class="field"><label for="gl_by">By</label><input id="gl_by" type="month" min="' + ymY(cur) + '-' + pad(ymM(cur) + 1) + '" value="' + ymY(byKey) + '-' + pad(ymM(byKey) + 1) + '"></div></div>';
   h += '<div class="field"><label for="gl_c">Savings category it grows from</label><select id="gl_c">' + cats.map(function (c) {
     return '<option value="' + esc(c) + '"' + (g && low(g.c) === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') +
-    (g && cats.indexOf(low(g.c)) < 0 ? '<option value="' + esc(g.c) + '" selected>' + esc(g.c) + '</option>' : '') + '</select>' +
-    '<div class="hint">Whatever you log to this category from now on counts toward the goal.</div></div>';
+    (g && cats.indexOf(low(g.c)) < 0 ? '<option value="' + esc(g.c) + '" selected>' + esc(g.c) + '</option>' : '') +
+    (g ? '' : '<option value="__new"' + (cats.length ? '' : ' selected') + '>＋ A new one, named after the goal</option>') + '</select>' +
+    '<div class="hint">Whatever you log to this category from now on counts toward the goal.' + (g ? '' : ' A new one goes in Savings with no monthly amount yet — set one in Plan.') + '</div></div>';
   h += '<div class="field"><label for="gl_base">Saved so far</label><div class="amtwrap"><span class="cur" aria-hidden="true">$</span><input id="gl_base" class="amtin" inputmode="decimal" placeholder="0" value="' + (g ? fmtAmt(g.base) : '') + '"></div></div>';
   h += '<div class="field"><label for="gl_notes">Notes</label><input id="gl_notes" value="' + esc(g ? g.notes : '') + '" placeholder="optional"></div>';
   h += '<div class="wiline" id="gl_need">' + goalNeedText() + '</div>';
@@ -4624,6 +4693,16 @@ function submitGoal() {
   if (!g.c) return bad('Pick the savings category it grows from.');
   if (isNaN(g.base) || g.base < 0) g.base = 0;
   g.by = ymKey(+by.slice(0, 4), +by.slice(5, 7) - 1);
+  if (g.c === '__new') {                       // 2.32: no savings category yet: make one named after the goal
+    var nc = low(g.name), bl0 = budgetLatest();
+    if (bl0[nc] && !bl0[nc].rm && bl0[nc].g !== 'save') nc += ' fund';
+    g.c = nc;
+    if (!bl0[nc] || bl0[nc].rm) {
+      var nb = { mode: 'from', s: nowYM(), g: GROUP_NAME.save, c: nc, a: 0, remove: false };
+      applyBudgetOp(S.budget, nb);
+      if (!S.demo) S.outbox.push({ oid: nid('o'), op: 'budgets', list: [nb] });
+    }
+  }
   var was = old ? goalByName(old) : null;
   g.start = was && low(was.c) === g.c && Math.abs((+was.base || 0) - g.base) < 0.005 ? was.start : nowYM();
   lock('goal', function () { saveGoalLocal(g, old); closeSheet(); render(); flushSoon(); toast(old ? 'Goal saved' : 'Goal added'); });
@@ -4761,17 +4840,26 @@ function billKey(b, d) { return low(b.name) + '|' + d; }
 // the entry that paid one due date: same category, the name or amount matches, dated close to it
 function billMatch(b, d) {
   if (billMonthly(b)) return recurPaid(b, ymKey(+d.slice(0, 4), +d.slice(5, 7) - 1));
-  var span = billUnit(b) === 'w' ? 3 : Math.min(20, Math.floor(billPeriodDays(b) / 2)), lo = addDaysStr(d, -span), hi = addDaysStr(d, span), w = low(b.name), best = null;
+  var span = billUnit(b) === 'w' ? 3 : Math.min(20, Math.floor(billPeriodDays(b) / 2)), lo = addDaysStr(d, -span), hi = addDaysStr(d, span), w = low(b.name), best = null, any = null;
+  var link = (S.blink || {})[billKey(b, d)];
   S.tx.forEach(function (t) {
-    if (t.k !== 'e' || low(t.c) !== low(b.c)) return;
+    if (t.k !== 'e' || t.a <= 0) return;
+    if (link && txSig(t) === link) { best = t; return; }
+    if (low(t.c) !== low(b.c)) return;
     var td = t.d || (t.y + '-' + pad(t.m + 1) + '-15');
     if (td < lo || td > hi) return;
+    if (!any) any = t;
     var nameHit = w && t.v && (low(t.v).indexOf(w) >= 0 || w.indexOf(low(t.v)) >= 0);
     var amtHit = b.a > 0 && Math.abs(t.a - b.a) <= Math.max(2, b.a * 0.15);
-    if (nameHit || amtHit) { if (!best || nameHit) best = t; }
+    if ((nameHit || amtHit) && !(best && link && txSig(best) === link)) { if (!best || nameHit) best = t; }
   });
-  return best;
+  // 2.31: the only bill in its category: anything logged there around the due date paid it (any store, any amount)
+  return best || (any && soleBill(b) ? any : null);
 }
+// one bill per category: an entry in that category is that bill
+function soleBill(b) { var c = low(b.c), n = 0; if (groupOf(c) !== 'bills') return false; S.recur.forEach(function (x) { if (low(x.c) === c) n++; }); return n === 1; }   // 2.32: only in a Bills-group category (not groceries, gas…)
+// what an entry is, stable across syncs (ids change once the sheet has it)
+function txSig(t) { return [t.y, t.m, low(t.v), low(t.c), r2(t.a), t.d || ''].join('|'); }
 var LATE_DAYS = 3;        // 2.28: up to this many days past due reads as "due", not "late"
 function isAutopay(b) { return !!(S.autopay && S.autopay[low(b.name)]); }
 function autoDue(b, d) { return isAutopay(b) && (S.bmark || {})[billKey(b, d)] !== 'x'; }      // undone by hand: it's yours to check off again
@@ -4812,14 +4900,17 @@ function billsToCheck(wholeMonth) {
 function dueDate(b, key) { return ymY(key) + '-' + pad(ymM(key) + 1) + '-' + pad(dueDay(b, key)); }
 // The entry that paid this bill in a month: same category, and the store name matches or the amount is close.
 function recurPaid(b, key) {
-  var best = null, w = low(b.name);
+  var best = null, w = low(b.name), any = null, link = (S.blink || {})[billKey(b, dueDate(b, key))];
   S.tx.forEach(function (t) {
-    if (t.k !== 'e' || t.y !== ymY(key) || t.m !== ymM(key) || low(t.c) !== low(b.c)) return;
+    if (t.k !== 'e' || t.a <= 0) return;
+    if (link && txSig(t) === link) { best = t; return; }
+    if (t.y !== ymY(key) || t.m !== ymM(key) || low(t.c) !== low(b.c)) return;
+    if (!any) any = t;
     var nameHit = w && t.v && (low(t.v).indexOf(w) >= 0 || w.indexOf(low(t.v)) >= 0);
     var amtHit = b.a > 0 && Math.abs(t.a - b.a) <= Math.max(2, b.a * 0.15);
-    if (nameHit || amtHit) { if (!best || nameHit) best = t; }
+    if ((nameHit || amtHit) && !(best && link && txSig(best) === link)) { if (!best || nameHit) best = t; }
   });
-  return best;
+  return best || (any && soleBill(b) ? any : null);
 }
 function recurStatus(b, key) {
   if (!billMonthly(b)) {
@@ -4885,6 +4976,25 @@ function payBill(b, d, amt) {
   markFresh(t);
   S.bmark = S.bmark || {}; S.bmark[billKey(b, d)] = 'paid'; pruneMarks(); save(); queuePrefs();
   return t;
+}
+function myDev() { if (!S.devId) { S.devId = 'd' + Math.random().toString(36).slice(2, 9); save(); } return S.devId; }
+function devName() {
+  var u = navigator.userAgent || '';
+  return /iPhone/.test(u) ? 'iPhone' : /iPad/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1) ? 'iPad' : /Android/.test(u) ? 'Android phone' : /Macintosh/.test(u) ? 'Mac' : /Windows/.test(u) ? 'Windows PC' : 'another device';
+}
+function verNum(v) { var p = String(v || '0').split('.'); return (+p[0] || 0) * 1000 + (+p[1] || 0); }
+// another device that has opened Piggy lately but runs an older version
+function oldDevices() {
+  var cut = Date.now() - 21 * 86400000, out = [];
+  Object.keys(S.devs || {}).forEach(function (id) { var d = S.devs[id]; if (id !== S.devId && d && +d.at > cut && verNum(d.v) < verNum(VERSION)) out.push(d); });
+  return out;
+}
+function pruneSynced() {
+  Object.keys(S.devs || {}).forEach(function (id) { if (Date.now() - (+(S.devs[id] || {}).at || 0) > 120 * 86400000) delete S.devs[id]; });
+  var cut = addDaysStr(todayStr(), -120), kcut = nowYM() - 4;
+  Object.keys(S.checkin || {}).forEach(function (k) { if (k < cut) delete S.checkin[k]; });
+  Object.keys(S.ciOk || {}).forEach(function (k) { var p = k.split('|'); if (p.length > 2 && +p[0] * 12 + +p[1] < kcut) delete S.ciOk[k]; else if (p.length < 3 && Object.keys(S.ciOk).length > 200) delete S.ciOk[k]; });
+  Object.keys(S.blink || {}).forEach(function (k) { if (k.split('|').pop() < addDaysStr(todayStr(), -400)) delete S.blink[k]; });
 }
 function pruneMarks() {
   var cut = addDaysStr(todayStr(), -400);
@@ -6223,6 +6333,7 @@ function sheetBack() {
   closeSheet();
 }
 function openSheet(kind, arg) {
+  if (TOUR) { var tov = $('tour'); if (tov && tov.parentNode) tov.parentNode.removeChild(tov); TOUR = null; }   // a sheet wins; the tour comes back after
   if (SHEET && $('sheet').classList.contains('on') && SHEET.kind !== kind) {
     var at = -1; SHEET_STACK.forEach(function (x, i) { if (x.kind === kind) at = i; });
     if (at >= 0) SHEET_STACK = SHEET_STACK.slice(0, at);          // going back to one already open: unwind to it
@@ -6289,6 +6400,7 @@ function closeSheet() {
   if (HU_PENDING) setTimeout(maybeHeadsUp, 450);
   else if (BILLS_PENDING || ((was === 'headsup' || was === 'settings') && BILLS_CHECK)) setTimeout(maybeBills, 450);
   CLOSED_AT = Date.now();
+  maybeTour();
   playPending();
   unfitSheet();
   $('scrim').classList.remove('on');
@@ -6543,7 +6655,7 @@ function appearanceHtml() {
   var b = '<div class="swatches">';
   Object.keys(PALETTES).forEach(function (k) {
     var v = PALETTES[k][dark ? 'dark' : 'light'];
-    b += '<button class="sw' + (S.cfg.pal === k ? ' on' : '') + '" data-act="pal" data-v="' + k + '" aria-label="' + PALETTES[k].name + '"><i style="background:' + v.bg + '"><b style="background:' + v.ac + '"></b><em style="background:' + v.s2 + '"></em></i>' + PALETTES[k].name + '</button>';
+    b += '<button class="sw' + (S.cfg.pal === k ? ' on' : '') + '" data-act="pal" data-v="' + k + '" aria-label="' + PALETTES[k].name + '"><i style="background:linear-gradient(135deg,' + v.ha + ',' + v.hb + ')"><b style="background:' + v.ac + '"></b><span class="swg">' + ['gb', 'gd', 'go', 'gs'].map(function (g) { return '<em style="background:' + v[g] + '"></em>'; }).join('') + '</span></i>' + PALETTES[k].name + '</button>';
   });
   h += '<div class="flabel">Color · ' + pal.name + '</div>' + b + '</div>';
   h += '<div class="flabel" style="margin-top:12px">Light / dark</div>' + seg('mode', { auto: 'Match device', light: 'Light', dark: 'Dark' }, S.cfg.mode);
@@ -6585,25 +6697,39 @@ function catOrderCats(gid) {
   return sortCats(gid, list, function (a, b) { return (bl[b].a - bl[a].a) || (a < b ? -1 : 1); });
 }
 function catOrderHtml() {
-  var ids = userGroupIds();
-  var h = '<details class="set" data-sec="cats"' + (isOpen('cats') ? ' open' : '') + '><summary>Categories<span>order &amp; groups</span></summary><div class="inner">' +
-    '<div class="hint">Sets the order on the Month and Plan tabs. <b>Bills</b> looks after itself: it sits on top while a bill is due soon and drops to the bottom once they’re paid.</div>';
-  ['bills'].concat(ids).forEach(function (gid) {
-    var g = groupById(gid), gi = ids.indexOf(gid), cats = catOrderCats(gid);
-    h += '<div class="ogrp"><div class="ohead"><b>' + g.name + (gid === 'bills' ? ' <small>· moves on its own</small>' : '') + '</b>' +
-      (gid === 'bills' ? '' : '<button class="obtn" data-act="gmove" data-v="' + gid + '" data-d="-1" aria-label="Move ' + g.name + ' up"' + (gi === 0 ? ' disabled' : '') + '>↑</button>' +
-        '<button class="obtn" data-act="gmove" data-v="' + gid + '" data-d="1" aria-label="Move ' + g.name + ' down"' + (gi === ids.length - 1 ? ' disabled' : '') + '>↓</button>') + '</div>';
-    if (!cats.length) h += '<div class="ocat"><span class="hint" style="margin:0">Nothing here yet.</span></div>';
-    cats.forEach(function (c, i) {
-      h += '<div class="ocat"><span>' + esc(c) + '</span>' +
-        '<select class="cgsel" data-c="' + esc(c) + '" aria-label="Group for ' + esc(c) + '">' + ['bills'].concat(ids).map(function (x) {
-          return '<option value="' + x + '"' + (x === gid ? ' selected' : '') + '>' + groupById(x).name + '</option>';
-        }).join('') + '</select>' +
-        '<button class="obtn" data-act="cmove" data-g="' + gid + '" data-v="' + esc(c) + '" data-d="-1" aria-label="Move ' + esc(c) + ' up"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
-        '<button class="obtn" data-act="cmove" data-g="' + gid + '" data-v="' + esc(c) + '" data-d="1" aria-label="Move ' + esc(c) + ' down"' + (i === cats.length - 1 ? ' disabled' : '') + '>↓</button></div>';
-    });
-    h += '</div>';
+  var ids = userGroupIds(), all = [], where = {};
+  ['bills'].concat(ids).forEach(function (gid) { catOrderCats(gid).forEach(function (c) { all.push(c); where[c] = gid; }); });
+  var sel = UI.catSel && where[UI.catSel] ? UI.catSel : all[0];
+  var h = '<details class="set" data-sec="cats"' + (isOpen('cats') ? ' open' : '') + '><summary>Categories<span>' + all.length + ' in ' + (ids.length + 1) + ' groups</span></summary><div class="inner">';
+  if (!all.length) return h + '<div class="hint">No categories yet. They show up here once you have a budget.</div></div></details>';
+  // 2.31: one category at a time, picked from a list, instead of every row at once
+  var gid = where[sel], list = catOrderCats(gid), pos = list.indexOf(sel);
+  h += '<div class="field"><label for="cat_pick">Category</label><select id="cat_pick" class="catpick2">' + ['bills'].concat(ids).map(function (g) {
+    var cs = catOrderCats(g); if (!cs.length) return '';
+    return '<optgroup label="' + esc(groupById(g).name) + '">' + cs.map(function (c) { return '<option value="' + esc(c) + '"' + (c === sel ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</optgroup>';
+  }).join('') + '</select></div>';
+  h += '<div class="cedit"><div class="field"><label for="cat_grp">Group</label><select id="cat_grp" class="cgsel" data-c="' + esc(sel) + '">' + ['bills'].concat(ids).map(function (x) {
+    return '<option value="' + x + '"' + (x === gid ? ' selected' : '') + '>' + groupById(x).name + '</option>'; }).join('') + '</select></div>' +
+    '<div class="field"><span class="flabel">Place in ' + esc(groupById(gid).name) + '</span><div class="cpos">' +
+    '<button class="btn" data-act="cmove" data-g="' + gid + '" data-v="' + esc(sel) + '" data-d="-1"' + (pos <= 0 ? ' disabled' : '') + '>↑ Earlier</button>' +
+    '<span>' + (pos + 1) + ' of ' + list.length + '</span>' +
+    '<button class="btn" data-act="cmove" data-g="' + gid + '" data-v="' + esc(sel) + '" data-d="1"' + (pos >= list.length - 1 ? ' disabled' : '') + '>Later ↓</button></div></div></div>';
+  h += '<div class="hint" style="margin:2px 0 12px">The order here is the order on the Month and Plan tabs. <b>Bills</b> moves on its own: on top while one is due, at the bottom once they’re paid.</div>';
+  // the group order, folded away
+  var go = '';
+  ids.forEach(function (g, gi) {
+    go += '<div class="ocat"><span>' + esc(groupById(g).name) + ' <small class="hint">· ' + catOrderCats(g).length + '</small></span>' +
+      '<button class="obtn" data-act="gmove" data-v="' + g + '" data-d="-1" aria-label="Move ' + esc(groupById(g).name) + ' up"' + (gi === 0 ? ' disabled' : '') + '>↑</button>' +
+      '<button class="obtn" data-act="gmove" data-v="' + g + '" data-d="1" aria-label="Move ' + esc(groupById(g).name) + ' down"' + (gi === ids.length - 1 ? ' disabled' : '') + '>↓</button></div>';
   });
+  h += '<details class="sub" data-sec="cat_groups"' + (isOpen('cat_groups') ? ' open' : '') + '><summary>Group order<span>' + ids.map(function (g) { return groupById(g).name; }).slice(0, 2).join(', ') + (ids.length > 2 ? '…' : '') + '</span></summary><div class="subin">' + go + '</div></details>';
+  // everything at a glance
+  var ov = '';
+  ['bills'].concat(ids).forEach(function (g) {
+    var cs = catOrderCats(g); if (!cs.length) return;
+    ov += '<div class="covw"><b>' + esc(groupById(g).name) + '</b><div>' + cs.map(function (c) { return '<button class="chip' + (c === sel ? ' on' : '') + '" data-act="catsel" data-v="' + esc(c) + '">' + esc(c) + '</button>'; }).join('') + '</div></div>';
+  });
+  h += '<details class="sub" data-sec="cat_all"' + (isOpen('cat_all') ? ' open' : '') + '><summary>All categories<span>tap one to edit it</span></summary><div class="subin">' + ov + '</div></details>';
   h += '<button class="btn" style="width:100%;margin-top:12px" data-act="oreset" id="o_reset">Back to the usual order</button>';
   return h + '</div></details>';
 }
@@ -6621,6 +6747,78 @@ function moveCatGroup(c, gid) {
 }
 
 function isOpen(sec, dflt) { return UI.open[sec] === undefined ? !!dflt : UI.open[sec]; }
+
+// ------------------------------------------------------------------ 2.31: a short first-run tour
+// A spotlight moves over each part of the app with a sentence about it. Shown once after the welcome; Settings → Show me around replays it.
+var TOUR = null;
+var TOUR_STEPS = [
+  { sel: '.card.hero', t: 'Your month at a glance', b: 'How much is left to spend this month, and about how much a day keeps you on track. It changes the moment you log something.' },
+  { sel: '#attn', t: 'Things that need you', b: 'Bills to check off, the weekly check-in and other nudges show up here. Tap × to put one away for now.', opt: true },
+  { sel: '#fab', t: 'Log a purchase', b: 'Tap + whenever you spend. Type the store and Piggy fills in the category from what you’ve logged before.' },
+  { sel: '.tab[data-v=activity]', t: 'Activity', b: 'Everything you’ve logged. Search it, tap an entry to change it, or swipe left to delete (with undo).' },
+  { sel: '.tab[data-v=plan]', t: 'Plan', b: 'Set your budget, see bills coming up, plan trips and savings goals, and try a what-if before you commit.' },
+  { sel: '.tab[data-v=trends]', t: 'Trends', b: 'Where the money goes week by week, how this month compares, and a calendar of your spending.' },
+  { sel: '[data-act=settings]', t: 'Make it yours', b: 'Connect a Google Sheet, set up recurring bills, change the colours, and replay this tour any time.' }
+];
+function maybeTour() {
+  if (!S || S.toured || S.welcomed !== true || window.__noTour || TOUR) return;
+  setTimeout(function () { if (!SHEET && !TOUR && !S.toured) startTour(); }, 700);
+}
+function tourTarget(st) {
+  var els = document.querySelectorAll(st.sel);
+  for (var i = 0; i < els.length; i++) { var r = els[i].getBoundingClientRect(); if (r.width > 0 && r.height > 0) return els[i]; }
+  return null;
+}
+function startTour() {
+  if (SHEET) closeSheet();
+  if (UI.tab !== 'month') { UI.tab = 'month'; render(); }
+  window.scrollTo(0, 0);
+  TOUR = { i: 0, steps: TOUR_STEPS.filter(function (st) { return !st.opt || tourTarget(st); }) };
+  var el = document.createElement('div'); el.id = 'tour'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Tour');
+  el.innerHTML = '<div class="tspot"></div><div class="tbub" aria-live="polite"></div>';
+  document.body.appendChild(el);
+  var stop = function (e) { e.preventDefault(); };
+  el.addEventListener('wheel', stop, { passive: false }); el.addEventListener('touchmove', stop, { passive: false });
+  setTimeout(tourDraw, 30);
+}
+function tourDraw() {
+  if (!TOUR) return;
+  var root = $('tour'), st = TOUR.steps[TOUR.i], tg = tourTarget(st);
+  if (!tg) { if (TOUR.i < TOUR.steps.length - 1) { TOUR.steps.splice(TOUR.i, 1); return tourDraw(); } return endTour(); }
+  // Larger text zooms the page: positions here are in the zoomed page's own pixels
+  var z = parseFloat(document.body.style.zoom) || 1;
+  var box = function () { var b = tg.getBoundingClientRect(); return { left: b.left / z, top: b.top / z, width: b.width / z, height: b.height / z, bottom: b.bottom / z }; };
+  var r = box(), vh = window.innerHeight / z, vw = window.innerWidth / z;
+  // keep a tall card's top in view
+  if (r.top < 8 || r.bottom > vh - 8) { window.scrollBy(0, (r.top - 90) * z); r = box(); }
+  var pad = 6, spot = root.querySelector('.tspot'), bub = root.querySelector('.tbub');
+  var sx = Math.max(4, r.left - pad), sy = Math.max(4, r.top - pad), sw = Math.min(vw - 8, r.width + pad * 2), sh = Math.min(vh - 8, r.height + pad * 2);
+  spot.style.cssText = 'left:' + sx + 'px;top:' + sy + 'px;width:' + sw + 'px;height:' + sh + 'px;border-radius:' + (tg.id === 'fab' ? '22px' : '16px');
+  var n = TOUR.steps.length, last = TOUR.i === n - 1;
+  bub.innerHTML = '<div class="tstep">' + (TOUR.i + 1) + ' of ' + n + '</div><h3>' + st.t + '</h3><p>' + st.b + '</p>' +
+    '<div class="tdots" aria-hidden="true">' + TOUR.steps.map(function (x, i) { return '<i class="' + (i === TOUR.i ? 'on' : '') + '"></i>'; }).join('') + '</div>' +
+    '<div class="tbtns"><button class="linkbtn" data-act="tourskip">' + (last ? '' : 'Skip') + '</button><span>' +
+    (TOUR.i ? '<button class="btn" data-act="tourback">Back</button>' : '') +
+    '<button class="btn pri" data-act="tournext" id="tour_next">' + (last ? 'Done' : 'Next') + '</button></span></div>';
+  // the bubble goes on whichever side has more room
+  var bw = Math.min(360, vw - 32), bh = bub.offsetHeight, below = (vh - (sy + sh)) >= (sy);
+  var by = below ? Math.min(vh - bh - 12, sy + sh + 12) : Math.max(12, sy - bh - 12);
+  var bx = Math.min(Math.max(16, sx + sw / 2 - bw / 2), vw - bw - 16);
+  bub.style.width = bw + 'px'; bub.style.left = bx + 'px'; bub.style.top = by + 'px';
+  if (bub.animate) bub.animate(REDUCED ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'translateY(' + (below ? 6 : -6) + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: 'ease-out' });
+  var nb = $('tour_next'); if (nb) try { nb.focus({ preventScroll: true }); } catch (e) {}
+}
+function endTour(done) {
+  var el = $('tour'); TOUR = null; S.toured = true; save();
+  if (!el) return;
+  var rm = function () { if (el.parentNode) el.parentNode.removeChild(el); };
+  if (el.animate) { var a = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180 }); a.onfinish = rm; } else rm();
+  window.scrollTo(0, 0);
+  if (done) toast('You’re all set. Tap + to log your first purchase');
+  if (HU_PENDING) setTimeout(maybeHeadsUp, 450);
+  if (BILLS_PENDING) setTimeout(maybeBills, 450);
+}
+window.addEventListener('resize', function () { if (TOUR) tourDraw(); });
 
 // ------------------------------------------------------------------ first run: no sheet needed
 function localMode() { return !!S && !S.demo && !S.cfg.url; }                 // using Piggy on this phone only
@@ -6669,7 +6867,8 @@ function saveStarter() {
     S.outbox.push({ oid: nid('o'), op: 'budgets', list: list });
   }
   save(); closeSheet(); render();
-  toast(list.length ? 'Budget saved — add your first purchase with +' : 'Okay — add your first purchase with +');
+  if (!S.toured) { toast(list.length ? 'Budget saved' : 'Okay'); maybeTour(); }
+  else toast(list.length ? 'Budget saved — add your first purchase with +' : 'Okay — add your first purchase with +');
 }
 var PASS_WORDS = ['maple', 'river', 'quartz', 'amber', 'cedar', 'ember', 'harbor', 'meadow', 'otter', 'pebble', 'summit', 'willow', 'falcon', 'lantern', 'orchard', 'thistle', 'juniper', 'marble', 'saddle', 'copper'];
 function makePass() {
@@ -6678,26 +6877,33 @@ function makePass() {
   return PASS_WORDS[r[0] % PASS_WORDS.length] + '-' + PASS_WORDS[r[1] % PASS_WORDS.length] + '-' + PASS_WORDS[r[2] % PASS_WORDS.length] + '-' + (10 + r[3] % 90);
 }
 
+function recurRowHtml() {
+  var n = recurBills().length, due = n ? billsToCheck(false).length : 0;
+  return '<button class="set setlink" data-act="recur" id="s_recur"><span class="sl1">Recurring bills</span><span class="sl2">' + (n ? n + ' bill' + (n === 1 ? '' : 's') + (due ? ' · ' + due + ' to check off' : '') : 'none yet') + ' ›</span></button>';
+}
 function settingsHtml() {
   var conn = !S.demo && S.cfg.url;
   var h = '<div class="shead"><h2>Settings</h2><button data-act="close">Done</button></div>';
   if (SHEET.arg === 'conn') { UI.open.conn = true; SHEET.arg = null; }
-  h += '<div class="sgrp">Your sheet</div><details class="set" data-sec="conn"' + (isOpen('conn', !conn) ? ' open' : '') + '><summary>Google Sheet<span>' + (conn ? 'Connected · synced ' + ago(S.lastSync) : localMode() ? 'On this phone' : 'Not connected') + '</span></summary><div class="inner">';
+  h += '<div class="sgrp">Your data</div><details class="set" data-sec="conn"' + (isOpen('conn', !conn) ? ' open' : '') + '><summary>Google Sheet<span>' + (conn ? 'Connected · synced ' + ago(S.lastSync) : localMode() ? 'On this phone' : 'Not connected') + '</span></summary><div class="inner">';
   if (S.syncErr) h += '<div class="hint" style="color:var(--bad);margin-bottom:10px">' + esc(S.syncErr) + '</div>';
   h += '<div class="field"><label for="c_url">Web app URL</label><input id="c_url" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec" value="' + esc(S.cfg.url) + '"></div>';
   h += '<div class="field"><label for="c_pass">Passcode</label><input id="c_pass" type="password" value="' + esc(S.cfg.pass) + '" placeholder="same as PASSCODE in the script"></div>';
   h += '<div class="btns"><button class="btn pri" data-act="connect" id="c_go">' + (conn ? 'Save & sync' : 'Connect') + '</button>' + (conn ? '<button class="btn" data-act="disconnect">Disconnect</button>' : '') + '</div>';
   if (S.outbox.length) h += '<div class="hint">' + S.outbox.length + ' change' + (S.outbox.length === 1 ? '' : 's') + ' waiting to reach the sheet.</div>';
+  if (conn) h += '<button class="btn" style="width:100%;margin-top:10px" data-act="syncstat">Sync status</button>';
   if (conn) {
     var tabsTxt = S.seed && S.seed.tabs && S.seed.tabs.length ? S.seed.tabs.join(', ') : 'your yearly budget tabs';
-    h += '<div class="bsec" style="margin-top:16px">Budget tabs</div><div class="hint" style="margin-bottom:8px">Changed amounts right in ' + esc(tabsTxt) + '? This reads them back in. Changes made in the app are kept.</div>' +
+    h += '<details class="sub" data-sec="conn_tools" style="margin-top:12px"' + (isOpen('conn_tools') ? ' open' : '') + '><summary>Sheet tools<span>budget tabs · layout</span></summary><div class="subin">';
+    h += '<div class="bsec" style="margin-top:4px">Budget tabs</div><div class="hint" style="margin-bottom:8px">Changed amounts right in ' + esc(tabsTxt) + '? This reads them back in. Changes made in the app are kept.</div>' +
       '<button class="btn" style="width:100%" data-act="rebuild">Re-read budget tabs</button>';
     h += '<div class="bsec" style="margin-top:16px">New spending layout</div><div class="hint" style="margin-bottom:8px">Rebuilds a tab with the new layout: shading against each month’s budget, year-so-far columns, averages that only count months so far and savings balances. Whatever is in that tab is replaced — amounts you typed under “Taken out of savings” are kept.</div>' +
       '<div class="field" style="margin-bottom:8px"><label for="sv_tab">Tab name</label><input id="sv_tab" value="' + esc(UI.svTab || 'test for next year') + '" autocomplete="off"></div>' +
       '<button class="btn" style="width:100%" data-act="spendview" id="sv_go">Build the new layout</button>' + (UI.svMsg ? '<div class="spendsum">' + UI.svMsg + '</div>' : '');
+    h += '</div></details>';
   }
   var pp = UI.genPass || (UI.genPass = makePass());
-  h += '<div class="bsec" style="margin-top:16px">' + (conn ? 'Set up another sheet' : 'Set up a Google Sheet') + '</div>' +
+  h += '<details class="sub" data-sec="conn_setup" style="margin-top:' + (conn ? '0' : '14px') + '"' + (isOpen('conn_setup', !conn) ? ' open' : '') + '><summary>' + (conn ? 'Set up another sheet' : 'How to set up a sheet') + '<span>about 10 minutes</span></summary><div class="subin">' +
     (localMode() ? '<div class="hint" style="margin-bottom:8px">You’re using ' + esc(appName()) + ' on this phone. When you connect a sheet, everything you’ve entered goes into it.</div>' : '') +
     '<ol class="steps">' +
     '<li>Make a new, empty sheet: <a href="https://sheets.new" target="_blank" rel="noopener">sheets.new</a>. (An existing budget sheet works too.)</li>' +
@@ -6706,18 +6912,19 @@ function settingsHtml() {
     '<li><b>Deploy → New deployment</b> → type <b>Web app</b>. Execute as <b>Me</b>, access <b>Anyone</b>. Approve the permission prompt.</li>' +
     '<li>Copy the web app URL, paste it above, and tap Connect.</li></ol>' +
     '<button class="btn" style="width:100%" data-act="copyscript" id="cp_script">' + (UI.scriptCopied ? 'Copy the script again' : 'Copy the script') + '</button>' +
-    '<div class="hint" style="margin-top:8px">Piggy only reads and writes this one sheet. Nobody else can see it unless you share it.</div></div></details>';
+    '<div class="hint" style="margin-top:8px">Piggy only reads and writes this one sheet. Nobody else can see it unless you share it.</div></div></details></div></details>';
 
-  h += backupHtml() + '<div class="sgrp">Reminders &amp; shortcuts</div>' + alertsHtml();
+  h += backupHtml() + '<div class="sgrp">Everyday</div>' + recurRowHtml() + alertsHtml();
   h += '<details class="set" data-sec="quick"' + (isOpen('quick') ? ' open' : '') + '><summary>Quick add<span>' + (S.cfg.launchAdd ? 'Opens to a new entry' : 'Off') + '</span></summary><div class="inner">' +
     '<button class="chip chipw' + (S.cfg.launchAdd ? ' on' : '') + '" data-act="qadd" aria-pressed="' + !!S.cfg.launchAdd + '" id="q_launch">' + (S.cfg.launchAdd ? '✓ ' : '') + 'Open to a new entry when I open the app</button>' +
     '<div class="hint" style="margin-bottom:12px">When you open ' + esc(appName()) + ' from the Home Screen (or come back after 5 minutes away), the add form is already up. Close it to see your month.</div>' +
     '<button class="btn" style="width:100%" data-act="qlink" id="q_link">Copy the quick-add link</button>' +
     '<details class="itip"><summary>ⓘ <span>Using the link with Siri or the Action button</span></summary><div class="hint">In the Shortcuts app make a shortcut with <b>Open URLs</b> and paste the link. It opens in Safari (iPhone opens links there, not in the Home Screen app), so connect your sheet once in Safari too — entries from either place land in the same sheet.</div></details></div></details>';
-  h += installHtml();
-  h += '<div class="sgrp">Look</div>' + appearanceHtml();
-  h += '<div class="sgrp">Categories &amp; names</div>' + catOrderHtml();
+  h += '<div class="sgrp">Look &amp; categories</div>' + appearanceHtml();
+  h += catOrderHtml();
   h += hiddenSuggHtml();
+  h += '<div class="sgrp">Help</div>' + installHtml();
+  h += '<button class="set setlink" data-act="tour" id="s_tour"><span class="sl1">Show me around</span><span class="sl2">a 1-minute tour ›</span></button>';
 
   h += '<div class="hint" style="text-align:center;margin-top:14px">' + esc(appName()) + ' ' + VERSION + '</div>';
   return h;
@@ -7206,7 +7413,7 @@ function sync() {
       : op.op === 'goal' ? { action: 'goal', goal: op.goal, old: op.old || '' }
       : op.op === 'goaldel' ? { action: 'goaldel', name: op.name }
       : op.op === 'yeartab' ? { action: 'yeartab', y: op.y }
-      : op.op === 'prefs' ? { action: 'prefs', prefs: prefsObj() }
+      : op.op === 'prefs' ? (function () { var po = prefsObj(), ch = prefsChanged(po); if (ch) po.chg = ch; op.sentSnap = prefsSnap(prefsObj()); return { action: 'prefs', prefs: po }; })()
       : op.op === 'budgetundo' ? { action: 'budgetundo', c: op.c, s: op.s }
       : { action: op.op, tx: op.tx, ref: op.ref };
     var sentPrefs = op.op === 'prefs' ? prefsHash() : '';
@@ -7230,6 +7437,7 @@ function sync() {
         throw new Error(e);
       }
       // settings changed again while they were being sent: send the newer ones too
+      if (op.op === 'prefs' && op.sentSnap) { S.prefsBase = op.sentSnap; delete op.sentSnap; }
       if (!(op.op === 'prefs' && prefsHash() !== sentPrefs)) S.outbox.shift();
       save();
       return next();
@@ -7259,9 +7467,17 @@ var PREF_KEYS = ['pal', 'mode', 'style', 'corners', 'cards', 'density', 'icon', 
 function prefsObj() {
   var cfg = {};
   PREF_KEYS.forEach(function (k) { cfg[k] = S.cfg[k]; });
-  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, pay: S.pay || null, up: S.up || [], hu: S.hu || 0, bc: S.bc || 0, bm: S.bmark || {}, bmo: S.bmo || 0, td: S.tdis || {}, ap: S.autopay || {}, at: S.prefsAt || 0 };
+  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, pay: S.pay || null, up: S.up || [], hu: S.hu || 0, bc: S.bc || 0, bm: S.bmark || {}, bl: S.blink || {}, dv: S.devs || {}, ck: S.checkin || {}, co: S.ciOk || {}, ds: S.dis || {}, bmo: S.bmo || 0, td: S.tdis || {}, ap: S.autopay || {}, at: S.prefsAt || 0 };
 }
 // "heads up seen" doesn't count as a change by itself: a phone that hasn't caught up mustn't send an older month back
+// 2.32: which settings changed here since this device last saw the sheet's copy (cfg per setting), so the sheet keeps the rest
+function prefsSnap(p) { var o = {}; Object.keys(p).forEach(function (k) { if (k === 'cfg') Object.keys(p.cfg || {}).forEach(function (x) { o['cfg.' + x] = JSON.stringify(p.cfg[x]); }); else o[k] = JSON.stringify(p[k]); }); return o; }
+function prefsChanged(p) {
+  var base = S.prefsBase, now = prefsSnap(p), out = [];
+  if (!base) return null;                                   // never seen the sheet's copy: send everything
+  Object.keys(now).forEach(function (k) { if (k !== 'at' && now[k] !== base[k]) out.push(k); });
+  return out;
+}
 function prefsHash() { var p = prefsObj(); delete p.at; delete p.hu; delete p.bc; delete p.bmo; return JSON.stringify(p); }
 function queuePrefs() {
   if (S.demo || (S.scriptV || 0) < 10 || !S.prefsPulled) return;
@@ -7273,7 +7489,7 @@ function queuePrefs() {
 }
 function adoptPrefs(p) {
   var c = p.cfg || {};
-  if (PALETTES[c.pal]) S.cfg.pal = c.pal;
+  if (PALETTES[c.pal] || PAL_MOVE[c.pal]) S.cfg.pal = PALETTES[c.pal] ? c.pal : PAL_MOVE[c.pal];
   if (/^(auto|light|dark)$/.test(c.mode)) S.cfg.mode = c.mode;
   if (STYLES[c.style]) S.cfg.style = c.style;
   if (CORNERS[c.corners]) S.cfg.corners = c.corners;
@@ -7294,6 +7510,7 @@ function adoptPrefs(p) {
   S.cfg.launchAdd = !!c.launchAdd;
   S.prefsAt = p.at || 0;
   S.prefsSent = prefsHash();
+  S.prefsBase = prefsSnap(prefsObj());
   try { applyTheme(); } catch (e) {}
 }
 
@@ -7368,7 +7585,8 @@ function applyPull(data) {
       if (op.op === 'goaldel') S.goals = S.goals.filter(function (g) { return low(g.name) !== low(op.name); });
     });
   }
-  if (data.prefs && !S.outbox.some(function (op) { return op.op === 'prefs'; }) && (+data.prefs.at || 0) > (S.prefsAt || 0)) adoptPrefs(data.prefs);
+  // the sheet's copy may now hold another device's changes merged with ours: take it unless something here is still waiting to go
+  if (data.prefs && !S.outbox.some(function (op) { return op.op === 'prefs'; }) && (+data.prefs.at || 0) >= (S.prefsAt || 0) && (+data.prefs.at || 0) > 0 && !(S.prefsPulled && prefsHash() !== S.prefsSent)) adoptPrefs(data.prefs);
   // hidden suggestions saved from another device (or by an older version that didn't know about them)
   if (data.prefs && data.prefs.hideV && typeof data.prefs.hideV === 'object' && !S.hideV) S.hideV = data.prefs.hideV;
   if (data.prefs && data.prefs.pay && typeof data.prefs.pay === 'object' && S.pay === undefined) S.pay = data.prefs.pay;
@@ -7378,7 +7596,25 @@ function applyPull(data) {
   if (data.prefs && +data.prefs.bmo > (S.bmo || 0)) S.bmo = +data.prefs.bmo;
   if (data.prefs && data.prefs.td && typeof data.prefs.td === 'object' && !S.tdis) S.tdis = data.prefs.td;
   if (data.prefs && data.prefs.ap && typeof data.prefs.ap === 'object' && (!S.autopay || (+data.prefs.at || 0) > (S.prefsAt || 0) && !S.outbox.some(function (op) { return op.op === 'prefs'; }))) S.autopay = data.prefs.ap;
-  if (data.prefs && data.prefs.bm && typeof data.prefs.bm === 'object') { S.bmark = S.bmark || {}; Object.keys(data.prefs.bm).forEach(function (k) { if (!S.bmark[k]) S.bmark[k] = data.prefs.bm[k]; }); }
+  // 2.31: things you've done on one device count on all of them: bills checked off, weekly check-ins, "it's fine", dismissed reminders.
+  // Each device adds the other's to its own; if this one knows something the sheet doesn't, it sends it back.
+  if (data.prefs && (+data.v || 0) >= 10) {
+    var mine = 0;
+    [['bm', 'bmark'], ['bl', 'blink'], ['ck', 'checkin'], ['co', 'ciOk'], ['ds', 'dis']].forEach(function (x) {
+      var theirs = data.prefs[x[0]]; theirs = theirs && typeof theirs === 'object' ? theirs : {};
+      var loc = S[x[1]] = S[x[1]] || {};
+      Object.keys(theirs).forEach(function (k) { if (loc[k] === undefined || (x[0] === 'ds' && String(theirs[k]) > String(loc[k]))) loc[k] = theirs[k]; });
+      Object.keys(loc).forEach(function (k) { if (theirs[k] === undefined) mine++; });
+    });
+    // the app version each device runs (2.31+): newest report wins; this device's own entry is refreshed every few days
+    var tdv = data.prefs.dv && typeof data.prefs.dv === 'object' ? data.prefs.dv : {};
+    S.devs = S.devs || {};
+    Object.keys(tdv).forEach(function (id) { var a = tdv[id] || {}, b = S.devs[id]; if (id !== myDev() && (!b || (+a.at || 0) > (+b.at || 0))) S.devs[id] = a; });
+    var me = S.devs[myDev()];
+    if (!me || me.v !== VERSION || Date.now() - (+me.at || 0) > 3 * 86400000 || !tdv[myDev()]) { S.devs[myDev()] = { v: VERSION, at: Date.now(), n: devName() }; mine++; }
+    pruneSynced();
+    if (mine && S.prefsPulled) { S.prefsSent = ''; setTimeout(function () { queuePrefs(); if (S.outbox.length) flushSoon(); }, 0); }
+  }
   if ((data.v || 0) >= 10) S.prefsPulled = 1;
   CACHE = {}; VER++;
   setTimeout(function () { if (!SHEET && !UI.edit) autoPayBills(); }, 0);
@@ -7607,6 +7843,7 @@ document.addEventListener('click', function (e) {
       if (gi2 < 0 || gi2 + gd < 0 || gi2 + gd >= gids.length) break;
       gids.splice(gi2, 1); gids.splice(gi2 + gd, 0, v);
       orderState().groups = gids; save(); renderSheet(); break;
+    case 'catsel': UI.catSel = v; renderSheet(); var cpk = $('cat_pick'); if (cpk) cpk.scrollIntoView({ block: 'nearest', behavior: REDUCED ? 'auto' : 'smooth' }); break;
     case 'cmove':
       var cg = el.getAttribute('data-g'), clist = catOrderCats(cg), ci = clist.indexOf(v), cd = +el.getAttribute('data-d');
       if (ci < 0 || ci + cd < 0 || ci + cd >= clist.length) break;
@@ -7668,6 +7905,15 @@ document.addEventListener('click', function (e) {
         var ptAfter = pick(pt);
         toast(pb.name + ' paid · ' + money(pt.a, true), function () { var ft = resolveTx(pt.id, ptAfter); if (ft) deleteTx(ft.id); S.bmark[billKey(pb, pd0)] = 'x'; save(); queuePrefs(); keepScroll(render); if (SHEET) renderSheet(); flushSoon(); toast('Undone'); });
       });
+      break;
+    case 'billlink':
+      var lb = recurByName(v); if (!lb) break;
+      var lk = billKey(lb, el.getAttribute('data-d'));
+      S.blink = S.blink || {}; S.blink[lk] = el.getAttribute('data-sig');
+      S.bmark = S.bmark || {}; S.bmark[lk] = 'paid'; save(); queuePrefs();
+      var lrow = el.closest('.brow');
+      if (lrow) leaveThen(lrow, afterBillMark, 28); else afterBillMark();
+      toast(lb.name + ' checked off — no new entry', function () { S.blink[lk] = ''; S.bmark[lk] = 'x'; save(); queuePrefs(); keepScroll(render); if (SHEET) renderSheet(); flushSoon(); toast('Undone'); });
       break;
     case 'billall':
       lock('billpay', function () {
@@ -7763,13 +8009,14 @@ document.addEventListener('click', function (e) {
       UI.armed = null; cancelBudgetChange(v); break;
     case 'upedit': openSheet('upedit', v || ''); break;
     case 'review': openSheet('headsup'); break;
+    case 'olddevx': S.dis = S.dis || {}; S.dis.olddev = todayStr(); save(); keepScroll(render); break;
     case 'attnmore': UI.attnAll = !UI.attnAll; keepScroll(render); break;
     case 'attnx':
       S.dis = S.dis || {};
       if (v === 'review') S.dis.review = todayStr();
       else if (v === 'checkin') { var Wx = checkinWeek(); S.checkin = S.checkin || {}; S.checkin[Wx.key] = 1; }
       else S.dis[v] = el.getAttribute('data-s');
-      save();
+      save(); queuePrefs(); flushSoon();
       var aiEl = el.closest('.ai');
       if (aiEl && !REDUCED && aiEl.animate) { var aiH = aiEl.offsetHeight; aiEl.style.overflow = 'hidden'; var aiA = aiEl.animate([{ opacity: 1, height: aiH + 'px' }, { opacity: 0, height: '0px' }], { duration: 200, easing: 'ease' }); aiA.onfinish = function () { keepScroll(render); }; }
       else keepScroll(render);
@@ -7925,9 +8172,13 @@ document.addEventListener('click', function (e) {
     case 'welcome': openSheet('welcome'); break;
     case 'wlocal': startLocal(); break;
     case 'wconnect': closeSheet(); S.welcomed = true; save(); setTimeout(function () { openSheet('settings', 'conn'); }, 320); break;
-    case 'wlook': S.welcomed = true; save(); closeSheet(); break;
+    case 'wlook': S.welcomed = true; save(); closeSheet(); maybeTour(); break;
+    case 'tour': startTour(); break;
+    case 'tournext': if (!TOUR) break; if (TOUR.i >= TOUR.steps.length - 1) endTour(true); else { TOUR.i++; tourDraw(); } break;
+    case 'tourback': if (TOUR && TOUR.i > 0) { TOUR.i--; tourDraw(); } break;
+    case 'tourskip': endTour(false); break;
     case 'stsave': saveStarter(); break;
-    case 'stskip': closeSheet(); toast('Okay — add your first purchase with +'); break;
+    case 'stskip': closeSheet(); if (S.toured) toast('Okay — add your first purchase with +'); else maybeTour(); break;
     case 'copyscript':
       var gp0 = UI.genPass || (UI.genPass = makePass());
       fetch('script.txt', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('missing'); return r.text(); }).then(function (t) {
@@ -7948,6 +8199,7 @@ document.addEventListener('click', function (e) {
       if (PICK) closePicker(); closeSheet();
       if (wasSettings && !S.demo && S.cfg.url && (S.scriptV || 0) >= 10 && S.prefsPulled && prefsHash() !== S.prefsSent) flushSoon();
       break;
+    case 'syncstat':
     case 'sync':
       if (S.demo || localMode()) { openSheet('settings', 'conn'); break; }
       openSheet('status');
@@ -8010,10 +8262,10 @@ document.addEventListener('click', function (e) {
       break;
     case 'ysf': UI.tab = 'trends'; UI.trend = 'overview'; UI.period = 'year'; render(); window.scrollTo(0, 0); break;
     case 'cidone':
-      S.checkin = S.checkin || {}; S.checkin[checkinWeek().key] = Date.now(); save();
+      S.checkin = S.checkin || {}; S.checkin[checkinWeek().key] = Date.now(); save(); queuePrefs(); flushSoon();
       if (SHEET) closeSheet();
       keepScroll(render); toast('Week checked ✓'); confetti(); break;
-    case 'ciok': S.ciOk = S.ciOk || {}; S.ciOk[v] = 1; save(); renderSheet(); keepScroll(render); break;
+    case 'ciok': S.ciOk = S.ciOk || {}; var cot = findTx(v); S.ciOk[cot ? txSig(cot) : v] = 1; save(); queuePrefs(); flushSoon(); renderSheet(); keepScroll(render); break;
     case 'ciedit':
       closeSheet(); UI.tab = 'activity'; UI.q = ''; UI.am = ''; UI.fk = 'all'; UI.asort = 'new'; UI.lim = 100000; UI.edit = v; UI.editTop = null; render();
       anchorTx(v, 120, true); break;
@@ -8400,7 +8652,7 @@ document.addEventListener('input', function (e) {
     for (var ci = 0; ci < chs.length; ci++) chs[ci].classList.toggle('on', chs[ci].getAttribute('data-v') === appName());
   }
   else if (t.id === 'q') { UI.q = t.value; UI.lim = 120; $('txlist').innerHTML = txListHtml(); }
-  else if (t.id === 'pk_q' && PICK) { PICK.q = t.value; PICK.creating = false; $('pk_body').innerHTML = pickerBody(); }
+  else if (t.id === 'pk_q' && PICK) { PICK.q = t.value; PICK.creating = false; var pb = $('pk_body'); pb.innerHTML = pickerBody(); pb.classList.toggle('q', !!PICK.q); pb.scrollTop = PICK.q ? pb.scrollHeight : 0; }
   else if (t.id === 'f_v') { suggest(); autoCatFromVendor(); }
   else if (t.hasAttribute && t.hasAttribute('data-split-a') && UI.split) { UI.split[+t.getAttribute('data-split-a')].a = t.value; refreshSplit(); }
   else if (t.id === 'f_a' && UI.split) refreshSplit();
@@ -8424,10 +8676,11 @@ document.addEventListener('change', function (e) {
   else if (t.hasAttribute && t.hasAttribute('data-split-c') && UI.split) { UI.split[+t.getAttribute('data-split-c')].c = t.value; }
   else if (t.classList && t.classList.contains('cgsel')) {
     var cgc = t.getAttribute('data-c');
-    moveCatGroup(cgc, t.value);
+    moveCatGroup(cgc, t.value); UI.catSel = cgc;
     toast(cgc + ' moved to ' + groupById(t.value).name);
     renderSheet(); render();
   }
+  else if (t.id === 'cat_pick') { UI.catSel = t.value; renderSheet(); }
   else if (t.id === 'a_m' || t.id === 'a_sort') {
     if (t.id === 'a_m') UI.am = t.value; else UI.asort = t.value;
     UI.lim = 120; UI.edit = null;
@@ -8450,10 +8703,24 @@ document.addEventListener('change', function (e) {
 });
 
 // Remember which settings sections are open so re-renders don't collapse them.
+// 2.31: one settings section open at a time; opening one closes the others (the one you tapped stays put)
+function accordion(d) {
+  var sh = $('sheet'); if (!sh || !sh.contains(d) || !d.getAttribute('data-sec')) return;
+  var peers = d.classList.contains('set') ? sh.querySelectorAll('details.set[open]') : d.classList.contains('sub') ? d.parentNode.children : [];
+  var top0 = d.getBoundingClientRect().top, any = false;
+  for (var i = 0; i < peers.length; i++) {
+    var p = peers[i];
+    if (p === d || p.tagName !== 'DETAILS' || !p.open || p.contains(d) || !p.getAttribute('data-sec')) continue;
+    p.open = false; UI.open[p.getAttribute('data-sec')] = false; any = true;
+  }
+  if (any) { var dy = d.getBoundingClientRect().top - top0; if (Math.abs(dy) > 0.5) sh.scrollTop += dy; }
+}
 document.addEventListener('click', function (e) {
   var sm = e.target.closest ? e.target.closest('summary') : null;
-  if (!sm || REDUCED || e.defaultPrevented) return;
+  if (!sm || e.defaultPrevented) return;
   var d = sm.parentNode;
+  if (d && d.tagName === 'DETAILS' && !d.open && !d.getAttribute('data-anim')) accordion(d);
+  if (REDUCED) return;
   if (!d || d.tagName !== 'DETAILS' || d.getAttribute('data-anim') || !d.animate) return;
   e.preventDefault();
   var cs = getComputedStyle(d), shut = sm.offsetHeight + (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
@@ -8471,6 +8738,7 @@ document.addEventListener('toggle', function (e) {
 }, true);
 
 document.addEventListener('keydown', function (e) {
+  if (TOUR) { if (e.key === 'Escape') endTour(false); else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { var tb = document.querySelector('#tour [data-act=' + (e.key === 'ArrowRight' ? 'tournext' : 'tourback') + ']'); if (tb) tb.click(); } return; }
   if (e.key === 'Escape') {
     var fc = document.querySelector('#txform [data-act=fcancel]');
     if (PICK) closePicker();
@@ -8595,7 +8863,7 @@ function refitSoon() {          // the iPhone settles the keyboard size over a f
   FIT_T = [0, 120, 300, 600].map(function (ms) { return setTimeout(function () { fitSheet(ms >= 300); }, ms); });
 }
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', function () { fitSheet(false); refitSoon(); });
+  window.visualViewport.addEventListener('resize', function () { fitSheet(false); refitSoon(); fitPicker(); });
   window.visualViewport.addEventListener('scroll', function () { fitSheet(false); });
 }
 document.addEventListener('focusin', function (e) { var sh = $('sheet'); if (SHEET && sh && sh.contains(e.target)) refitSoon(); });
