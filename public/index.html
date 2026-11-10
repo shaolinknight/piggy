@@ -223,6 +223,7 @@ main{padding:0 16px 72px}
 .mgroup[data-g=out]{--gc:var(--go,var(--ac))}.mgroup[data-g=once]{--gc:var(--gn,var(--ac))}.mgroup[data-g=save]{--gc:var(--gs,var(--ac))}
 .mgroup .bar i:not(.over):not(.good){background:var(--gc)}
 .mgname b::before,.lgroup .lname b::before{content:'';display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--gc);margin-right:8px;vertical-align:1px}
+.tlist{padding-top:4px}.tlrow{display:flex;width:100%;align-items:center;gap:10px;text-align:left;padding:11px 2px;border-top:1px solid var(--b1)}.tlrow:first-child{border-top:0}.tlrow span{flex:1;min-width:0}.tlrow b{display:block}.tlrow small{color:var(--t2);font-size:.82rem}.tlrow i{font-style:normal;color:var(--ac);font-weight:700}
 #tour{position:fixed;inset:0;z-index:60}
 #tour .tspot{position:fixed;box-shadow:0 0 0 9999px rgba(10,12,16,.62);transition:left .3s ease,top .3s ease,width .3s ease,height .3s ease;pointer-events:none;outline:2px solid rgba(255,255,255,.85);outline-offset:2px}
 #tour .tbub{position:fixed;background:var(--p1);color:var(--t1);border-radius:18px;padding:16px 16px 12px;box-shadow:0 12px 40px rgba(0,0,0,.35);max-width:calc(100vw - 32px)}
@@ -633,7 +634,8 @@ button.citem .chev{flex:none;opacity:.5}
 .pchk .pl b.pos{color:var(--ok)}
 .pmonth{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px;padding:10px 12px;border-radius:var(--r2);background:var(--p2)}
 .pmonth small{display:block;font-size:13px;color:var(--t3)}.pmonth b{font-size:16px}.pmonth b.neg{color:var(--bad)}
-.preal .rrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--b1)}
+.preal .rrow small .up{color:var(--bad)}.rrow small .dn{color:var(--ok)}
+.rrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--b1)}
 .preal .rname{flex:1;min-width:0;text-align:left;background:none;border:0;padding:0;color:var(--t1)}
 .preal .rname b{display:block;font-size:15px;overflow-wrap:anywhere}.preal .rname small{display:block;font-size:13px;color:var(--t3);margin-top:2px}
 .preal .rset{flex:none;white-space:nowrap}
@@ -1109,6 +1111,8 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 .bamt{position:relative;display:block}
 .bamt .cur{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--t3);font-weight:600}
 .bamt input{width:100%;box-sizing:border-box;min-height:42px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--p1);padding:0 10px 0 22px;font-size:16px;font-weight:600;text-align:right}
+.cgbox{padding:10px 0;border-top:1px solid var(--b1)}.cgbox:first-of-type{border-top:0}.cghead{display:flex;align-items:center;gap:8px;margin-bottom:8px}.cghead b{flex:1;min-width:0}.cgn{color:var(--t3);font-size:.82rem}.cgnote{color:var(--t3);font-size:.78rem}
+.cgchips{display:flex;flex-wrap:wrap;gap:6px}.cedit2{margin-top:10px;padding:12px;border-radius:var(--r2);background:var(--p2)}.cedit2 .field{margin-bottom:10px}
 .cedit{display:grid;gap:0 12px;grid-template-columns:minmax(0,1fr)}.cpos{display:flex;align-items:center;gap:8px}.cpos .btn{flex:1;min-width:0;padding:0 10px}.cpos>span{flex:0 0 auto;color:var(--t2);font-size:.86rem;min-width:52px;text-align:center}
 .covw{margin-bottom:10px}.covw>b{display:block;font-size:.8rem;color:var(--t2);margin-bottom:6px}.covw>div{display:flex;flex-wrap:wrap;gap:6px}
 .ciline{display:flex;gap:10px;align-items:flex-start;padding:7px 0;line-height:1.4}.ciline+.ciline{border-top:1px solid var(--b1)}.cii{flex:0 0 22px;text-align:center;font-weight:700}.cii.up{color:var(--warn)}.cii.dn{color:var(--ok)}
@@ -1271,7 +1275,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.32';
+var VERSION = '2.33';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -3519,18 +3523,20 @@ function planRealityHtml() {
   var over = rows.filter(function (x) { return x.gap > 0; }), under = rows.filter(function (x) { return x.gap < 0; });
   var ov = over.reduce(function (a, x) { return a + x.gap; }, 0), un = under.reduce(function (a, x) { return a - x.gap; }, 0);
   h += '<div class="sub" style="margin-bottom:6px">' + (over.length ? 'You usually spend <b class="up">' + money(ov) + ' more</b> a month than budgeted on ' + over.length + ' categor' + (over.length === 1 ? 'y' : 'ies') : '') +
-    (over.length && under.length ? ', and ' : '') + (under.length ? (over.length ? '' : 'You usually spend ') + '<b>' + money(un) + ' less</b> on ' + under.length + (over.length ? '' : ' categor' + (under.length === 1 ? 'y' : 'ies')) : '') + '.</div>';
+    (over.length && under.length ? ', and ' : '') + (under.length ? (over.length ? '' : 'You usually spend ') + '<b>' + money(un) + ' less</b> on ' + under.length + (over.length ? '' : ' categor' + (under.length === 1 ? 'y' : 'ies')) : '') + '.' +
+    ' Use a suggestion and it starts in ' + MONTHS[ymM(nowYM())] + ' — past months stay as they were.</div>';
   var show = UI.realAll ? rows : rows.slice(0, 5);
   show.forEach(function (x) {
-    var on = realityInDraft(x), ch = lastBudgetChange(x.c);
-    h += '<div class="rrow"><button class="rname" data-act="pcat" data-v="' + esc(x.c) + '"><b>' + esc(x.c) + '</b><small>usually ' + money(x.avg) + ' · ' + (x.bud ? 'budget ' + money(x.bud) : 'no budget') +
-      (ch ? ' · set ' + MON[ymM(ch.s)] + ' ' + ymY(ch.s) : '') + '</small></button>' +
-      '<button class="chip rset' + (on ? ' on' : '') + '" data-act="preal" data-v="' + esc(x.c) + '" aria-pressed="' + on + '">' + (on ? '✓ ' + money(x.sug) : 'Set to ' + money(x.sug)) + '</button></div>';
+    // 2.33: no "set Jan 2024" (it read like advice to change an old month); say how far off the budget runs instead
+    var on = realityInDraft(x);
+    h += '<div class="rrow"><button class="rname" data-act="pcat" data-v="' + esc(x.c) + '"><b>' + esc(x.c) + '</b><small>usually ' + money(x.avg) + ' a month · ' + (x.bud ? 'budget ' + money(x.bud) : 'no budget') +
+      ' · <span class="' + (x.gap > 0 ? 'up' : 'dn') + '">' + (x.bud ? (x.gap > 0 ? money(x.gap) + ' over' : money(-x.gap) + ' to spare') : '') + '</span></small></button>' +
+      '<button class="chip rset' + (on ? ' on' : '') + '" data-act="preal" data-v="' + esc(x.c) + '" aria-pressed="' + on + '" aria-label="Use ' + money(x.sug) + ' for ' + esc(x.c) + ' from ' + MONTHS[ymM(nowYM())] + ' on">' + (on ? '✓ ' + money(x.sug) : 'Use ' + money(x.sug)) + '</button></div>';
   });
   h += '<div class="rfoot">' + (rows.length > 5 ? '<button class="linkbtn" data-act="prealmore">' + (UI.realAll ? 'Show fewer' : 'See all ' + rows.length) + '</button>' : '<span></span>') +
     (rows.filter(function (x) { return !realityInDraft(x); }).length > 1 ? '<button class="btn" data-act="prealall" id="p_realall">Use all ' + rows.length + '</button>' : '') + '</div>';
   h += '<details class="itip"><summary>ⓘ <span>How this works</span></summary><div class="hint">Averages of your last ' + ks.length + ' full months, counting only your share of split bills. Trips, things paid from savings and yearly bills are left out. ' +
-    'Tapping <b>Set to</b> adds it to your changes — nothing is saved until you tap <b>Continue → Review &amp; save</b> and choose when it starts.</div></details></section>';
+    'Tapping <b>Use</b> adds it to your changes — nothing is saved until you tap <b>Continue → Review &amp; save</b> and choose when it starts.</div></details></section>';
   return h;
 }
 
@@ -6333,7 +6339,7 @@ function sheetBack() {
   closeSheet();
 }
 function openSheet(kind, arg) {
-  if (TOUR) { var tov = $('tour'); if (tov && tov.parentNode) tov.parentNode.removeChild(tov); TOUR = null; }   // a sheet wins; the tour comes back after
+  if (TOUR && !TOUR.nav) { var tov = $('tour'); if (tov && tov.parentNode) tov.parentNode.removeChild(tov); TOUR = null; }   // a sheet wins (unless the tour opened it)
   if (SHEET && $('sheet').classList.contains('on') && SHEET.kind !== kind) {
     var at = -1; SHEET_STACK.forEach(function (x, i) { if (x.kind === kind) at = i; });
     if (at >= 0) SHEET_STACK = SHEET_STACK.slice(0, at);          // going back to one already open: unwind to it
@@ -6697,40 +6703,34 @@ function catOrderCats(gid) {
   return sortCats(gid, list, function (a, b) { return (bl[b].a - bl[a].a) || (a < b ? -1 : 1); });
 }
 function catOrderHtml() {
-  var ids = userGroupIds(), all = [], where = {};
-  ['bills'].concat(ids).forEach(function (gid) { catOrderCats(gid).forEach(function (c) { all.push(c); where[c] = gid; }); });
-  var sel = UI.catSel && where[UI.catSel] ? UI.catSel : all[0];
-  var h = '<details class="set" data-sec="cats"' + (isOpen('cats') ? ' open' : '') + '><summary>Categories<span>' + all.length + ' in ' + (ids.length + 1) + ' groups</span></summary><div class="inner">';
-  if (!all.length) return h + '<div class="hint">No categories yet. They show up here once you have a budget.</div></div></details>';
-  // 2.31: one category at a time, picked from a list, instead of every row at once
-  var gid = where[sel], list = catOrderCats(gid), pos = list.indexOf(sel);
-  h += '<div class="field"><label for="cat_pick">Category</label><select id="cat_pick" class="catpick2">' + ['bills'].concat(ids).map(function (g) {
-    var cs = catOrderCats(g); if (!cs.length) return '';
-    return '<optgroup label="' + esc(groupById(g).name) + '">' + cs.map(function (c) { return '<option value="' + esc(c) + '"' + (c === sel ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</optgroup>';
-  }).join('') + '</select></div>';
-  h += '<div class="cedit"><div class="field"><label for="cat_grp">Group</label><select id="cat_grp" class="cgsel" data-c="' + esc(sel) + '">' + ['bills'].concat(ids).map(function (x) {
-    return '<option value="' + x + '"' + (x === gid ? ' selected' : '') + '>' + groupById(x).name + '</option>'; }).join('') + '</select></div>' +
-    '<div class="field"><span class="flabel">Place in ' + esc(groupById(gid).name) + '</span><div class="cpos">' +
-    '<button class="btn" data-act="cmove" data-g="' + gid + '" data-v="' + esc(sel) + '" data-d="-1"' + (pos <= 0 ? ' disabled' : '') + '>↑ Earlier</button>' +
-    '<span>' + (pos + 1) + ' of ' + list.length + '</span>' +
-    '<button class="btn" data-act="cmove" data-g="' + gid + '" data-v="' + esc(sel) + '" data-d="1"' + (pos >= list.length - 1 ? ' disabled' : '') + '>Later ↓</button></div></div></div>';
-  h += '<div class="hint" style="margin:2px 0 12px">The order here is the order on the Month and Plan tabs. <b>Bills</b> moves on its own: on top while one is due, at the bottom once they’re paid.</div>';
-  // the group order, folded away
-  var go = '';
-  ids.forEach(function (g, gi) {
-    go += '<div class="ocat"><span>' + esc(groupById(g).name) + ' <small class="hint">· ' + catOrderCats(g).length + '</small></span>' +
-      '<button class="obtn" data-act="gmove" data-v="' + g + '" data-d="-1" aria-label="Move ' + esc(groupById(g).name) + ' up"' + (gi === 0 ? ' disabled' : '') + '>↑</button>' +
-      '<button class="obtn" data-act="gmove" data-v="' + g + '" data-d="1" aria-label="Move ' + esc(groupById(g).name) + ' down"' + (gi === ids.length - 1 ? ' disabled' : '') + '>↓</button></div>';
+  var ids = userGroupIds(), gs = ['bills'].concat(ids), n = 0, where = {};
+  gs.forEach(function (g) { catOrderCats(g).forEach(function (c) { where[c] = g; n++; }); });
+  var sel = UI.catSel && where[UI.catSel] ? UI.catSel : null;
+  var h = '<details class="set" data-sec="cats"' + (isOpen('cats') ? ' open' : '') + '><summary>Categories<span>' + n + ' in ' + gs.length + ' groups</span></summary><div class="inner">';
+  if (!n) return h + '<div class="hint">No categories yet. They show up here once you have a budget.</div></div></details>';
+  // 2.33: everything in view, grouped; tap a category and its editor opens right there
+  h += '<div class="hint" style="margin:0 0 10px">Tap a category to move it to another group or change its place. This order is the order on the Month and Plan tabs.</div>';
+  gs.forEach(function (g) {
+    var cs = catOrderCats(g), gi = ids.indexOf(g); if (!cs.length && g === 'bills') return;
+    h += '<div class="cgbox"><div class="cghead"><b>' + esc(groupById(g).name) + '</b><span class="cgn">' + cs.length + '</span>' +
+      (g === 'bills' ? '<span class="cgnote">moves by itself</span>' :
+        '<button class="obtn" data-act="gmove" data-v="' + g + '" data-d="-1" aria-label="Move ' + esc(groupById(g).name) + ' up"' + (gi === 0 ? ' disabled' : '') + '>↑</button>' +
+        '<button class="obtn" data-act="gmove" data-v="' + g + '" data-d="1" aria-label="Move ' + esc(groupById(g).name) + ' down"' + (gi === ids.length - 1 ? ' disabled' : '') + '>↓</button>') + '</div>';
+    h += '<div class="cgchips">' + (cs.length ? cs.map(function (c) {
+      return '<button class="chip' + (c === sel ? ' on' : '') + '" data-act="catsel" data-v="' + esc(c) + '" aria-expanded="' + (c === sel) + '">' + esc(c) + '</button>';
+    }).join('') : '<span class="hint">Empty</span>') + '</div>';
+    if (sel && where[sel] === g) {
+      var pos = cs.indexOf(sel);
+      h += '<div class="cedit2" id="cat_ed"><div class="field"><label for="cat_grp">Move “' + esc(sel) + '” to</label><select id="cat_grp" class="cgsel" data-c="' + esc(sel) + '">' + gs.map(function (x) {
+          return '<option value="' + x + '"' + (x === g ? ' selected' : '') + '>' + groupById(x).name + '</option>'; }).join('') + '</select></div>' +
+        '<div class="cpos"><button class="btn" data-act="cmove" data-g="' + g + '" data-v="' + esc(sel) + '" data-d="-1"' + (pos <= 0 ? ' disabled' : '') + '>← Earlier</button>' +
+        '<span>' + (pos + 1) + ' of ' + cs.length + '</span>' +
+        '<button class="btn" data-act="cmove" data-g="' + g + '" data-d="1" data-v="' + esc(sel) + '"' + (pos >= cs.length - 1 ? ' disabled' : '') + '>Later →</button></div>' +
+        '<button class="linkbtn" data-act="catsel" data-v="" style="margin-top:8px">Done</button></div>';
+    }
+    h += '</div>';
   });
-  h += '<details class="sub" data-sec="cat_groups"' + (isOpen('cat_groups') ? ' open' : '') + '><summary>Group order<span>' + ids.map(function (g) { return groupById(g).name; }).slice(0, 2).join(', ') + (ids.length > 2 ? '…' : '') + '</span></summary><div class="subin">' + go + '</div></details>';
-  // everything at a glance
-  var ov = '';
-  ['bills'].concat(ids).forEach(function (g) {
-    var cs = catOrderCats(g); if (!cs.length) return;
-    ov += '<div class="covw"><b>' + esc(groupById(g).name) + '</b><div>' + cs.map(function (c) { return '<button class="chip' + (c === sel ? ' on' : '') + '" data-act="catsel" data-v="' + esc(c) + '">' + esc(c) + '</button>'; }).join('') + '</div></div>';
-  });
-  h += '<details class="sub" data-sec="cat_all"' + (isOpen('cat_all') ? ' open' : '') + '><summary>All categories<span>tap one to edit it</span></summary><div class="subin">' + ov + '</div></details>';
-  h += '<button class="btn" style="width:100%;margin-top:12px" data-act="oreset" id="o_reset">Back to the usual order</button>';
+  h += '<button class="btn" style="width:100%;margin-top:6px" data-act="oreset" id="o_reset">Back to the usual order</button>';
   return h + '</div></details>';
 }
 function moveCatGroup(c, gid) {
@@ -6765,37 +6765,103 @@ function maybeTour() {
   setTimeout(function () { if (!SHEET && !TOUR && !S.toured) startTour(); }, 700);
 }
 function tourTarget(st) {
+  if (st.find) { var f = st.find(); return f && f.getBoundingClientRect().width ? f : null; }
   var els = document.querySelectorAll(st.sel);
   for (var i = 0; i < els.length; i++) { var r = els[i].getBoundingClientRect(); if (r.width > 0 && r.height > 0) return els[i]; }
   return null;
 }
-function startTour() {
+// 2.33: more walkthroughs, each a list of steps; a step can first switch tabs or open a screen ("go")
+function cardWith(title) { var hs = document.querySelectorAll('h3'); for (var i = 0; i < hs.length; i++) if (hs[i].textContent.trim() === title && hs[i].getBoundingClientRect().width) return hs[i].closest('section,.card') || hs[i]; return null; }
+function tourTab(t) { return function () { if (SHEET) closeSheet(); if (UI.tab !== t) { UI.tab = t; UI.edit = null; render(); } window.scrollTo(0, 0); }; }
+function tourPsec(sec) { return function () { if (SHEET) closeSheet(); UI.tab = 'plan'; UI.psec = sec; render(); window.scrollTo(0, 0); }; }
+function tourSheet(kind, arg) { return function () { if (!SHEET || SHEET.kind !== kind) openSheet(kind, arg); }; }
+var TOURS = {
+  intro: { name: 'Show me around', sub: 'the basics, in a minute', steps: TOUR_STEPS },
+  add: { name: 'Logging a purchase', sub: 'categories, splits, trips, refunds', steps: [
+    { go: function () { if (!SHEET || SHEET.kind !== 'add') openSheet('add', newTxDraft('e')); }, sel: '#f_a', t: 'Amount first', b: 'Type what you spent. Spent money back? There’s a refund option further down.' },
+    { sel: '#f_v', t: 'Where you spent it', b: 'Type the store. Once you’ve logged it a few times, Piggy fills in the category it usually goes to.' },
+    { sel: '#f_csel', t: 'Category', b: 'Tap to choose. The search box sits at the bottom so you can reach it with your thumb, and you can make a new category right there.' },
+    { sel: '#f_d', t: 'Date', b: 'Today, unless you change it. Logging something from last week? Change the date and it lands in the right month.' },
+    { go: function () { var m = $('f_more'); if (m && m.hidden && $('f_moreb')) $('f_moreb').click(); }, sel: '#f_moreb', t: 'More options', b: '<b>Split</b> one receipt across categories, tag it to a <b>trip</b>, add a <b>note</b>, mark a <b>refund</b>, or note money someone <b>owes you back</b>.' },
+    { sel: '#f_save', t: 'Add it', b: 'The numbers update straight away. No signal? It waits on your phone and goes to the sheet later.' }
+  ] },
+  activity: { name: 'Finding and fixing entries', sub: 'search, filters, edit, undo', steps: [
+    { go: tourTab('activity'), sel: '#q', t: 'Search', b: 'Find anything by store, category, note or amount.' },
+    { find: function () { return $('a_filter') || document.querySelector('#view .afilters, #view .fside, #view [data-act=afk]'); }, t: 'Filter', b: 'Narrow it down by month, category, trip, income or expenses.' },
+    { sel: '#view .th-a', t: 'Sort', b: 'Click a column heading to sort by date, store, category or amount.' },
+    { sel: '#txlist .tx', t: 'Change an entry', b: 'Tap one to change it. Swipe left to delete it — there’s always an Undo for a few seconds.' },
+    { sel: '#a_select', t: 'Several at once', b: 'Select a few entries to move them to another category or delete them together.', opt: true }
+  ] },
+  bills: { name: 'Recurring bills', sub: 'due dates and checking them off', steps: [
+    { go: tourSheet('recur'), sel: '#rc_add', t: 'Add each bill once', b: 'Rent, phone, insurance — the name, amount, category and when it’s due. Every month, every 6 months, yearly… all work.' },
+    { find: function () { return document.querySelector('#sheet .shead'); }, t: 'Checking them off', b: 'When a bill is due, Piggy asks once you open the app. <b>Paid</b> logs it for you. <b>Already logged it?</b> links an entry you made yourself, so nothing is counted twice.' },
+    { go: function () { if (SHEET) closeSheet(); UI.tab = 'month'; render(); window.scrollTo(0, 0); }, find: function () { return document.querySelector('.mgroup[data-g=bills]'); }, t: 'On the Month tab', b: 'The Bills group shows what’s paid and what’s still due. It sits on top while something’s due and drops to the bottom once everything is paid.' }
+  ] },
+  plan: { name: 'Planning your budget', sub: 'budgets, what’s coming, goals', steps: [
+    { go: tourPsec('month'), sel: '.psegs', t: 'Four parts', b: '<b>This month</b>, <b>Ahead</b>, <b>Trips</b> and <b>Goals</b>. Tap to switch.' },
+    { find: function () { return document.querySelector('#view .card.ptable') || document.querySelector('#view .pchoice[data-v=now]'); }, t: 'Your budget', b: 'Every category and its monthly amount. Tap <b>Change</b> to try new numbers — nothing is saved until you review it, and you choose when it starts.' },
+    { sel: '#p_real', opt: true, t: 'Budget vs real spending', b: 'Where your budget and your actual spending have drifted apart, with a suggested amount. Using one starts this month; past months stay as they were.' },
+    { sel: '#p_pay', opt: true, t: 'By paycheck', b: 'Which bills and spending each paycheck has to cover.' },
+    { go: tourPsec('ahead'), sel: '#p_coming', t: 'Coming up', b: 'Bigger things you know are coming — tires, gifts, a yearly bill — so they don’t surprise you.' },
+    { go: tourPsec('goals'), find: function () { return document.querySelector('#view .card.goals, #view [data-act=goaledit]'); }, t: 'Savings goals', b: 'Set a target and a date. Piggy tracks what goes into that savings category and tells you if you’re on pace.' }
+  ] },
+  trends: { name: 'Trends and the weekly check-in', sub: 'where your money goes', steps: [
+    { go: tourTab('trends'), find: function () { return cardWith('Where it went'); }, t: 'Where it went', b: 'This month by category, compared with what you usually spend. Tap a category to see its history.' },
+    { find: function () { return cardWith('Worth knowing'); }, opt: true, t: 'Worth knowing', b: 'Short notes when something changes — a category climbing, a good month, a habit worth a look.' },
+    { sel: '.cmpentry', t: 'Compare months', b: 'Any two months or years side by side.' },
+    { go: tourSheet('checkin'), find: function () { return document.querySelector('#sheet .kpis') || document.querySelector('#sheet section.card') || document.querySelector('#sheet .shead'); }, t: 'Weekly check-in', b: 'Every week Piggy sums up the last seven days and points out anything worth a second look, like a possible duplicate. Done on one device counts on all of them.' }
+  ] },
+  sheet: { name: 'Using a Google Sheet', sub: 'keeping everything backed up', steps: [
+    { go: function () { if (!SHEET || SHEET.kind !== 'settings') { UI.openSet = 'conn'; openSheet('settings'); } var d = document.querySelector('details[data-sec=conn]'); if (d && !d.open) { d.open = true; UI.open.conn = true; } }, find: function () { return document.querySelector('details[data-sec=conn] > summary'); }, t: 'Your sheet', b: 'Piggy can keep everything in a Google Sheet you own, so it’s backed up and works on every device. Without one, it all stays on this phone.' },
+    { find: function () { return document.querySelector('details[data-sec=conn_setup] > summary') || document.querySelector('#c_url'); }, t: 'Setting it up', b: 'Make a blank sheet, paste in the script Piggy copies for you, and connect. Piggy builds the tabs itself and sends over anything you logged before.' }
+  ] }
+};
+var TOUR_ORDER = ['intro', 'add', 'activity', 'bills', 'plan', 'trends', 'sheet'];
+function startTour(id) {
+  var T = TOURS[id] || TOURS.intro;
   if (SHEET) closeSheet();
-  if (UI.tab !== 'month') { UI.tab = 'month'; render(); }
+  if (PICK) closePicker();
+  if (UI.tab !== 'month' && T === TOURS.intro) { UI.tab = 'month'; render(); }
   window.scrollTo(0, 0);
-  TOUR = { i: 0, steps: TOUR_STEPS.filter(function (st) { return !st.opt || tourTarget(st); }) };
-  var el = document.createElement('div'); el.id = 'tour'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Tour');
+  TOUR = { id: id || 'intro', i: 0, steps: T.steps.filter(function (st) { return !(T === TOURS.intro && st.opt && !tourTarget(st)); }) };
+  var el = document.createElement('div'); el.id = 'tour'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', T.name);
   el.innerHTML = '<div class="tspot"></div><div class="tbub" aria-live="polite"></div>';
   document.body.appendChild(el);
   var stop = function (e) { e.preventDefault(); };
   el.addEventListener('wheel', stop, { passive: false }); el.addEventListener('touchmove', stop, { passive: false });
-  setTimeout(tourDraw, 30);
+  setTimeout(tourShow, SHEET ? 380 : 30);
 }
-function tourDraw() {
+// run the step's "go" (switch tab, open a screen), then draw once things have settled
+function tourShow(dir) {
   if (!TOUR) return;
-  var root = $('tour'), st = TOUR.steps[TOUR.i], tg = tourTarget(st);
-  if (!tg) { if (TOUR.i < TOUR.steps.length - 1) { TOUR.steps.splice(TOUR.i, 1); return tourDraw(); } return endTour(); }
+  var st = TOUR.steps[TOUR.i];
+  if (st && st.go) { TOUR.nav = true; try { st.go(); } catch (e) {} TOUR.nav = false; setTimeout(function () { tourDraw(dir); }, 420); }
+  else tourDraw(dir);
+}
+function tourDraw(dir) {
+  if (!TOUR) return;
+  var root = $('tour'), st = TOUR.steps[TOUR.i], tg = st && tourTarget(st);
+  if (!tg) {                                   // that part isn't there (no data yet): skip it
+    TOUR.steps.splice(TOUR.i, 1);
+    if (dir === -1 && TOUR.i > 0) TOUR.i--;
+    if (TOUR.i < TOUR.steps.length) return tourShow(dir);
+    if (TOUR.steps.length) { TOUR.i = TOUR.steps.length - 1; return tourShow(dir); }
+    return endTour();
+  }
+  // something inside a sheet: scroll it into the sheet's view first
+  var inSheet = tg.closest && tg.closest('#sheet');
+  if (inSheet) { var sr = tg.getBoundingClientRect(), shr = inSheet.getBoundingClientRect(); if (sr.top < shr.top + 20 || sr.bottom > shr.bottom - 20) tg.scrollIntoView({ block: 'center' }); }
   // Larger text zooms the page: positions here are in the zoomed page's own pixels
   var z = parseFloat(document.body.style.zoom) || 1;
   var box = function () { var b = tg.getBoundingClientRect(); return { left: b.left / z, top: b.top / z, width: b.width / z, height: b.height / z, bottom: b.bottom / z }; };
   var r = box(), vh = window.innerHeight / z, vw = window.innerWidth / z;
   // keep a tall card's top in view
-  if (r.top < 8 || r.bottom > vh - 8) { window.scrollBy(0, (r.top - 90) * z); r = box(); }
+  if (!inSheet && (r.top < 8 || r.bottom > vh - 8)) { window.scrollBy(0, (r.top - 90) * z); r = box(); }
   var pad = 6, spot = root.querySelector('.tspot'), bub = root.querySelector('.tbub');
-  var sx = Math.max(4, r.left - pad), sy = Math.max(4, r.top - pad), sw = Math.min(vw - 8, r.width + pad * 2), sh = Math.min(vh - 8, r.height + pad * 2);
+  var sx = Math.max(4, r.left - pad), sy = Math.max(4, r.top - pad), sw = Math.min(vw - 8, r.width + pad * 2), sh = Math.min(vh * 0.55, r.height + pad * 2);
   spot.style.cssText = 'left:' + sx + 'px;top:' + sy + 'px;width:' + sw + 'px;height:' + sh + 'px;border-radius:' + (tg.id === 'fab' ? '22px' : '16px');
   var n = TOUR.steps.length, last = TOUR.i === n - 1;
-  bub.innerHTML = '<div class="tstep">' + (TOUR.i + 1) + ' of ' + n + '</div><h3>' + st.t + '</h3><p>' + st.b + '</p>' +
+  bub.innerHTML = '<div class="tstep">' + (TOUR.id !== 'intro' ? esc(TOURS[TOUR.id].name) + ' · ' : '') + (TOUR.i + 1) + ' of ' + n + '</div><h3>' + st.t + '</h3><p>' + st.b + '</p>' +
     '<div class="tdots" aria-hidden="true">' + TOUR.steps.map(function (x, i) { return '<i class="' + (i === TOUR.i ? 'on' : '') + '"></i>'; }).join('') + '</div>' +
     '<div class="tbtns"><button class="linkbtn" data-act="tourskip">' + (last ? '' : 'Skip') + '</button><span>' +
     (TOUR.i ? '<button class="btn" data-act="tourback">Back</button>' : '') +
@@ -6809,12 +6875,19 @@ function tourDraw() {
   var nb = $('tour_next'); if (nb) try { nb.focus({ preventScroll: true }); } catch (e) {}
 }
 function endTour(done) {
-  var el = $('tour'); TOUR = null; S.toured = true; save();
+  var el = $('tour'), id = TOUR && TOUR.id; TOUR = null;
+  if (!id || id === 'intro') { S.toured = true; save(); }
+  if (id && id !== 'intro') {                 // a feature walkthrough: put things back as they were
+    S.tutDone = S.tutDone || {}; if (done) { S.tutDone[id] = 1; save(); }
+    if (SHEET) closeSheet(); if (PICK) closePicker();
+    if (UI.tab !== 'month') { UI.tab = 'month'; render(); }
+  }
   if (!el) return;
   var rm = function () { if (el.parentNode) el.parentNode.removeChild(el); };
   if (el.animate) { var a = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180 }); a.onfinish = rm; } else rm();
   window.scrollTo(0, 0);
-  if (done) toast('You’re all set. Tap + to log your first purchase');
+  if (done && (!id || id === 'intro')) toast('You’re all set. Tap + to log your first purchase');
+  else if (done) toast('That’s it. More in Settings → Tutorials');
   if (HU_PENDING) setTimeout(maybeHeadsUp, 450);
   if (BILLS_PENDING) setTimeout(maybeBills, 450);
 }
@@ -6924,7 +6997,10 @@ function settingsHtml() {
   h += catOrderHtml();
   h += hiddenSuggHtml();
   h += '<div class="sgrp">Help</div>' + installHtml();
-  h += '<button class="set setlink" data-act="tour" id="s_tour"><span class="sl1">Show me around</span><span class="sl2">a 1-minute tour ›</span></button>';
+  h += '<details class="set" data-sec="tours"' + (isOpen('tours') ? ' open' : '') + '><summary>Tutorials<span>' + TOUR_ORDER.length + ' short walkthroughs</span></summary><div class="inner tlist">' +
+    TOUR_ORDER.map(function (id) { var T = TOURS[id], dn = id === 'intro' ? S.toured : S.tutDone && S.tutDone[id];
+      return '<button class="tlrow" data-act="tour" data-v="' + id + '"' + (id === 'intro' ? ' id="s_tour"' : '') + '><span><b>' + T.name + '</b><small>' + T.sub + ' · ' + T.steps.length + ' steps</small></span><i aria-hidden="true">' + (dn ? '✓' : '›') + '</i></button>'; }).join('') +
+    '</div></details>';
 
   h += '<div class="hint" style="text-align:center;margin-top:14px">' + esc(appName()) + ' ' + VERSION + '</div>';
   return h;
@@ -7843,12 +7919,12 @@ document.addEventListener('click', function (e) {
       if (gi2 < 0 || gi2 + gd < 0 || gi2 + gd >= gids.length) break;
       gids.splice(gi2, 1); gids.splice(gi2 + gd, 0, v);
       orderState().groups = gids; save(); renderSheet(); break;
-    case 'catsel': UI.catSel = v; renderSheet(); var cpk = $('cat_pick'); if (cpk) cpk.scrollIntoView({ block: 'nearest', behavior: REDUCED ? 'auto' : 'smooth' }); break;
+    case 'catsel': UI.catSel = UI.catSel === v ? '' : v; var sst = $('sheet').scrollTop; renderSheet(); $('sheet').scrollTop = sst; var ced = $('cat_ed'); if (ced) ced.scrollIntoView({ block: 'nearest', behavior: REDUCED ? 'auto' : 'smooth' }); break;
     case 'cmove':
       var cg = el.getAttribute('data-g'), clist = catOrderCats(cg), ci = clist.indexOf(v), cd = +el.getAttribute('data-d');
       if (ci < 0 || ci + cd < 0 || ci + cd >= clist.length) break;
       clist.splice(ci, 1); clist.splice(ci + cd, 0, v);
-      orderState().cats[cg] = clist; save(); renderSheet(); break;
+      orderState().cats[cg] = clist; save(); var sst2 = $('sheet').scrollTop; renderSheet(); $('sheet').scrollTop = sst2; break;
     case 'oreset':
       if (UI.armed !== 'oreset') { arm('oreset', el, 'Sure? Tap again'); break; }
       UI.armed = null;
@@ -8173,9 +8249,9 @@ document.addEventListener('click', function (e) {
     case 'wlocal': startLocal(); break;
     case 'wconnect': closeSheet(); S.welcomed = true; save(); setTimeout(function () { openSheet('settings', 'conn'); }, 320); break;
     case 'wlook': S.welcomed = true; save(); closeSheet(); maybeTour(); break;
-    case 'tour': startTour(); break;
-    case 'tournext': if (!TOUR) break; if (TOUR.i >= TOUR.steps.length - 1) endTour(true); else { TOUR.i++; tourDraw(); } break;
-    case 'tourback': if (TOUR && TOUR.i > 0) { TOUR.i--; tourDraw(); } break;
+    case 'tour': startTour(v || 'intro'); break;
+    case 'tournext': if (!TOUR) break; if (TOUR.i >= TOUR.steps.length - 1) endTour(true); else { TOUR.i++; tourShow(1); } break;
+    case 'tourback': if (TOUR && TOUR.i > 0) { TOUR.i--; tourShow(-1); } break;
     case 'tourskip': endTour(false); break;
     case 'stsave': saveStarter(); break;
     case 'stskip': closeSheet(); if (S.toured) toast('Okay — add your first purchase with +'); else maybeTour(); break;
@@ -8680,7 +8756,6 @@ document.addEventListener('change', function (e) {
     toast(cgc + ' moved to ' + groupById(t.value).name);
     renderSheet(); render();
   }
-  else if (t.id === 'cat_pick') { UI.catSel = t.value; renderSheet(); }
   else if (t.id === 'a_m' || t.id === 'a_sort') {
     if (t.id === 'a_m') UI.am = t.value; else UI.asort = t.value;
     UI.lim = 120; UI.edit = null;
@@ -8769,11 +8844,29 @@ if (window.matchMedia) {
   if (mq.addEventListener) mq.addEventListener('change', onScheme); else if (mq.addListener) mq.addListener(onScheme);
 }
 
+// 2.33: away for more than ~10 seconds → back on the first screen (this month, top), unless you were halfway through an entry
+var AWAY_MS = 10000;
+function entryInProgress() {
+  if (!$('txform')) return false;
+  var a = $('f_a'), v = $('f_v'), n = $('f_n');
+  if (UI.edit || (SHEET && SHEET.kind === 'edit')) return true;                 // changing an existing entry: leave it open
+  return !!((a && a.value.trim()) || (v && v.value.trim()) || (n && n.value.trim()));
+}
+function goHome() {
+  if (!S || entryInProgress()) return;
+  if (TOUR) { var tv = $('tour'); if (tv && tv.parentNode) tv.parentNode.removeChild(tv); TOUR = null; }
+  if (PICK) closePicker();
+  if (SHEET) closeSheet();
+  UI.tab = 'month'; UI.ym = nowYM(); UI.edit = null; UI.psec = UI.psec && 'month';
+  render(); window.scrollTo(0, 0);
+}
 document.addEventListener('visibilitychange', function () {
   if (document.visibilityState === 'hidden') { HIDDEN_AT = Date.now(); return; }
   if (HIDDEN_AT && Date.now() - HIDDEN_AT > 5 * 60000) { BILLS_CHECK = true; BILL_LATER = {}; }
+  if (HIDDEN_AT && Date.now() - HIDDEN_AT > AWAY_MS) goHome();
   if (document.visibilityState === 'visible' && S && !S.demo) {
     NOW = FIXED_NOW || new Date();
+    if (UI.tab === 'month' && UI.ym !== null && HIDDEN_AT && Date.now() - HIDDEN_AT > AWAY_MS) UI.ym = nowYM();
     if (S.outbox.length || Date.now() - S.lastSync > 60000) sync().then(function () { setTimeout(maybeHeadsUp, 600); }, function () {}); else { render(); setTimeout(maybeHeadsUp, 600); }
   }
 });
