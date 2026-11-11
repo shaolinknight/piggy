@@ -1275,7 +1275,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.33';
+var VERSION = '2.34';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -3132,7 +3132,7 @@ function txForm(t, isNew) {
   var refund = kind === 'e' && t.a < 0;
   // a trip that's on now (or that this date falls in) sits right under the store, not in More options
   var tripUp = kind === 'e' && !!(t.tr || tripFor(t.d) || (isNew && activeTripNow()));
-  var moreOpen = UI.fmore || window.__openMore === true || refund || !!t.n || !!(t.fs) || +t.ow > 0 || !!UI.split;
+  var moreOpen = UI.fmore || window.__openMore === true || refund || !!t.n || !!(t.fs) || +t.ow > 0 || !!UI.split || !!UI.spread;
   var h = '<form class="form" id="txform" data-id="' + esc(t.id || '') + '" data-new="' + (isNew ? 1 : 0) + '" data-m="' + t.m + '" data-y="' + t.y + '" autocomplete="off">';
   h += '<div class="seg' + (isNew ? '' : ' kseg') + '" role="tablist"><button type="button" class="' + (kind === 'e' ? 'on' : '') + '" data-act="fkind" data-v="e">Expense</button><button type="button" class="' + (kind === 'i' ? 'on' : '') + '" data-act="fkind" data-v="i">Income</button></div>';
   h += '<div class="field"><label for="f_a">Amount</label><div class="amtwrap"><span class="cur" aria-hidden="true">$</span><input id="f_a" class="amtin" inputmode="decimal" placeholder="0.00" value="' + (t.a ? Math.abs(t.a).toFixed(2) : '') + '"></div></div>';
@@ -3151,13 +3151,14 @@ function txForm(t, isNew) {
   // the rest, one tap away
   var extras = [];
   if (kind === 'e') extras.push('refund'); if (kind === 'e' && !tripUp) extras.push('trip'); if (kind === 'e') extras.push('paid with', 'split the bill');
-  if (isNew && kind === 'e') extras.push('split'); extras.push('notes');
+  if (isNew && kind === 'e') extras.push('split', 'spread'); extras.push('notes');
   h += '<button type="button" class="moreopt" data-act="fmore" id="f_moreb" aria-expanded="' + moreOpen + '"><span>More options</span><small>' + (moreOpen ? '' : extras.join(' · ')) + '</small><i class="chev' + (moreOpen ? ' up' : '') + '"></i></button>';
   h += '<div class="fmore" id="f_more"' + (moreOpen ? '' : ' hidden') + '>';
   if (kind === 'e') h += '<div class="chips" style="margin:0 0 10px"><button type="button" class="chip' + (refund ? ' on' : '') + '" data-act="frefund" id="f_refund" aria-pressed="' + refund + '">Refund / return</button></div>';
   if (!tripUp) h += tripField;
   if (kind === 'e') h += payWithHtml(t) + owedHtml(t);
-  if (isNew && kind === 'e') h += '<div class="field">' + splitHtml() + '</div>';
+  if (isNew && kind === 'e') h += '<div class="field">' + (UI.spread ? '' : splitHtml()) + (UI.split ? '' : spreadHtml()) + '</div>';
+  if (!isNew && kind === 'e') h += spreadPartHtml(t);
   h += '<div class="field"><label for="f_n">Notes</label><input id="f_n" value="' + esc(t.n) + '" placeholder="optional"></div>';
   h += '</div>';
   h += '<div class="hint" id="f_err" role="alert"></div>';
@@ -3267,6 +3268,53 @@ function splitMainText() {
   return '<b>' + (c ? esc(c) : 'the category above') + '</b> gets the rest: <b class="' + (rest <= 0 ? 'over' : '') + '">' + money(rest) + '</b>';
 }
 function refreshSplit() { var m = $('f_splitmain'); if (m) m.innerHTML = splitMainText(); }
+
+// 2.34: spread a big purchase over a few months. Each month gets its own entry (an equal share, cents to the
+// first), dated the same day of each month, noted "2 of 3 · $600.00 over 3 months" so the parts find each other.
+var SPREAD_N = [2, 3, 4, 6, 12];
+function spreadHtml() {
+  if (!UI.spread) return '<button type="button" class="linkbtn splitbtn" data-act="fspread" id="f_spread">Spread over a few months</button>';
+  var h = '<div class="split" id="f_spreadbox"><div class="splithead"><b>Spread over</b><button type="button" class="linkbtn" data-act="fspreadoff">Don’t spread</button></div>' +
+    '<div class="chips" role="radiogroup" aria-label="Number of months">' + SPREAD_N.map(function (n) {
+      return '<button type="button" class="chip' + (UI.spread.n === n ? ' on' : '') + '" role="radio" aria-checked="' + (UI.spread.n === n) + '" data-act="fspreadn" data-v="' + n + '">' + n + ' months</button>'; }).join('') + '</div>' +
+    '<div class="hint" id="f_spreadsum" style="margin-top:8px">' + spreadSumText() + '</div></div>';
+  return h;
+}
+function addMonthsStr(ds, n) {
+  var d = parseD(ds), y = d.getFullYear(), m = d.getMonth() + n, day = d.getDate();
+  y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
+  return y + '-' + pad(m + 1) + '-' + pad(Math.min(day, daysIn(y, m)));
+}
+function spreadAmounts(tot, n) {
+  var c = Math.round(tot * 100), base = Math.floor(c / n), out = [];
+  for (var i = 0; i < n; i++) out.push((base + (i === 0 ? c - base * n : 0)) / 100);
+  return out;
+}
+function spreadSumText() {
+  var tot = parseAmt(($('f_a') || {}).value || '0'), ds = ($('f_d') || {}).value || todayStr(), n = UI.spread ? UI.spread.n : 3;
+  if (!parseD(ds)) ds = todayStr();
+  var ms = []; for (var i = 0; i < n; i++) { var d = parseD(addMonthsStr(ds, i)); ms.push(MON[d.getMonth()] + (i === n - 1 || d.getMonth() === 0 ? ' ' + String(d.getFullYear()).slice(2).replace(/^/, '’') : '')); }
+  var each = isNaN(tot) || tot <= 0 ? 0 : spreadAmounts(tot, n)[n - 1];
+  var d0 = parseD(ds), d1 = parseD(addMonthsStr(ds, n - 1)), yy = function (d) { return MON[d.getMonth()] + ' ’' + String(d.getFullYear()).slice(2); };
+  return (each ? '<b>' + money(each, true) + ' a month</b> · ' : '') + (n > 4 ? yy(d0) + ' to ' + yy(d1) : ms.join(', ')) + '. Each month’s budget only takes its share.';
+}
+function refreshSpread() { var m = $('f_spreadsum'); if (m) m.innerHTML = spreadSumText(); }
+var SPREAD_RE = /(\d+) of (\d+) · \$([\d,]+\.\d\d) over \d+ months$/;
+function spreadInfo(t) {
+  var m = t && t.n && String(t.n).match(SPREAD_RE);
+  return m ? { i: +m[1], n: +m[2], tot: parseAmt(m[3]), tail: ' · $' + m[3] + ' over ' + m[2] + ' months' } : null;
+}
+// the other parts of the same spread purchase: same store and category, same total and count
+function spreadSiblings(t) {
+  var si = spreadInfo(t); if (!si) return [];
+  return S.tx.filter(function (x) { var xi = spreadInfo(x); return x.k === 'e' && xi && xi.n === si.n && xi.tot === si.tot && low(x.v) === low(t.v) && low(x.c) === low(t.c); });
+}
+function spreadPartHtml(t) {
+  var si = spreadInfo(t); if (!si) return '';
+  var sib = spreadSiblings(t);
+  return '<div class="field spreadpart"><div class="hint">Part ' + si.i + ' of ' + si.n + ' of a ' + money(si.tot, true) + ' purchase spread over ' + si.n + ' months.' +
+    (sib.length > 1 ? '' : '') + '</div>' + (sib.length > 1 ? '<button type="button" class="btn danger" style="width:100%;margin-top:8px" data-act="fspreaddel" id="f_spreaddel">Delete all ' + sib.length + ' parts</button>' : '') + '</div>';
+}
 
 // "$238 left" / "$51 over" / "no budget" for a category in a given month.
 function catStatus(c, kind, key) {
@@ -6329,7 +6377,7 @@ var SHEET_STACK = [];
 function sheetBack() {
   if (SHEET && SHEET_STACK.length) {
     var prev = SHEET_STACK.pop(), sh = $('sheet');
-    SHEET = prev; UI.split = null;
+    SHEET = prev; UI.split = null; UI.spread = null;
     renderSheet(); sh.scrollTop = prev.top || 0;
     sh.style.transition = 'none'; sh.style.transform = 'translateY(40px)'; $('scrim').style.opacity = '';
     void sh.offsetWidth; sh.style.transition = 'transform .32s ' + EASE_IOS; sh.style.transform = '';
@@ -6348,7 +6396,7 @@ function openSheet(kind, arg) {
   SHEET = { kind: kind, arg: arg };
   UI.catTouched = false; UI.tripTouched = false; UI.catAuto = false;
   if (kind === 'settings') UI.open = {};      // every visit starts with the sections closed
-  if (kind === 'add' || kind === 'edit') { UI.split = null; UI.fmore = false; }
+  if (kind === 'add' || kind === 'edit') { UI.split = null; UI.spread = null; UI.fmore = false; }
   if (kind === 'settings') UI.alertMsg = '';
   renderSheet();
   var wasOpen = $('sheet').classList.contains('on');
@@ -6782,7 +6830,7 @@ var TOURS = {
     { sel: '#f_v', t: 'Where you spent it', b: 'Type the store. Once you’ve logged it a few times, Piggy fills in the category it usually goes to.' },
     { sel: '#f_csel', t: 'Category', b: 'Tap to choose. The search box sits at the bottom so you can reach it with your thumb, and you can make a new category right there.' },
     { sel: '#f_d', t: 'Date', b: 'Today, unless you change it. Logging something from last week? Change the date and it lands in the right month.' },
-    { go: function () { var m = $('f_more'); if (m && m.hidden && $('f_moreb')) $('f_moreb').click(); }, sel: '#f_moreb', t: 'More options', b: '<b>Split</b> one receipt across categories, tag it to a <b>trip</b>, add a <b>note</b>, mark a <b>refund</b>, or note money someone <b>owes you back</b>.' },
+    { go: function () { var m = $('f_more'); if (m && m.hidden && $('f_moreb')) $('f_moreb').click(); }, sel: '#f_moreb', t: 'More options', b: '<b>Split</b> one receipt across categories, <b>spread</b> a big purchase over a few months, tag it to a <b>trip</b>, add a <b>note</b>, mark a <b>refund</b>, or note money someone <b>owes you back</b>.' },
     { sel: '#f_save', t: 'Add it', b: 'The numbers update straight away. No signal? It waits on your phone and goes to the sheet later.' }
   ] },
   activity: { name: 'Finding and fixing entries', sub: 'search, filters, edit, undo', steps: [
@@ -7171,6 +7219,12 @@ function submitForm() {
   if (v.ow && (v.a < 0 || v.ow > v.a + 0.005)) { err.textContent = 'What others owe can’t be more than the purchase.'; err.style.color = 'var(--bad)'; return; }
   if (v.ow && UI.split && isNew) { err.textContent = 'Use either “split across categories” or “someone owes me” on one purchase, not both.'; err.style.color = 'var(--bad)'; return; }
   if ((v.fs || v.ow) && sheetOld(13)) { err.textContent = 'Update the script in your sheet (Code.gs version 13) to use “paid with savings” or “owed”.'; err.style.color = 'var(--bad)'; return; }
+  if (isNew && v.k === 'e' && UI.spread) {
+    if (v.a < 0) { err.textContent = 'A refund can’t be spread.'; err.style.color = 'var(--bad)'; return; }
+    if (v.ow) { err.textContent = 'Use either “spread over months” or “someone owes me” on one purchase, not both.'; err.style.color = 'var(--bad)'; return; }
+    if (!v.d) { err.textContent = 'Pick a date.'; err.style.color = 'var(--bad)'; return; }
+    return saveSpread(v);
+  }
   var parts = isNew && v.k === 'e' && UI.split ? splitParts().filter(function (p) { return p.c || p.a; }) : [];
   if (parts.length) {
     if (v.a < 0) { err.textContent = 'Refunds can’t be split.'; err.style.color = 'var(--bad)'; return; }
@@ -7223,6 +7277,27 @@ function submitForm() {
       if (landed) glideTo(landed, 'saved', typing);
       if (before) toast('Saved', { type: 'edit', id: id, before: before, after: pick(v), top: top });
     }
+    flushSoon();
+  });
+}
+
+function saveSpread(v) {
+  lock('save', function () {
+    var btn = $('f_save'); if (btn) btn.disabled = true;
+    var n = UI.spread.n, amts = spreadAmounts(v.a, n), tail = ' · ' + money(v.a, true) + ' over ' + n + ' months';
+    var made = amts.map(function (a, i) {
+      var pv = {}; Object.keys(v).forEach(function (k) { pv[k] = v[k]; });
+      pv.a = a; pv.d = addMonthsStr(v.d, i); var dd = parseD(pv.d); pv.y = dd.getFullYear(); pv.m = dd.getMonth();
+      pv.n = (v.n ? v.n + ' · ' : '') + (i + 1) + ' of ' + n + tail;
+      var nt = addTx(pv); if (!i) markFresh(nt); return { id: nt.id, after: pick(nt) };
+    });
+    UI.spread = null;
+    var again = UI.addAnother; UI.addAnother = false;
+    var undo = function () { made.forEach(function (x) { var ft = resolveTx(x.id, x.after); if (ft) deleteTx(ft.id); }); render(); flushSoon(); toast('Spread removed'); };
+    if (again) { var nd = newTxDraft(v.k); nd.d = v.d; nd.y = v.y; nd.m = v.m; openSheet('add', nd); }
+    else { closeSheet(); UI.ym = ymKey(v.y, v.m) <= nowYM() ? ymKey(v.y, v.m) : UI.ym; }
+    render();
+    toast('Added ' + money(v.a, true) + ' over ' + n + ' months · ' + money(amts[n - 1], true) + ' a month', undo);
     flushSoon();
   });
 }
@@ -8439,6 +8514,20 @@ document.addEventListener('click', function (e) {
         if (SHEET && SHEET.kind === 'settings') renderSheet();
       }).catch(function (er) { UI.alertMsg = 'Couldn’t reach your sheet: ' + esc(errText(er)); if (SHEET && SHEET.kind === 'settings') renderSheet(); });
       break;
+    case 'fspread': UI.spread = { n: 3 }; UI.split = null; rerenderForm(); break;
+    case 'fspreadoff': UI.spread = null; rerenderForm(); break;
+    case 'fspreadn': if (UI.spread) { UI.spread.n = +v; var sb = $('f_spreadbox'); if (sb) { sb.querySelectorAll('[data-act=fspreadn]').forEach(function (c) { var on = +c.getAttribute('data-v') === UI.spread.n; c.classList.toggle('on', on); c.setAttribute('aria-checked', on); }); } refreshSpread(); } break;
+    case 'fspreaddel':
+      e.preventDefault();
+      if (UI.armed !== 'sdel') { arm('sdel', el, 'Sure? Tap again'); break; }
+      UI.armed = null;
+      lock('save', function () {
+        var sid = $('txform').getAttribute('data-id'), st = findTx(sid), sibs = spreadSiblings(st), copies = sibs.map(function (x) { return pick(x); });
+        sibs.forEach(function (x) { deleteTx(x.id); });
+        UI.edit = null; if (SHEET) closeSheet(); render(); flushSoon();
+        toast('Deleted all ' + sibs.length + ' parts', function () { copies.forEach(function (c) { addTx(c); }); render(); flushSoon(); toast('Brought back'); });
+      });
+      break;
     case 'fsplit': UI.split = [{ c: '', a: '' }]; rerenderForm(); var sp0 = document.querySelector('[data-split-c="0"]'); if (sp0) sp0.focus(); break;
     case 'fsplitoff': UI.split = null; rerenderForm(); break;
     case 'fsplitadd': UI.split.push({ c: '', a: '' }); rerenderForm(); break;
@@ -8732,6 +8821,7 @@ document.addEventListener('input', function (e) {
   else if (t.id === 'f_v') { suggest(); autoCatFromVendor(); }
   else if (t.hasAttribute && t.hasAttribute('data-split-a') && UI.split) { UI.split[+t.getAttribute('data-split-a')].a = t.value; refreshSplit(); }
   else if (t.id === 'f_a' && UI.split) refreshSplit();
+  else if ((t.id === 'f_a' || t.id === 'f_d') && UI.spread) refreshSpread();
   if (t.id === 'f_a' || t.id === 'f_ow') refreshOwed();
   else if (/^gl_(target|base|by)$/.test(t.id)) { var gn = $('gl_need'); if (gn) gn.innerHTML = goalNeedText(); }
 });
