@@ -491,6 +491,7 @@ table.tb tr.tot td{font-weight:700;border-top:2px solid var(--b2)}
 .col i.stk{display:flex;flex-direction:column;overflow:hidden}
 .col i.stk b.trip{display:block;flex:none;width:100%;background:var(--s3);border-bottom:2px solid var(--p1);border-radius:4px 4px 0 0}
 .tdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--s3);margin-right:6px;vertical-align:1px;flex:none}
+.sbadge{display:inline-block;font-weight:700;font-size:.78em;color:var(--ac);background:var(--acd);border-radius:6px;padding:0 5px;margin-right:4px;vertical-align:1px}
 .tbadge{display:inline-flex;align-items:center;font-weight:600;color:var(--t2);margin-right:2px}
 .bar.tbar i{background:var(--s3)}
 .bar.tbar i.over{background:var(--bad)}
@@ -1275,7 +1276,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.35';
+var VERSION = '2.37';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -2955,6 +2956,7 @@ function filteredTx() {
     if (fk === 'i' && t.k !== 'i') return false;
     if (fk === 't' && !t.tr) return false;
     if (am !== null && ymKey(t.y, t.m) !== am) return false;
+    if (am === null && spreadLater(t)) return false;            // 2.36: shows up when its month comes
     if (pq.m !== null && t.m !== pq.m) return false;
     if (pq.y !== null && t.y !== pq.y) return false;
     if (q && (low(t.v) + ' ' + low(t.c) + ' ' + low(t.n) + ' ' + low(t.tr) + ' ' + String(t.a)).indexOf(q) < 0) return false;
@@ -2976,7 +2978,7 @@ function filteredTx() {
 }
 function activityMonths() {
   var cnt = {};
-  S.tx.forEach(function (t) { var k = ymKey(t.y, t.m); cnt[k] = (cnt[k] || 0) + 1; });
+  S.tx.forEach(function (t) { if (spreadLater(t)) return; var k = ymKey(t.y, t.m); cnt[k] = (cnt[k] || 0) + 1; });
   return Object.keys(cnt).map(Number).sort(function (a, b) { return b - a; }).map(function (k) { return [k, cnt[k]]; });
 }
 var SORTS = [['new', 'Newest first'], ['old', 'Oldest first'], ['big', 'Biggest first'], ['small', 'Smallest first'], ['store', 'Store A–Z'], ['storez', 'Store Z–A'], ['cat', 'Category A–Z'], ['catz', 'Category Z–A']];
@@ -3084,7 +3086,7 @@ function tableHeadHtml() {
 // one entry as a table row (computers)
 function txRowCells(t) {
   var det = [];
-  if (t.n) det.push(esc(t.n));
+  if (t.n && spreadBase(t)) det.push(esc(spreadInfo(t) ? spreadBase(t) : t.n));
   if (t.fs) det.push('from ' + esc(t.fs));
   if (+t.ow > 0) det.push(t.pb ? 'your share ' + money(share(t), true) + ' · paid back ✓' : 'your share ' + money(share(t), true) + ' · ' + money(+t.ow, true) + ' owed');
   var date = t.d ? shortDate(t.d) : MON[t.m];
@@ -3092,7 +3094,7 @@ function txRowCells(t) {
   return '<span class="td td-d">' + date + '</span>' +
     '<span class="td td-v"><b>' + esc(t.v || '—') + '</b>' + (t.p ? '<span class="pend" title="Waiting to reach your sheet">• waiting to sync</span>' : '') + '</span>' +
     '<span class="td td-c"><span class="cpill' + (t.k === 'i' ? ' in' : '') + '">' + esc(t.c) + '</span></span>' +
-    '<span class="td td-n">' + (t.tr ? '<span class="tbadge"><i class="tdot"></i>' + esc(t.tr) + '</span> ' : '') + det.join(' · ') + '</span>' +
+    '<span class="td td-n">' + spreadBadge(t) + (t.tr ? '<span class="tbadge"><i class="tdot"></i>' + esc(t.tr) + '</span> ' : '') + det.join(' · ') + '</span>' +
     '<span class="amt' + (t.k === 'i' ? ' in' : '') + '">' + (t.k === 'i' ? '+' : '') + money(t.a, true) + '</span>';
 }
 function txItem(t) {
@@ -3108,17 +3110,18 @@ function txItem(t) {
   if (t.v) bits.push(t.c);
   if (t.d) bits.push(shortDate(t.d) + (flatSort() && UI.tab === 'activity' ? ' ' + t.y : ''));
   else if (flatSort() && UI.tab === 'activity') bits.push(MON[t.m] + ' ' + t.y);
-  if (t.n) bits.push(t.n);
+  if (t.n) bits.push(spreadInfo(t) ? spreadBase(t) : t.n);
+  bits = bits.filter(function (b) { return b; });
   if (t.fs) bits.push('from ' + t.fs);
   if (+t.ow > 0) bits.push(t.pb ? 'your share ' + money(share(t), true) + ' · paid back ✓' : 'your share ' + money(share(t), true) + ' · ' + money(+t.ow, true) + ' owed');
   if (UI.bulk && !UI.bulkOne && UI.tab === 'activity') {
     var on = !!UI.bulk[t.id];
     return '<button class="tx sel' + (on ? ' on' : '') + '" data-act="bsel" data-v="' + esc(t.id) + '" aria-pressed="' + on + '"><i class="btick">' + (on ? '✓' : '') + '</i>' +
-      '<div class="tl"><b>' + esc(title) + '</b><small>' + (t.tr ? '<span class="tbadge"><i class="tdot"></i>' + esc(t.tr) + '</span> ' : '') + esc(bits.join(' · ')) + '</small></div>' +
+      '<div class="tl"><b>' + esc(title) + '</b><small>' + spreadBadge(t) + (t.tr ? '<span class="tbadge"><i class="tdot"></i>' + esc(t.tr) + '</span> ' : '') + esc(bits.join(' · ')) + '</small></div>' +
       '<div class="amt' + (t.k === 'i' ? ' in' : '') + '">' + (t.k === 'i' ? '+' : '') + money(t.a, true) + '</div></button>';
   }
   var btn = '<button class="tx" data-act="edit" data-v="' + esc(t.id) + '" aria-expanded="' + (UI.edit === t.id) + '">' +
-    '<div class="tl"><b>' + esc(title) + (t.p ? '<span class="pend" title="Waiting to reach your sheet">• waiting to sync</span>' : '') + '</b><small>' + (t.tr ? '<span class="tbadge"><i class="tdot"></i>' + esc(t.tr) + '</span> ' : '') + esc(bits.join(' · ')) + '</small></div>' +
+    '<div class="tl"><b>' + esc(title) + (t.p ? '<span class="pend" title="Waiting to reach your sheet">• waiting to sync</span>' : '') + '</b><small>' + spreadBadge(t) + (t.tr ? '<span class="tbadge"><i class="tdot"></i>' + esc(t.tr) + '</span> ' : '') + esc(bits.join(' · ')) + '</small></div>' +
     '<div class="amt' + (t.k === 'i' ? ' in' : '') + '">' + (t.k === 'i' ? '+' : '') + money(t.a, true) + '</div></button>';
   if (UI.tab !== 'activity') return btn.replace('<button class="tx"', '<button data-fk="' + esc(t.id) + '" class="tx"');
   // swipe left to delete, right to change (Activity only)
@@ -3309,11 +3312,75 @@ function spreadSiblings(t) {
   var si = spreadInfo(t); if (!si) return [];
   return S.tx.filter(function (x) { var xi = spreadInfo(x); return x.k === 'e' && xi && xi.n === si.n && xi.tot === si.tot && low(x.v) === low(t.v) && low(x.c) === low(t.c); });
 }
+// 2.37: payments for months still to come aren't entries yet. They wait in a schedule that travels with your
+// settings (every device knows it) and each becomes an entry the first time Piggy opens in its month.
+function hashStr(x) { var h = 5381; x = String(x); for (var i = 0; i < x.length; i++) h = ((h * 33) ^ x.charCodeAt(i)) >>> 0; return h.toString(36); }
+function spPart(sp, i) {
+  var d = addMonthsStr(sp.d, i - 1), dd = parseD(d);
+  return { k: 'e', v: sp.v, c: sp.c, a: spreadAmounts(sp.tot, sp.n)[i - 1], d: d, y: dd.getFullYear(), m: dd.getMonth(),
+    n: (sp.note ? sp.note + ' · ' : '') + i + ' of ' + sp.n + ' · ' + money(sp.tot, true) + ' over ' + sp.n + ' months', tr: sp.tr || '', fs: sp.fs || '' };
+}
+function spPartKey(sp, i) { var d = parseD(addMonthsStr(sp.d, i - 1)); return ymKey(d.getFullYear(), d.getMonth()); }
+function spOid(id, i) { return 'sp-' + id + '-' + i; }
+function spMatches(sp, t) { var si = spreadInfo(t); return !!si && t.k === 'e' && si.n === sp.n && Math.abs(si.tot - sp.tot) < 0.005 && low(t.v) === low(sp.v) && low(t.c) === low(sp.c); }
+function spFor(t) { var out = null; Object.keys(S.spreads || {}).forEach(function (id) { var sp = S.spreads[id]; if (!sp.del && spMatches(sp, t)) out = id; }); return out; }
+// post what's due, and move any already-written payments for later months into a schedule
+function spreadTick() {
+  if (!S || S.demo) return false;
+  S.spreads = S.spreads || {};
+  var cur = nowYM(), changed = false;
+  // older spreads (2.34–2.36) wrote every payment up front: take the future ones back out of the sheet
+  var groups = {};
+  S.tx.forEach(function (t) {
+    var si = t.k === 'e' && spreadInfo(t); if (!si || spFor(t)) return;
+    var gk = [low(t.v), low(t.c), si.tot, si.n].join('|'); (groups[gk] = groups[gk] || []).push(t);
+  });
+  Object.keys(groups).forEach(function (gk) {
+    var parts = groups[gk];
+    if (!parts.some(function (t) { return ymKey(t.y, t.m) > cur; })) return;
+    parts.sort(function (a, b) { return spreadInfo(a).i - spreadInfo(b).i; });
+    var t0 = parts[0], si0 = spreadInfo(t0), d1 = t0.d ? addMonthsStr(t0.d, -(si0.i - 1)) : (t0.y + '-' + pad(t0.m + 1) + '-01');
+    var id = 'm' + hashStr(gk + '|' + d1);
+    var sp = S.spreads[id] = S.spreads[id] || { v: t0.v, c: t0.c, tot: si0.tot, n: si0.n, d: d1, note: spreadBase(t0), tr: t0.tr || '', fs: t0.fs || '', done: {}, at: Date.now() };
+    parts.forEach(function (t) {
+      var i = spreadInfo(t).i;
+      if (ymKey(t.y, t.m) > cur) deleteTx(t.id); else sp.done[i] = 1;
+    });
+    changed = true;
+  });
+  // payments whose month has come
+  Object.keys(S.spreads).forEach(function (id) {
+    var sp = S.spreads[id]; if (sp.del) return;
+    sp.done = sp.done || {};
+    for (var i = 1; i <= sp.n; i++) {
+      if (sp.done[i] || spPartKey(sp, i) > cur) continue;
+      var pv = spPart(sp, i);
+      var have = S.tx.some(function (t) { return spMatches(sp, t) && spreadInfo(t).i === i; });
+      if (!have) addTx(pv, spOid(id, i));
+      sp.done[i] = 1; changed = true;
+    }
+  });
+  if (changed) { save(); if (S.cfg.url) { queuePrefs(); flushSoon(); } }
+  return changed;
+}
+function spLeft(sp) { var cur = nowYM(), n = 0; for (var i = 1; i <= sp.n; i++) if (spPartKey(sp, i) > cur) n++; return n; }
+function spreadLater(t) { return t.k === 'e' && ymKey(t.y, t.m) > nowYM() && !!spreadInfo(t); }
+// the note without the "2 of 6 · $1,200.00 over 6 months" tail, and a short "Payment 2/6" label instead
+function spreadBase(t) { return String(t.n || '').replace(/(?: · )?\d+ of \d+ · \$[\d,]+\.\d\d over \d+ months$/, ''); }
+function spreadBadge(t) { var si = spreadInfo(t); return si ? '<span class="sbadge" title="Payment ' + si.i + ' of ' + si.n + ' of ' + money(si.tot, true) + '">Payment ' + si.i + '/' + si.n + '</span> ' : ''; }
+// every spread purchase that still has payments to come, for Plan → Coming up
+function spreadsInProgress() {
+  var cur = nowYM();
+  return Object.keys(S.spreads || {}).map(function (id) { var sp = S.spreads[id]; return sp; }).filter(function (sp) { return !sp.del && spLeft(sp) > 0; }).map(function (sp) {
+    var left = spLeft(sp); return { v: sp.v || sp.c, c: sp.c, tot: sp.tot, n: sp.n, each: spreadAmounts(sp.tot, sp.n)[sp.n - 1], made: sp.n - left, parts: sp.n, last: spPartKey(sp, sp.n) };
+  }).sort(function (a, b) { return a.last - b.last; });
+}
 function spreadPartHtml(t) {
   var si = spreadInfo(t); if (!si) return '';
-  var sib = spreadSiblings(t);
-  return '<div class="field spreadpart"><div class="hint">Part ' + si.i + ' of ' + si.n + ' of a ' + money(si.tot, true) + ' purchase spread over ' + si.n + ' months.' +
-    (sib.length > 1 ? '' : '') + '</div>' + (sib.length > 1 ? '<button type="button" class="btn danger" style="width:100%;margin-top:8px" data-act="fspreaddel" id="f_spreaddel">Delete all ' + sib.length + ' parts</button>' : '') + '</div>';
+  var sib = spreadSiblings(t), sid = spFor(t), later = sid ? spLeft(S.spreads[sid]) : 0, all = sib.length + later;
+  return '<div class="field spreadpart"><div class="hint">Payment ' + si.i + ' of ' + si.n + ' of a ' + money(si.tot, true) + ' purchase spread over ' + si.n + ' months.' +
+    (later ? ' ' + later + ' more ' + (later === 1 ? 'comes' : 'come') + ' as ' + (later === 1 ? 'its month arrives' : 'their months arrive') + '.' : '') + '</div>' +
+    (all > 1 ? '<button type="button" class="btn danger" style="width:100%;margin-top:8px" data-act="fspreaddel" id="f_spreaddel">Delete the whole purchase (' + all + ' payments)</button>' : '') + '</div>';
 }
 
 // "$238 left" / "$51 over" / "no budget" for a category in a given month.
@@ -3805,6 +3872,10 @@ function comingUpItemsAll(k) {
     items.push({ i: '✈️', t: '<b>' + esc(t.name) + '</b> · ' + shortDate(t.start) + (t.end && t.end !== t.start ? '–' + shortDate(t.end).replace(MON[m] + ' ', '') : ''),
       a: bud ? Math.max(0, bud - st.total) : 0, n: (bud ? 'budget ' + money(bud) : 'trip') + (st.total ? ' · ' + money(st.total) + ' already spent' : '') });
   });
+  Object.keys(S.spreads || {}).forEach(function (id) {
+    var sp = S.spreads[id]; if (sp.del) return;
+    for (var i = 1; i <= sp.n; i++) if (spPartKey(sp, i) === k && !(sp.done || {})[i]) items.push({ i: '🗓', t: '<b>' + esc(sp.v || sp.c) + '</b> · payment ' + i + '/' + sp.n, a: spreadAmounts(sp.tot, sp.n)[i - 1], n: esc(sp.c) + ' · ' + money(sp.tot, true) + ' spread' });
+  });
   (S.goals || []).forEach(function (g) {
     if (g.by !== k) return;
     var st = goalStats(g);
@@ -3856,9 +3927,19 @@ function planComingHtml() {
     any = true;
     body += '<div class="cmon"><div class="cmh"><b>Later</b></div>' + later.map(function (x) { var l = upLine(x); l.n = MONTHS[ymM(x.k)] + ' ' + ymY(x.k) + (x.c ? ' · ' + esc(x.c) : ''); return citemHtml(l); }).join('') + '</div>';
   }
+  // 2.36: purchases spread over months, one line each
+  var sp = spreadsInProgress();
+  if (sp.length) {
+    any = true;
+    body = '<div class="cmon" id="p_spreads"><div class="cmh"><b>Paying off</b><span>' + money(sp.reduce(function (a, x) { return a + x.each; }, 0)) + ' a month</span></div>' + sp.map(function (x) {
+      var left = x.parts - x.made, lm = MON[ymM(x.last)] + ' ’' + String(ymY(x.last)).slice(2);
+      return '<div class="citem uline spl"><b class="um">' + x.made + '/' + x.n + '</b><span>' + esc(x.v) + ' · ' + money(x.each, true) + ' a month<small>' +
+        left + ' payment' + (left === 1 ? '' : 's') + ' left · last one ' + lm + ' · ' + money(x.tot, true) + ' in all</small></span></div>';
+    }).join('') + '</div>' + body;
+  }
   h = '<section class="card pcoming" id="p_coming"><div class="ghead"><h3>Coming up</h3><button class="linkbtn" data-act="upedit" id="up_add">+ Add</button></div>' + body;
   if (!any) h += '<div class="hint">Nothing big in the next three months. Tap <b>+ Add</b> for things you know you’ll need to buy.</div>';
-  h += '<details class="itip"><summary>ⓘ <span>Where this comes from</span></summary><div class="hint">Things you’ve added with <b>+ Add</b>, yearly bills, trips and goal target dates.</div></details></section>';
+  h += '<details class="itip"><summary>ⓘ <span>Where this comes from</span></summary><div class="hint">Things you’ve added with <b>+ Add</b>, yearly bills, trips, goal target dates, and purchases you’ve spread over months.</div></details></section>';
   return h;
 }
 // 2.27: budget changes you've saved for later months, on their own
@@ -7285,18 +7366,24 @@ function submitForm() {
 function saveSpread(v, editId) {
   lock('save', function () {
     var btn = $('f_save'); if (btn) btn.disabled = true;
-    var n = UI.spread.n, amts = spreadAmounts(v.a, n), tail = ' · ' + money(v.a, true) + ' over ' + n + ' months', before = null, firstId = null;
-    var made = amts.map(function (a, i) {
-      var pv = {}; Object.keys(v).forEach(function (k) { pv[k] = v[k]; });
-      pv.a = a; pv.d = addMonthsStr(v.d, i); var dd = parseD(pv.d); pv.y = dd.getFullYear(); pv.m = dd.getMonth();
-      pv.n = (v.n ? v.n + ' · ' : '') + (i + 1) + ' of ' + n + tail;
-      if (!i && editId) { before = editTx(editId, pv); firstId = editId; return { id: editId, after: pick(pv), edited: true }; }
-      var nt = addTx(pv); if (!i) markFresh(nt); return { id: nt.id, after: pick(nt) };
-    });
+    var n = UI.spread.n, amts = spreadAmounts(v.a, n), before = null, cur = nowYM();
+    // 2.37: payments for months that have come are entries now; the rest wait in the schedule
+    var sid = 's' + hashStr([low(v.v), low(v.c), v.a, n, v.d, Date.now()].join('|'));
+    var sp = { v: v.v, c: v.c, tot: v.a, n: n, d: v.d, note: v.n || '', tr: v.tr || '', fs: v.fs || '', done: {}, at: Date.now() };
+    S.spreads = S.spreads || {}; S.spreads[sid] = sp;
+    var made = [];
+    for (var i = 1; i <= n; i++) {
+      if (spPartKey(sp, i) > cur && !(i === 1 && editId)) continue;
+      var pv = spPart(sp, i); sp.done[i] = 1;
+      if (i === 1 && editId) { before = editTx(editId, pv); made.push({ id: editId, after: pick(pv), edited: true }); continue; }
+      var nt = addTx(pv, S.demo ? null : spOid(sid, i)); if (i === 1) markFresh(nt); made.push({ id: nt.id, after: pick(nt) });
+    }
+    save(); queuePrefs();
     UI.spread = null;
     var again = UI.addAnother; UI.addAnother = false;
     var undo = function () {
       made.forEach(function (x) { var ft = resolveTx(x.id, x.after); if (!ft) return; if (x.edited) editTx(ft.id, before); else deleteTx(ft.id); });
+      if (S.spreads[sid]) { S.spreads[sid].del = 1; save(); queuePrefs(); }
       render(); flushSoon(); toast(editId ? 'Back to one purchase' : 'Spread removed');
     };
     if (editId) { UI.edit = null; if (SHEET) closeSheet(); }
@@ -7413,12 +7500,12 @@ function pick(t) { return { k: t.k, y: t.y, m: t.m, v: t.v, c: t.c, a: t.a, n: t
 function share(t) { return t.k === 'e' ? r2(t.a - (+t.ow || 0)) : t.a; }
 function refOf(t) { var o = t.o || t; return { k: o.k || t.k, y: o.y || t.y, m: o.m, r: t.r || 0, fp: { m: o.m, v: o.v, c: o.c, a: o.a } }; }
 
-function addTx(v) {
+function addTx(v, oid) {
   var t = pick(v);
   t.id = nid('L'); t.r = 0; t.p = S.demo ? 0 : 1;
   if (S.demo) t.demo = 1;
   S.tx.push(t);
-  if (!S.demo) S.outbox.push({ oid: nid('o'), op: 'add', tid: t.id, tx: pick(t) });
+  if (!S.demo) S.outbox.push({ oid: oid || nid('o'), op: 'add', tid: t.id, tx: pick(t) });   // a fixed oid: the sheet adds it once, whichever device sends it
   save();
   return t;
 }
@@ -7624,7 +7711,7 @@ var PREF_KEYS = ['pal', 'mode', 'style', 'corners', 'cards', 'density', 'icon', 
 function prefsObj() {
   var cfg = {};
   PREF_KEYS.forEach(function (k) { cfg[k] = S.cfg[k]; });
-  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, pay: S.pay || null, up: S.up || [], hu: S.hu || 0, bc: S.bc || 0, bm: S.bmark || {}, bl: S.blink || {}, dv: S.devs || {}, ck: S.checkin || {}, co: S.ciOk || {}, ds: S.dis || {}, bmo: S.bmo || 0, td: S.tdis || {}, ap: S.autopay || {}, at: S.prefsAt || 0 };
+  return { cfg: cfg, order: orderState(), catGroup: S.catGroup || {}, alerts: alertState(), yearly: S.yearly || {}, roll: S.roll || {}, hideV: S.hideV || {}, pay: S.pay || null, up: S.up || [], hu: S.hu || 0, bc: S.bc || 0, bm: S.bmark || {}, bl: S.blink || {}, dv: S.devs || {}, sp: S.spreads || {}, ck: S.checkin || {}, co: S.ciOk || {}, ds: S.dis || {}, bmo: S.bmo || 0, td: S.tdis || {}, ap: S.autopay || {}, at: S.prefsAt || 0 };
 }
 // "heads up seen" doesn't count as a change by itself: a phone that hasn't caught up mustn't send an older month back
 // 2.32: which settings changed here since this device last saw the sheet's copy (cfg per setting), so the sheet keeps the rest
@@ -7763,6 +7850,18 @@ function applyPull(data) {
       Object.keys(theirs).forEach(function (k) { if (loc[k] === undefined || (x[0] === 'ds' && String(theirs[k]) > String(loc[k]))) loc[k] = theirs[k]; });
       Object.keys(loc).forEach(function (k) { if (theirs[k] === undefined) mine++; });
     });
+    // spread schedules: each device adds the other's; payments done and deletions add up
+    var tsp = data.prefs.sp && typeof data.prefs.sp === 'object' ? data.prefs.sp : {};
+    S.spreads = S.spreads || {};
+    Object.keys(tsp).forEach(function (id) {
+      var a = tsp[id], b = S.spreads[id]; if (!a) return;
+      if (!b) { S.spreads[id] = JSON.parse(JSON.stringify(a)); return; }
+      if (a.del && !b.del) b.del = 1;
+      b.done = b.done || {}; Object.keys(a.done || {}).forEach(function (i) { b.done[i] = 1; });
+      if (b.del && !a.del) mine++;
+      Object.keys(b.done).forEach(function (i) { if (!(a.done || {})[i]) mine++; });
+    });
+    Object.keys(S.spreads).forEach(function (id) { if (!tsp[id]) mine++; });
     // the app version each device runs (2.31+): newest report wins; this device's own entry is refreshed every few days
     var tdv = data.prefs.dv && typeof data.prefs.dv === 'object' ? data.prefs.dv : {};
     S.devs = S.devs || {};
@@ -7775,6 +7874,7 @@ function applyPull(data) {
   if ((data.v || 0) >= 10) S.prefsPulled = 1;
   CACHE = {}; VER++;
   setTimeout(function () { if (!SHEET && !UI.edit) autoPayBills(); }, 0);
+  if ((data.v || 0) >= 10) setTimeout(function () { if (spreadTick()) { CACHE = {}; VER++; safeRender(); } }, 0);   // 2.37: spread payments whose month has come
 }
 
 // Don't wipe out a form the person is in the middle of filling in.
@@ -8529,9 +8629,11 @@ document.addEventListener('click', function (e) {
       UI.armed = null;
       lock('save', function () {
         var sid = $('txform').getAttribute('data-id'), st = findTx(sid), sibs = spreadSiblings(st), copies = sibs.map(function (x) { return pick(x); });
+        var spid = spFor(st), spWas = spid ? JSON.parse(JSON.stringify(S.spreads[spid])) : null;
         sibs.forEach(function (x) { deleteTx(x.id); });
+        if (spid) { S.spreads[spid].del = 1; save(); queuePrefs(); }
         UI.edit = null; if (SHEET) closeSheet(); render(); flushSoon();
-        toast('Deleted all ' + sibs.length + ' parts', function () { copies.forEach(function (c) { addTx(c); }); render(); flushSoon(); toast('Brought back'); });
+        toast('Deleted the whole purchase', function () { copies.forEach(function (c) { addTx(c); }); if (spid) { S.spreads[spid] = spWas; S.spreads[spid].del = 0; save(); queuePrefs(); } render(); flushSoon(); toast('Brought back'); });
       });
       break;
     case 'fsplit': UI.split = [{ c: '', a: '' }]; rerenderForm(); var sp0 = document.querySelector('[data-split-c="0"]'); if (sp0) sp0.focus(); break;
@@ -8959,7 +9061,7 @@ function goHome() {
 document.addEventListener('visibilitychange', function () {
   if (document.visibilityState === 'hidden') { HIDDEN_AT = Date.now(); return; }
   if (HIDDEN_AT && Date.now() - HIDDEN_AT > 5 * 60000) { BILLS_CHECK = true; BILL_LATER = {}; }
-  if (HIDDEN_AT && Date.now() - HIDDEN_AT > AWAY_MS) goHome();
+  if (HIDDEN_AT && Date.now() - HIDDEN_AT > AWAY_MS) { if (!S.cfg.url && spreadTick()) { CACHE = {}; VER++; } goHome(); }
   if (document.visibilityState === 'visible' && S && !S.demo) {
     NOW = FIXED_NOW || new Date();
     if (UI.tab === 'month' && UI.ym !== null && HIDDEN_AT && Date.now() - HIDDEN_AT > AWAY_MS) UI.ym = nowYM();
@@ -8992,6 +9094,7 @@ function boot() {
     } catch (e) {}
     if (S.demo && !S.tx.length) buildDemo();
     S.mopen = {}; UI.heroOpen = false;            // each time the app opens, every section starts closed
+    if (!S.demo && !S.cfg.url) spreadTick();      // on this phone only: spread payments whose month has come (with a sheet: after it syncs)
     applyTheme();
     render();
     var wantAdd = '';
@@ -9217,7 +9320,7 @@ document.addEventListener('visibilitychange', function () {
 });
 
 // test hook
-window.__runway = { planTotals: function (k) { return planTotals(k); }, get S() { return S; }, UI: UI, sync: sync, applyPull: applyPull, monthStats: monthStats, budgetTotals: budgetTotals, render: render, save: function () { return save(); }, fitSheet: fitSheet, get FULLH() { return FULLH; }, setNow: function (d) { FIXED_NOW = d; NOW = d; }, planState: function () { return planState(); }, autoPay: function () { return autoPayBills(); }, closeSheet: function () { if (SHEET) closeSheet(); } };
+window.__runway = { spPart: function (sp, i) { return spPart(sp, i); }, planTotals: function (k) { return planTotals(k); }, get S() { return S; }, UI: UI, sync: sync, applyPull: applyPull, monthStats: monthStats, budgetTotals: budgetTotals, render: render, save: function () { return save(); }, fitSheet: fitSheet, get FULLH() { return FULLH; }, setNow: function (d) { FIXED_NOW = d; NOW = d; }, planState: function () { return planState(); }, autoPay: function () { return autoPayBills(); }, closeSheet: function () { if (SHEET) closeSheet(); } };
 
 boot();
 })();
