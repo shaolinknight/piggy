@@ -1275,7 +1275,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.34';
+var VERSION = '2.35';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -3158,7 +3158,7 @@ function txForm(t, isNew) {
   if (!tripUp) h += tripField;
   if (kind === 'e') h += payWithHtml(t) + owedHtml(t);
   if (isNew && kind === 'e') h += '<div class="field">' + (UI.spread ? '' : splitHtml()) + (UI.split ? '' : spreadHtml()) + '</div>';
-  if (!isNew && kind === 'e') h += spreadPartHtml(t);
+  if (!isNew && kind === 'e') h += spreadInfo(t) ? spreadPartHtml(t) : (t.a > 0 && !(+t.ow > 0) ? '<div class="field">' + spreadHtml() + '</div>' : '');   // 2.35: spread an existing purchase too
   h += '<div class="field"><label for="f_n">Notes</label><input id="f_n" value="' + esc(t.n) + '" placeholder="optional"></div>';
   h += '</div>';
   h += '<div class="hint" id="f_err" role="alert"></div>';
@@ -7219,11 +7219,11 @@ function submitForm() {
   if (v.ow && (v.a < 0 || v.ow > v.a + 0.005)) { err.textContent = 'What others owe can’t be more than the purchase.'; err.style.color = 'var(--bad)'; return; }
   if (v.ow && UI.split && isNew) { err.textContent = 'Use either “split across categories” or “someone owes me” on one purchase, not both.'; err.style.color = 'var(--bad)'; return; }
   if ((v.fs || v.ow) && sheetOld(13)) { err.textContent = 'Update the script in your sheet (Code.gs version 13) to use “paid with savings” or “owed”.'; err.style.color = 'var(--bad)'; return; }
-  if (isNew && v.k === 'e' && UI.spread) {
+  if (v.k === 'e' && UI.spread) {
     if (v.a < 0) { err.textContent = 'A refund can’t be spread.'; err.style.color = 'var(--bad)'; return; }
     if (v.ow) { err.textContent = 'Use either “spread over months” or “someone owes me” on one purchase, not both.'; err.style.color = 'var(--bad)'; return; }
     if (!v.d) { err.textContent = 'Pick a date.'; err.style.color = 'var(--bad)'; return; }
-    return saveSpread(v);
+    return saveSpread(v, isNew ? null : f.getAttribute('data-id'));
   }
   var parts = isNew && v.k === 'e' && UI.split ? splitParts().filter(function (p) { return p.c || p.a; }) : [];
   if (parts.length) {
@@ -7281,23 +7281,29 @@ function submitForm() {
   });
 }
 
-function saveSpread(v) {
+// editId: an existing purchase becomes the first month's share and the other months are added after it
+function saveSpread(v, editId) {
   lock('save', function () {
     var btn = $('f_save'); if (btn) btn.disabled = true;
-    var n = UI.spread.n, amts = spreadAmounts(v.a, n), tail = ' · ' + money(v.a, true) + ' over ' + n + ' months';
+    var n = UI.spread.n, amts = spreadAmounts(v.a, n), tail = ' · ' + money(v.a, true) + ' over ' + n + ' months', before = null, firstId = null;
     var made = amts.map(function (a, i) {
       var pv = {}; Object.keys(v).forEach(function (k) { pv[k] = v[k]; });
       pv.a = a; pv.d = addMonthsStr(v.d, i); var dd = parseD(pv.d); pv.y = dd.getFullYear(); pv.m = dd.getMonth();
       pv.n = (v.n ? v.n + ' · ' : '') + (i + 1) + ' of ' + n + tail;
+      if (!i && editId) { before = editTx(editId, pv); firstId = editId; return { id: editId, after: pick(pv), edited: true }; }
       var nt = addTx(pv); if (!i) markFresh(nt); return { id: nt.id, after: pick(nt) };
     });
     UI.spread = null;
     var again = UI.addAnother; UI.addAnother = false;
-    var undo = function () { made.forEach(function (x) { var ft = resolveTx(x.id, x.after); if (ft) deleteTx(ft.id); }); render(); flushSoon(); toast('Spread removed'); };
-    if (again) { var nd = newTxDraft(v.k); nd.d = v.d; nd.y = v.y; nd.m = v.m; openSheet('add', nd); }
+    var undo = function () {
+      made.forEach(function (x) { var ft = resolveTx(x.id, x.after); if (!ft) return; if (x.edited) editTx(ft.id, before); else deleteTx(ft.id); });
+      render(); flushSoon(); toast(editId ? 'Back to one purchase' : 'Spread removed');
+    };
+    if (editId) { UI.edit = null; if (SHEET) closeSheet(); }
+    else if (again) { var nd = newTxDraft(v.k); nd.d = v.d; nd.y = v.y; nd.m = v.m; openSheet('add', nd); }
     else { closeSheet(); UI.ym = ymKey(v.y, v.m) <= nowYM() ? ymKey(v.y, v.m) : UI.ym; }
     render();
-    toast('Added ' + money(v.a, true) + ' over ' + n + ' months · ' + money(amts[n - 1], true) + ' a month', undo);
+    toast((editId ? 'Spread ' : 'Added ') + money(v.a, true) + ' over ' + n + ' months · ' + money(amts[n - 1], true) + ' a month', undo);
     flushSoon();
   });
 }
@@ -8538,13 +8544,13 @@ document.addEventListener('click', function (e) {
     case 'more': UI.lim += 200; keepScroll(function () { $('txlist').innerHTML = txListHtml(); }); break;
     case 'edit':
       if (isWide() && UI.tab === 'activity') {
-        UI.edit = UI.edit === v ? null : v; UI.editTop = el.getBoundingClientRect().top; UI.catTouched = false; UI.tripTouched = true; UI.fmore = false;
+        UI.edit = UI.edit === v ? null : v; UI.editTop = el.getBoundingClientRect().top; UI.catTouched = false; UI.tripTouched = true; UI.fmore = false; UI.spread = null; UI.split = null;
         keepScroll(function () { $('txlist').innerHTML = txListHtml(); });
         syncEditPanel(!UI.kbNav); UI.kbNav = false;
         break;
       }
       var etop = el.getBoundingClientRect().top;
-      UI.edit = UI.edit === v ? null : v; UI.catTouched = false; UI.tripTouched = true; UI.fmore = false;
+      UI.edit = UI.edit === v ? null : v; UI.catTouched = false; UI.tripTouched = true; UI.fmore = false; UI.spread = null; UI.split = null;
       if (UI.edit) UI.editTop = etop;
       flipRows(function () { $('txlist').innerHTML = txListHtml(); });
       var nf = UI.edit && $('txform');
