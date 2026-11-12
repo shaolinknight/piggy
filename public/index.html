@@ -58,12 +58,13 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .ttl .tnav+h1+.tnav{margin-left:0}
 .ttl .tnav svg{width:18px;height:18px}
 .ttl .tnav[disabled]{opacity:.28}
+#refreshBtn{display:none}
+#refreshBtn.spin svg{animation:refspin .8s linear infinite}@keyframes refspin{to{transform:rotate(360deg)}}
 .sync.quiet{width:36px;height:36px;padding:0;justify-content:center;background:none}
 .sync.quiet span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .sync.quiet .dot{width:9px;height:9px}
 .sync.quiet.busy .dot{animation:syncpulse 1s ease-in-out infinite}
 @keyframes syncpulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.45}}
-@media (prefers-reduced-motion:reduce){.sync.quiet.busy .dot{animation:none}}
 .sync{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--t2);padding:6px 10px;border-radius:999px;background:var(--p2)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--t3)}
 .dot.ok{background:var(--ok)}.dot.wait{background:var(--warn)}.dot.err{background:var(--bad)}
@@ -771,18 +772,38 @@ canvas.confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:n
 .chev{transition:transform .25s ease}
 #view.fade{animation:viewin .22s ease-out}
 @keyframes viewin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes vinS{from{opacity:0}to{opacity:1}}
+@keyframes dchipR{0%{opacity:0}12%{opacity:1}75%{opacity:1}100%{opacity:0}}
+@keyframes pulseR{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes skR{0%,100%{opacity:1}50%{opacity:.55}}
 .meter i,.bar i{transition:width .55s cubic-bezier(.2,.8,.2,1)}
 button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 .tx:active,.scrow:active,.crow:active,.mghead:active{transform:none;background:var(--p2)}
 @media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{animation:none !important;transition:none !important}
-  /* nothing slides, grows or counts, but popups and messages still fade in and out */
+  /* Reduce motion: nothing slides, grows, spins or bounces. Changes still fade, and colours still shift,
+     so the app stays calm without anything snapping. */
+  *,*::before,*::after{transition-property:opacity,color,background-color,border-color,outline-color,box-shadow,fill,stroke,visibility !important}
+  #view.fade,#view.vin{animation:vin .2s ease-out !important}
+  .dchip{animation:dchipR 2.1s ease-out forwards !important}
+  .ck.big{animation:vin .3s ease-out !important}
+  .ck path{animation:vinS .25s ease-out !important;stroke-dashoffset:0 !important}
+  .sk{animation:skR 1.6s ease-in-out infinite !important;background:var(--p2) !important}
+  #refreshBtn.spin svg{animation:pulseR 1s ease-in-out infinite !important}
+  .sync.quiet.busy .dot{animation:pulseR 1.2s ease-in-out infinite !important}
+  button:active:not(:disabled){transform:none !important}
+  .pressed,#fab.pressed,.tabs .tab.pressed{transform:none !important;opacity:.7;transition:opacity .08s !important}
+  .mgbody{transition:visibility 0s .2s !important}.mgroup.open .mgbody{transition:none !important}
+  .mgbody>*{opacity:0;transition:opacity .2s ease !important}.mgroup.open .mgbody>*{opacity:1 !important}
   #scrim{transition:opacity .18s ease !important}
   #sheet,#sheet.on{transform:none !important}
   #sheet{opacity:0;transition:opacity .18s ease,visibility 0s linear .18s !important}
   #sheet.on{opacity:1;transition:opacity .18s ease,visibility 0s !important}
   #toast{transform:none !important;transition:opacity .2s ease !important}
+  #picker{opacity:0;transition:opacity .18s ease,visibility 0s linear .18s !important}
+  #picker.on{opacity:1;transition:opacity .18s ease,visibility 0s !important}
 }
+@media (prefers-reduced-motion: reduce) and (max-width:959px){ #picker,#picker.on{transform:none !important} }
+@media (prefers-reduced-motion: reduce) and (min-width:960px){ #picker,#picker.on{transform:translate(-50%,-50%) !important} }
 .morebtn{display:flex;align-items:center;gap:6px;margin-top:10px;color:var(--t2);font-size:13px;font-weight:600}
 .mgroup{padding:0;overflow:hidden}
 .mghead{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:4px 10px;width:100%;text-align:left;padding:13px 16px}
@@ -1100,7 +1121,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 .skel .card{display:flex;flex-direction:column;gap:10px}
 .sk{display:block;border-radius:6px;background:linear-gradient(90deg,var(--p2) 25%,color-mix(in srgb,var(--p2) 50%,var(--p1)) 50%,var(--p2) 75%);background-size:200% 100%;animation:skm 1.3s ease-in-out infinite}
 @keyframes skm{from{background-position:100% 0}to{background-position:-100% 0}}
-@media (prefers-reduced-motion:reduce){.sk{animation:none}.ck path{animation:none;stroke-dashoffset:0}.pressed{transform:none}}
+
 /* bills to check off */
 .card.bills{padding:4px 14px}
 .brow{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:8px 10px;align-items:center;padding:12px 0;border-top:1px solid var(--b1)}
@@ -1117,6 +1138,17 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 .cedit{display:grid;gap:0 12px;grid-template-columns:minmax(0,1fr)}.cpos{display:flex;align-items:center;gap:8px}.cpos .btn{flex:1;min-width:0;padding:0 10px}.cpos>span{flex:0 0 auto;color:var(--t2);font-size:.86rem;min-width:52px;text-align:center}
 .covw{margin-bottom:10px}.covw>b{display:block;font-size:.8rem;color:var(--t2);margin-bottom:6px}.covw>div{display:flex;flex-wrap:wrap;gap:6px}
 .ciline{display:flex;gap:10px;align-items:flex-start;padding:7px 0;line-height:1.4}.ciline+.ciline{border-top:1px solid var(--b1)}.cii{flex:0 0 22px;text-align:center;font-weight:700}.cii.up{color:var(--warn)}.cii.dn{color:var(--ok)}
+button.citem.spl .chev{margin-left:auto;align-self:center;flex:none}button.citem.spl span:not(.chev){flex:1;min-width:0}
+.stepb{flex:none;width:52px;min-width:0;font-size:20px;line-height:1;padding:8px 0}
+.logagain{display:block;margin:2px 0 10px}
+#sheet h2[tabindex]:focus{outline:none}
+/* quick repeated taps (− + − +) never zoom the page */
+button,[data-act],summary,.chip{touch-action:manipulation}
+/* a screen sliding in never makes the page scroll sideways (clip keeps sticky headers working) */
+@supports (overflow:clip){@media (min-width:700px){#app{overflow-x:clip}}}
+.yrbtn{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:14px 16px}.yrbtn b{display:block;font-size:1.02rem}.yrbtn small{color:var(--t2);font-size:.84rem}
+.yrrow{display:block;width:100%;background:none;border:0;color:inherit;font:inherit;text-align:left;padding:8px 0;cursor:pointer}.yrrow .chev{width:7px;height:7px;margin:0 0 1px 6px;display:inline-block;opacity:.6}.yrbars .yb{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer}.yrbars div.yb{cursor:default}.yrrow+.yrrow{border-top:1px solid var(--b1)}.yrrow .l1{display:flex;justify-content:space-between;gap:10px}.yrrow .l1 em{font-style:normal;font-weight:700}.yrrow .bar{margin:6px 0 4px}.yrrow .l2{font-size:.82rem;color:var(--t2)}
+.yrbars{display:flex;align-items:flex-end;gap:4px;height:110px;padding-top:6px}.yrbars .yb{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}.yrbars .yb i{display:block;width:100%;max-width:26px;border-radius:5px 5px 2px 2px;background:var(--b2)}.yrbars .yb.hi i{background:var(--ac)}.yrbars .yb span{font-size:11px;color:var(--t3)}
 .bcand{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--b2)}.bcand>span{font-size:.82rem;color:var(--t3);margin-right:2px}.bcand .chip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bbtns{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .bbtns .btn{flex:1 1 90px;min-height:42px;width:auto}
@@ -1126,6 +1158,19 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 .rcfreq .selw{flex:1}
 .rcpre{margin:0 0 10px}
 .rrow.none{opacity:.7}
+/* 2.38: tablets use the four-section Plan too, so its header and columns apply from 700px */
+@media (min-width:700px) and (max-width:959px){
+  .phd{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 14px}
+  .phd .dtitle{display:none}
+  .phd .dsub{color:var(--t3);font-size:14px}.phd .dsub b{color:var(--t1)}
+  .phd .ppill{padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600;background:var(--p2)}
+  .ppill.bad{color:var(--bad)}.ppill.ok{color:var(--ok)}
+  .pcols2{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+  .pcols2 .pcol{min-width:0}.pcols2 .pcol>:first-child{margin-top:0}
+  .pwsegs{position:static;width:auto;max-width:520px;margin:0 0 16px}
+  .pwdraft{margin-bottom:12px}
+  .pcols2 .pcoming,.pcols2 .ppay{margin-top:0}
+}
 /* ===================== 2.22: computer layouts that use the whole screen ===================== */
 .sidex{display:none}
 @media (min-width:960px){
@@ -1135,7 +1180,8 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
   #app:has(main#view) .top{max-width:none}
   .top .brand,.top .ttl{display:none}
   .sync.quiet{width:auto;height:auto;padding:6px 10px;background:var(--p2)}
-  .sync.quiet span{position:static;width:auto;height:auto;clip:auto}
+  .sync.quiet span{position:static;width:auto;height:auto;clip:auto;white-space:nowrap}
+  .top #refreshBtn{display:flex;margin-left:auto}
   .tabs{overflow-y:auto;padding-bottom:76px}
   main#view{padding-top:22px}
   main#view[data-v=trends]{max-width:1480px}
@@ -1252,6 +1298,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
     <div class="brand">Piggy</div>
     <div class="ttl" id="topTitle"></div>
     <button class="sync" id="syncBtn" data-act="sync"><i class="dot" id="syncDot"></i><span id="syncTxt">Demo</span></button>
+    <button class="icon-btn" id="refreshBtn" data-act="refreshnow" aria-label="Refresh" title="Refresh: get the latest from your sheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button>
     <button class="icon-btn" data-act="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </header>
   <main id="view"></main>
@@ -1276,7 +1323,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.37';
+var VERSION = '2.41';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1829,7 +1876,7 @@ function renderSync() {
   var dot = $('syncDot'), txt = $('syncTxt'), cls = '', label;
   var n = S.outbox.length;
   if (S.demo) { label = 'Demo'; }
-  else if (localMode()) { label = 'On this phone'; cls = 'ok'; }
+  else if (localMode()) { label = isWide() ? 'On this device' : 'On this phone'; cls = 'ok'; }
   else if (SYNCING) { label = 'Syncing…'; cls = 'wait'; }
   else if (S.syncErr && n) { label = n + ' waiting'; cls = 'err'; }
   else if (S.syncErr) { label = 'Sync issue'; cls = 'err'; }
@@ -1931,6 +1978,81 @@ function checkinAheadHtml(D) {
   if (!rows.length) return '';
   return '<section class="card"><div class="ghead"><h3>Looking ahead</h3></div>' + rows.join('') + '</section>';
 }
+// ---- 2.39: a year in review — the whole year on one page: what came in, where it went, how it went against the plan
+function yearReviewData(y) {
+  var cur = nowYM(), last = Math.min(ymKey(y, 11), cur), lastFull = y === ymY(cur) ? ymM(cur) - 1 : 11;
+  var D = { y: y, months: [], inc: 0, spent: 0, saved: 0, trip: 0, bud: 0, under: 0, counted: 0, cat: {}, store: {}, trips: {}, partial: y === ymY(cur) };
+  for (var m = 0; m <= ymM(last) && ymKey(y, m) <= cur; m++) {
+    var k = ymKey(y, m), ms = monthStats(k), bt = budgetTotals(k);
+    D.months.push({ m: m, spent: ms.spent + ms.trip, n: ms.n });
+    D.inc += ms.inc; D.spent += ms.spent; D.saved += ms.saved; D.trip += ms.trip;
+    Object.keys(ms.cat).forEach(function (c) { if (groupOf(c, k) !== 'save') D.cat[c] = (D.cat[c] || 0) + ms.cat[c]; });
+    Object.keys(ms.tripBy).forEach(function (t) { D.trips[t] = (D.trips[t] || 0) + ms.tripBy[t]; });
+    if (m <= lastFull && ms.n) { D.counted++; if (ms.spentB <= bt.spend + 0.5) D.under++; }
+    // same sum as "<year> so far": finished months in full, this month up to today
+    if (ms.n || k === cur) { var part = k === cur ? NOW.getDate() / daysIn(y, m) : 1; D.bud += bt.spend * part; D.budSpent = (D.budSpent || 0) + ms.spentB; }
+  }
+  allTx().forEach(function (t) { if (t.k === 'e' && t.y === y && t.v && groupOf(low(t.c), ymKey(t.y, t.m)) !== 'bills' && groupOf(low(t.c), ymKey(t.y, t.m)) !== 'save') { var v = low(t.v); D.store[v] = (D.store[v] || 0) + share(t); } });
+  var py = yearStats(y - 1, D.partial ? Math.max(0, ymM(cur) - 1) : 11), thisCmp = yearStats(y, D.partial ? Math.max(0, ymM(cur) - 1) : 11);
+  D.prev = py.months ? { spent: py.spent + py.trip, cat: py.cat } : null;
+  D.cmpSpent = thisCmp.spent + thisCmp.trip; D.cmpCat = thisCmp.cat;
+  return D;
+}
+function yearReviewHtml(y) {
+  var D = yearReviewData(y), MONS = MONTHS;
+  var h = '<div class="shead"><h2>' + y + ' in review</h2><button data-act="close">Done</button></div>';
+  if (!D.months.some(function (x) { return x.n; })) return h + '<div class="card empty"><b>Nothing logged in ' + y + '</b></div>';
+  var span = D.partial ? 'January to ' + MONS[D.months.length - 1] + ' so far' : 'the whole year';
+  var all = D.spent + D.trip, rate = D.inc > 0 ? D.saved / D.inc : 0;
+  h += '<div class="hint" style="margin:-4px 0 12px">' + span + '</div>';
+  h += '<section class="card"><div class="kpis">' + kpi('Money in', money(D.inc), D.months.length + ' month' + (D.months.length === 1 ? '' : 's')) +
+    kpi('Spent', money(all), D.trip ? money(D.trip) + ' of it on trips' : 'everything you spent') +
+    kpi('Saved', money(D.saved), D.inc > 0 ? Math.round(rate * 100) + '% of income' : 'to savings') +
+    kpi('Left over', (D.inc - all - D.saved < 0 ? '−' : '') + money(Math.abs(D.inc - all - D.saved)), 'after spending and saving') + '</div></section>';
+  // against the plan
+  if (D.bud > 0) {
+    var gap = D.bud - (D.budSpent || 0);
+    h += '<section class="card"><div class="ghead"><h3>Against your plan</h3></div>' +
+      '<div class="ciline"><span class="cii ' + (gap >= 0 ? 'dn' : 'up') + '" aria-hidden="true">' + (gap >= 0 ? '✓' : '!') + '</span><span><b>' + money(Math.abs(gap)) + ' ' + (gap >= 0 ? 'under' : 'over') + '</b> your budget ' + (D.partial ? 'so far' : 'for the year') + '</span></div>' +
+      (D.counted ? '<div class="ciline"><span class="cii" aria-hidden="true">📅</span><span>Under budget in <b>' + D.under + ' of ' + D.counted + '</b> ' + (D.partial ? 'finished ' : '') + 'months</span></div>' : '') +
+      (D.prev ? '<div class="ciline"><span class="cii ' + (D.cmpSpent > D.prev.spent ? 'up' : 'dn') + '" aria-hidden="true">' + (D.cmpSpent > D.prev.spent ? '↑' : '↓') + '</span><span>' + money(Math.abs(D.cmpSpent - D.prev.spent)) + ' ' + (D.cmpSpent > D.prev.spent ? 'more' : 'less') + ' than ' + (y - 1) + ' over the same months (' + Math.round(Math.abs(D.cmpSpent - D.prev.spent) / Math.max(1, D.prev.spent) * 100) + '%)</span></div>' : '') +
+      '</section>';
+  }
+  // where it went
+  var cats = Object.keys(D.cat).filter(function (c) { return D.cat[c] > 0; }).sort(function (a, b) { return D.cat[b] - D.cat[a]; }).slice(0, 6);
+  if (cats.length) {
+    var max = D.cat[cats[0]];
+    h += '<section class="card"><div class="ghead"><h3>Where it went</h3><span>tap for history</span></div>' + cats.map(function (c) {
+      var was = D.prev && D.prev.cat[c], ch = was ? ((D.cmpCat[c] || 0) - was) / was : null;
+      return '<button class="yrrow" data-act="cat" data-v="' + esc(c) + '" data-k="e"><div class="l1"><b>' + esc(c) + '</b><em>' + money(D.cat[c]) + ' <span class="chev rt" aria-hidden="true"></span></em></div><div class="bar"><i style="width:' + (D.cat[c] / max * 100).toFixed(1) + '%"></i></div>' +
+        '<div class="l2">' + Math.round(D.cat[c] / Math.max(1, D.spent) * 100) + '% of spending' + (ch !== null && Math.abs(ch) >= 0.05 ? ' · ' + (ch > 0 ? '↑ ' : '↓ ') + Math.round(Math.abs(ch) * 100) + '% vs ' + (y - 1) : '') + '</div></button>';
+    }).join('') + '</section>';
+  }
+  // months
+  var ms = D.months.filter(function (x) { return x.n; });
+  if (ms.length > 1) {
+    var hi = ms.reduce(function (a, x) { return x.spent > a.spent ? x : a; }), lo = ms.reduce(function (a, x) { return x.spent < a.spent ? x : a; }), mx = hi.spent || 1;
+    h += '<section class="card"><div class="ghead"><h3>Month by month</h3><span>tap a month</span></div><div class="yrbars">' + D.months.map(function (x) {
+      var lab = MONS[x.m] + ' ' + y + ': ' + money(x.spent) + ' spent';
+      return x.n ? '<button class="yb' + (x === hi ? ' hi' : '') + '" data-act="recapgo" data-v="' + ymKey(y, x.m) + '" aria-label="' + lab + '" title="' + lab + '"><i style="height:' + Math.max(2, x.spent / mx * 100).toFixed(1) + '%"></i><span>' + MONS[x.m].slice(0, 1) + '</span></button>'
+        : '<div class="yb"><i style="height:2%"></i><span>' + MONS[x.m].slice(0, 1) + '</span></div>'; }).join('') + '</div>' +
+      '<div class="l2" style="margin-top:8px">Biggest: <b>' + MONS[hi.m] + '</b> ' + money(hi.spent) + ' · lightest: <b>' + MONS[lo.m] + '</b> ' + money(lo.spent) + '</div></section>';
+  }
+  // stores and trips
+  var st = Object.keys(D.store).sort(function (a, b) { return D.store[b] - D.store[a]; }).slice(0, 3);
+  var tr = Object.keys(D.trips).filter(function (t) { return D.trips[t] > 0; }).sort(function (a, b) { return D.trips[b] - D.trips[a]; });
+  if (st.length || tr.length) {
+    h += '<section class="card">';
+    if (st.length) h += '<div class="ghead"><h3>Where you shopped most</h3></div>' + st.map(function (v, i) { return '<div class="ciline"><span class="cii" aria-hidden="true">' + (i + 1) + '</span><span><b>' + esc(v) + '</b> · ' + money(D.store[v]) + '</span></div>'; }).join('') + '<div class="hint">Bills and savings left out.</div>';
+    if (tr.length) h += '<div class="ghead" style="margin-top:' + (st.length ? '14px' : '0') + '"><h3>Trips</h3><span>' + money(D.trip) + '</span></div>' + tr.map(function (t) { return '<div class="ciline"><span class="cii" aria-hidden="true">✈️</span><span><b>' + esc(t) + '</b> · ' + money(D.trips[t]) + '</span></div>'; }).join('');
+    h += '</section>';
+  }
+  // goals
+  var gs = (S.goals || []).filter(function (g) { return g.target > 0; });
+  if (gs.length && y === ymY(nowYM())) h += '<section class="card"><div class="ghead"><h3>Savings goals</h3></div>' + gs.map(function (g) { var x = goalStats(g); return '<div class="ciline"><span class="cii" aria-hidden="true">🎯</span><span><b>' + esc(g.name) + '</b> · ' + money(x.saved || 0) + ' of ' + money(g.target) + (x.done ? ' — reached' : '') + '</span></div>'; }).join('') + '</section>';
+  return h;
+}
+function yearReviewYear() { var c = nowYM(); return ymM(c) === 11 ? ymY(c) : ymM(c) === 0 ? ymY(c) - 1 : 0; }   // December: this year; January: last year
 function checkinSheetHtml() {
   var D = checkinData();
   var h = '<div class="shead"><h2>Week of ' + D.W.label + '</h2><button data-act="close">Done</button></div>';
@@ -2058,6 +2180,9 @@ function celebrations() {
 
 // ---- motion: numbers count to their new value, bars grow from where they were
 var REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+(function () {   // follow the setting if it's switched while Piggy is open
+  try { var mq = window.matchMedia('(prefers-reduced-motion: reduce)'), on = function (e) { REDUCED = !!e.matches; }; if (mq.addEventListener) mq.addEventListener('change', on); else if (mq.addListener) mq.addListener(on); } catch (e) {}
+})();
 var NUMS = {};
 // With "reduce motion" on nothing slides, grows or counts, but changes still fade so they aren't abrupt.
 function fadeIn(el, ms, from) {
@@ -2092,7 +2217,6 @@ function isPhone() { return !isRail(); }
   function down(el) { el.style.setProperty('--press', depth(el)); el.classList.add('pressed'); P.on = true; }
   function up() { if (P.el) P.el.classList.remove('pressed'); P.el = null; P.on = false; clearTimeout(P.t); }
   document.addEventListener('touchstart', function (e) {
-    if (REDUCED) return;
     up(); var el = target(e); if (!el) return;
     P.el = el; P.x = e.touches[0].clientX; P.y = e.touches[0].clientY;
     P.t = setTimeout(function () { if (P.el === el) down(el); }, 45);     // a quick scroll never dips anything
@@ -2248,7 +2372,8 @@ function viewIn() {
 }
 // A box that changed height grows/shrinks to its new size.
 function flipHeight(el, from) {
-  if (REDUCED || !el) return;
+  if (!el) return;
+  if (REDUCED) { if (Math.abs(el.offsetHeight - from) >= 2) fadeIn(el, 200, 0.4); return; }
   var to = el.offsetHeight; if (Math.abs(to - from) < 2) return;
   el.style.height = from + 'px'; el.style.overflow = 'hidden'; void el.offsetHeight;
   el.style.transition = 'height .26s ease'; el.style.height = to + 'px';
@@ -2542,6 +2667,9 @@ function attnItems(key) {
     if (D.tot || D.items.length) out.push({ id: 'checkin', pri: 5, ico: '📅', t: 'Weekly check-in · ' + D.W.label, sub: 'You spent ' + money(D.tot) + (D.items.length ? ' · ' + D.items.length + ' thing' + (D.items.length === 1 ? '' : 's') + ' to look at' : ' · nothing looks off'),
       act: 'checkin', go: D.items.length ? 'Review' : 'See' });
   }
+  var ry = yearReviewYear();
+  if (ry && !S.demo && dis['yr' + ry] !== 'x' && (ymM(nowYM()) === 0 || NOW.getDate() >= 15) && S.tx.some(function (t) { return t.y === ry; }))
+    out.push({ id: 'yr' + ry, sig: 'x', pri: 4, ico: '🎉', t: 'Your ' + ry + ' in review', sub: ymM(nowYM()) === 11 ? 'The year so far, on one page' : 'How the whole year went', act: 'yreview', v: String(ry), go: 'See' });
   var od = S.cfg.url && !S.demo ? oldDevices() : [];
   if (od.length && dis['olddev'] !== today) out.push({ id: 'olddev', pri: 2, ico: '🔄', tone: 'warn', t: 'Your ' + esc(od[0].n || 'other device') + ' has an older Piggy (' + esc(od[0].v) + ')',
     sub: 'Open Piggy there and pull down to refresh, so both stay in step', act: 'olddevx', go: 'OK' });
@@ -3008,13 +3136,15 @@ function activityFilterHtml() {
 // a line saying what the search or filters picked out, with totals
 function activitySummary(list) {
   var pq = parseQuery(UI.q);
-  if (pq.m === null && pq.y === null && UI.am === '') return '';
-  var what = UI.am !== '' ? MONTHS[ymM(+UI.am)] + ' ' + ymY(+UI.am)
+  var wordOnly = pq.m === null && pq.y === null && UI.am === '';
+  if (wordOnly && !(pq.rest && list.length)) return '';
+  var what = wordOnly ? '“' + esc(pq.rest) + '”' : UI.am !== '' ? MONTHS[ymM(+UI.am)] + ' ' + ymY(+UI.am)
     : pq.m !== null ? MONTHS[pq.m] + (pq.y !== null ? ' ' + pq.y : ', every year') : 'All of ' + pq.y;
-  if (pq.rest) what += ' · “' + esc(pq.rest) + '”';
-  var sp = 0, inc = 0;
-  list.forEach(function (t) { if (t.k === 'e') sp += t.a; else inc += t.a; });
-  return '<div class="asum"><span><b>' + what + '</b>' + list.length + ' entr' + (list.length === 1 ? 'y' : 'ies') + ' · spent ' + money(sp) + (inc ? ' · in ' + money(inc) : '') + '</span>' +
+  if (pq.rest && !wordOnly) what += ' · “' + esc(pq.rest) + '”';
+  var sp = 0, inc = 0, mons = {};
+  list.forEach(function (t) { if (t.k === 'e') sp += t.a; else inc += t.a; mons[ymKey(t.y, t.m)] = 1; });
+  var nm = Object.keys(mons).length;
+  return '<div class="asum"><span><b>' + what + '</b>' + list.length + ' entr' + (list.length === 1 ? 'y' : 'ies') + (nm > 1 ? ' in ' + nm + ' months' : '') + ' · spent ' + money(sp) + (inc ? ' · in ' + money(inc) : '') + '</span>' +
     '<button class="linkbtn" data-act="aclear">Clear</button></div>';
 }
 
@@ -3059,7 +3189,8 @@ function txListHtml() {
     if (!flat && k !== curKey) {
       if (open) h += '</div>';
       var s = monthStats(k), filt = UI.q || UI.fk !== 'all';
-      h += '<div class="mhead"><span>' + MONTHS[t.m] + ' ' + t.y + ' <small>· ' + cnt[k] + (filt ? ' found' : ' entries') + '</small></span><span class="num">spent <span data-count="' + s.spentAll + '" data-ck="am' + k + '">' + money(s.spentAll) + '</span>' + (s.inc ? ' · in ' + money(s.inc) : '') + '</span></div><div class="list">';
+      if (filt) { var fs0 = 0, fi0 = 0; list.forEach(function (x) { if (ymKey(x.y, x.m) === k) { if (x.k === 'e') fs0 += share(x); else fi0 += x.a; } }); s = { spentAll: fs0, inc: fi0 }; }
+      h += '<div class="mhead"><span>' + MONTHS[t.m] + ' ' + t.y + ' <small>· ' + cnt[k] + (filt ? ' found' : ' entries') + '</small></span><span class="num">' + (filt && !s.spentAll && s.inc ? '' : 'spent <span data-count="' + s.spentAll + '" data-ck="am' + k + (filt ? 'f' : '') + '">' + money(s.spentAll) + '</span>') + (s.inc ? (filt && !s.spentAll ? 'in ' : ' · in ') + money(s.inc) : '') + '</span></div><div class="list">';
       curKey = k; open = true;
     }
     h += txItem(t);
@@ -3165,6 +3296,7 @@ function txForm(t, isNew) {
   h += '<div class="field"><label for="f_n">Notes</label><input id="f_n" value="' + esc(t.n) + '" placeholder="optional"></div>';
   h += '</div>';
   h += '<div class="hint" id="f_err" role="alert"></div>';
+  if (!isNew && !t.demo && !spreadInfo(t) && !/split of \$/.test(t.n || '') && t.a > 0) h += '<button type="button" class="linkbtn logagain" data-act="logagain" id="f_again">Log this again for today</button>';
   h += '<div class="btns' + (isNew ? ' stickybar' : '') + '">' + (isNew ? '<button type="button" class="btn" data-act="fsaveadd" id="f_saveadd">Save & add another</button>' : '<button type="button" class="btn danger" data-act="fdel" id="f_del">Delete</button>') +
     (isNew ? '' : '<button type="button" class="btn" data-act="fcancel">Cancel</button>') +
     '<button type="submit" class="btn pri" id="f_save">' + (isNew ? 'Add' : 'Save') + '</button>' +
@@ -3317,9 +3449,10 @@ function spreadSiblings(t) {
 function hashStr(x) { var h = 5381; x = String(x); for (var i = 0; i < x.length; i++) h = ((h * 33) ^ x.charCodeAt(i)) >>> 0; return h.toString(36); }
 function spPart(sp, i) {
   var d = addMonthsStr(sp.d, i - 1), dd = parseD(d);
-  return { k: 'e', v: sp.v, c: sp.c, a: spreadAmounts(sp.tot, sp.n)[i - 1], d: d, y: dd.getFullYear(), m: dd.getMonth(),
+  return { k: 'e', v: sp.v, c: sp.c, a: spAmt(sp, i), d: d, y: dd.getFullYear(), m: dd.getMonth(),
     n: (sp.note ? sp.note + ' · ' : '') + i + ' of ' + sp.n + ' · ' + money(sp.tot, true) + ' over ' + sp.n + ' months', tr: sp.tr || '', fs: sp.fs || '' };
 }
+function spAmt(sp, i) { return sp.amts && sp.amts.length === sp.n ? sp.amts[i - 1] : spreadAmounts(sp.tot, sp.n)[i - 1]; }   // 2.39: after a change, its own amounts
 function spPartKey(sp, i) { var d = parseD(addMonthsStr(sp.d, i - 1)); return ymKey(d.getFullYear(), d.getMonth()); }
 function spOid(id, i) { return 'sp-' + id + '-' + i; }
 function spMatches(sp, t) { var si = spreadInfo(t); return !!si && t.k === 'e' && si.n === sp.n && Math.abs(si.tot - sp.tot) < 0.005 && low(t.v) === low(sp.v) && low(t.c) === low(sp.c); }
@@ -3371,8 +3504,8 @@ function spreadBadge(t) { var si = spreadInfo(t); return si ? '<span class="sbad
 // every spread purchase that still has payments to come, for Plan → Coming up
 function spreadsInProgress() {
   var cur = nowYM();
-  return Object.keys(S.spreads || {}).map(function (id) { var sp = S.spreads[id]; return sp; }).filter(function (sp) { return !sp.del && spLeft(sp) > 0; }).map(function (sp) {
-    var left = spLeft(sp); return { v: sp.v || sp.c, c: sp.c, tot: sp.tot, n: sp.n, each: spreadAmounts(sp.tot, sp.n)[sp.n - 1], made: sp.n - left, parts: sp.n, last: spPartKey(sp, sp.n) };
+  return Object.keys(S.spreads || {}).filter(function (id) { var sp = S.spreads[id]; return !sp.del && spLeft(sp) > 0; }).map(function (id) {
+    var sp = S.spreads[id], left = spLeft(sp); return { id: id, v: sp.v || sp.c, c: sp.c, tot: sp.tot, n: sp.n, each: spAmt(sp, sp.n - left + 1), made: sp.n - left, parts: sp.n, last: spPartKey(sp, sp.n) };
   }).sort(function (a, b) { return a.last - b.last; });
 }
 function spreadPartHtml(t) {
@@ -3380,7 +3513,69 @@ function spreadPartHtml(t) {
   var sib = spreadSiblings(t), sid = spFor(t), later = sid ? spLeft(S.spreads[sid]) : 0, all = sib.length + later;
   return '<div class="field spreadpart"><div class="hint">Payment ' + si.i + ' of ' + si.n + ' of a ' + money(si.tot, true) + ' purchase spread over ' + si.n + ' months.' +
     (later ? ' ' + later + ' more ' + (later === 1 ? 'comes' : 'come') + ' as ' + (later === 1 ? 'its month arrives' : 'their months arrive') + '.' : '') + '</div>' +
+    (sid ? spEditHtml(S.spreads[sid], sib) : '') +
     (all > 1 ? '<button type="button" class="btn danger" style="width:100%;margin-top:8px" data-act="fspreaddel" id="f_spreaddel">Delete the whole purchase (' + all + ' payments)</button>' : '') + '</div>';
+}
+// 2.39/2.40: change a spread you've already made. Payments made stay as they were; what's left of the total is paid
+// over a number of months, at a monthly amount you pick, or all at once with this month's payment.
+function spPaid(sp, sib) { var got = {}; sib.forEach(function (t) { var si = spreadInfo(t); if (si) got[si.i] = t.a; }); return got; }
+var SP_MAX = 60;
+// E = { tot, mode: 'n' | 'amt' | 'now', left (months still to pay), each (monthly amount) }
+function spPlan(sp, sib, E) {
+  var paid = spPaid(sp, sib), idx = Object.keys(paid).map(Number), made = idx.length, top = idx.length ? Math.max.apply(null, idx) : 0;
+  var paidSum = Math.round(idx.reduce(function (a, i) { return a + paid[i]; }, 0) * 100) / 100, tot = Math.round((+E.tot || 0) * 100) / 100, rest = Math.round((tot - paidSum) * 100) / 100;
+  if (!(tot > 0)) return { err: 'Enter the total.' };
+  if (rest < -0.004) return { err: 'You’ve already paid ' + money(paidSum, true) + ', more than that total.' };
+  var base = []; for (var i = 1; i <= top; i++) base.push(paid[i] !== undefined ? paid[i] : 0);
+  var share = [];
+  if (rest <= 0.004 || E.mode === 'now') {
+    if (rest > 0.004) { if (!top) return { err: 'Nothing is paid yet, so there’s no payment to add it to.' }; base[top - 1] = Math.round((base[top - 1] + rest) * 100) / 100; }
+  } else if (E.mode === 'amt') {
+    var each = Math.round((+E.each || 0) * 100) / 100;
+    if (!(each > 0)) return { err: 'Enter how much to pay each month.' };
+    var k = Math.ceil(rest / each - 1e-9);
+    if (k > SP_MAX) return { err: 'At that amount it would take ' + k + ' months. Raise it a little.' };
+    for (var j = 1; j < k; j++) share.push(each);
+    share.push(Math.round((rest - each * (k - 1)) * 100) / 100);
+  } else {
+    var left = Math.max(1, Math.min(SP_MAX, +E.left || 1));
+    share = spreadAmounts(rest, left);
+  }
+  var amts = base.concat(share);
+  return { amts: amts, n: amts.length, made: made, top: top, left: share.length, paidSum: paidSum, rest: Math.max(0, rest), share: share,
+    each: share.length ? share[share.length > 1 ? 1 : 0] : 0, lastAmt: share.length ? share[share.length - 1] : 0, now: share.length ? 0 : Math.max(0, rest), nowPay: top ? base[top - 1] : 0 };
+}
+function spPlanSummary(sp, pl) {
+  if (pl.err) return '<span style="color:var(--bad)">' + pl.err + '</span>';
+  var h = pl.made ? pl.made + ' paid (' + money(pl.paidSum, true) + ') stay as they were. ' : '';
+  if (!pl.left) return h + (pl.now > 0.004 ? '<b>' + money(pl.now, true) + '</b> goes on this month’s payment (' + money(pl.nowPay, true) + ' in all), and it’s paid off.' : 'Nothing left to pay.');
+  var last = parseD(addMonthsStr(sp.d, pl.n - 1)), lm = MON[last.getMonth()] + ' ’' + String(last.getFullYear()).slice(2);
+  var even = pl.share.every(function (a) { return Math.abs(a - pl.share[pl.share.length > 1 ? 1 : 0]) < 0.02; });
+  return h + '<b>' + money(pl.each, true) + ' a month</b> for ' + pl.left + ' more month' + (pl.left === 1 ? '' : 's') +
+    (!even && pl.left > 1 ? ' (the last one ' + money(pl.lastAmt, true) + ')' : '') + ', last one ' + lm + '.';
+}
+function spEditStart(sp, sib) {
+  var paid = spPaid(sp, sib), made = Object.keys(paid).length, left = Math.max(1, sp.n - made);
+  return { tot: sp.tot, mode: 'n', left: left, each: spAmt(sp, Math.min(sp.n, made + 1)), was: left };
+}
+function spEditHtml(sp, sib) {
+  if (!UI.spEdit) return '<button type="button" class="linkbtn" style="margin-top:8px" data-act="spedit" id="f_spedit">Change the spread</button>';
+  var E = UI.spEdit, pl = spPlan(sp, sib, E), modes = [['n', 'Number of months'], ['amt', 'Monthly amount'], ['now', 'Pay it off now']];
+  var h = '<div class="split" id="f_spedbox" style="margin-top:10px"><div class="splithead"><b>Change the spread</b><button type="button" class="linkbtn" data-act="speditoff">Cancel</button></div>' +
+    '<div class="field"><label for="sp_tot">Total</label><input id="sp_tot" inputmode="decimal" value="' + (+E.tot).toFixed(2) + '"><div class="hint">Lower it for a partial refund, raise it for an add-on.</div></div>' +
+    '<div class="flabel">Pay the rest by</div><div class="chips" role="radiogroup" aria-label="How to pay the rest" id="sp_modes">' + modes.map(function (m) {
+      return '<button type="button" class="chip' + (E.mode === m[0] ? ' on' : '') + '" role="radio" aria-checked="' + (E.mode === m[0]) + '" data-act="spmode" data-v="' + m[0] + '">' + m[1] + '</button>'; }).join('') + '</div>';
+  if (E.mode === 'n') h += '<div class="spstep" style="display:flex;align-items:center;gap:12px;margin-top:10px"><button type="button" class="btn stepb" data-act="spstep" data-v="-1" id="sp_minus" aria-label="One month fewer"' + (E.left <= 1 ? ' disabled' : '') + '>−</button>' +
+    '<span id="sp_left" style="flex:1;text-align:center"><b>' + E.left + '</b> more month' + (E.left === 1 ? '' : 's') + (E.left !== E.was ? ' <small style="color:var(--t2)">(was ' + E.was + ')</small>' : '') + '</span>' +
+    '<button type="button" class="btn stepb" data-act="spstep" data-v="1" id="sp_plus" aria-label="One month more"' + (E.left >= SP_MAX ? ' disabled' : '') + '>+</button></div>';
+  if (E.mode === 'amt') h += '<div class="field" style="margin-top:10px"><label for="sp_each">Each month</label><input id="sp_each" inputmode="decimal" value="' + (E.each ? (+E.each).toFixed(2) : '') + '"><div class="hint">Pay more to finish sooner, less to stretch it out. The last payment is whatever is left.</div></div>';
+  return h + '<div class="hint" id="sp_sum" style="margin-top:8px">' + spPlanSummary(sp, pl) + '</div>' +
+    '<button type="button" class="btn pri" style="width:100%;margin-top:10px" data-act="spsave" id="sp_save"' + (pl.err ? ' disabled' : '') + '>Update the spread</button></div>';
+}
+function spEditLive() {   // typing in the total or monthly amount: refresh the summary without redrawing the form
+  var f = $('txform'), tx1 = f && findTx(f.getAttribute('data-id')), id1 = tx1 && spFor(tx1); if (!id1 || !UI.spEdit) return;
+  var pl1 = spPlan(S.spreads[id1], spreadSiblings(tx1), UI.spEdit), sm = $('sp_sum'), sb = $('sp_save');
+  if (sb) sb.disabled = !!pl1.err; if (sm) sm.innerHTML = spPlanSummary(S.spreads[id1], pl1);
 }
 
 // "$238 left" / "$51 over" / "no budget" for a category in a given month.
@@ -3741,7 +3936,8 @@ function drawCheck(btn) {
 }
 var SHEET_BUSY = 0;          // while a row is animating out, a sync doesn't redraw the sheet under it
 function checkThen(btn, fn) {
-  if (REDUCED || !btn || !btn.closest('.brow')) { fn(); return; }
+  if (!btn || !btn.closest('.brow')) { fn(); return; }
+  if (REDUCED) { SHEET_BUSY = Date.now() + 900; drawCheck(btn); setTimeout(function () { leaveThen(btn.closest('.brow'), fn); }, 260); return; }   // the check shows, then the row fades
   SHEET_BUSY = Date.now() + 1200;
   drawCheck(btn);
   var row = btn.closest('.brow');
@@ -3874,7 +4070,7 @@ function comingUpItemsAll(k) {
   });
   Object.keys(S.spreads || {}).forEach(function (id) {
     var sp = S.spreads[id]; if (sp.del) return;
-    for (var i = 1; i <= sp.n; i++) if (spPartKey(sp, i) === k && !(sp.done || {})[i]) items.push({ i: '🗓', t: '<b>' + esc(sp.v || sp.c) + '</b> · payment ' + i + '/' + sp.n, a: spreadAmounts(sp.tot, sp.n)[i - 1], n: esc(sp.c) + ' · ' + money(sp.tot, true) + ' spread' });
+    for (var i = 1; i <= sp.n; i++) if (spPartKey(sp, i) === k && !(sp.done || {})[i]) items.push({ i: '🗓', t: '<b>' + esc(sp.v || sp.c) + '</b> · payment ' + i + '/' + sp.n, a: spAmt(sp, i), n: esc(sp.c) + ' · ' + money(sp.tot, true) + ' spread' });
   });
   (S.goals || []).forEach(function (g) {
     if (g.by !== k) return;
@@ -3933,8 +4129,8 @@ function planComingHtml() {
     any = true;
     body = '<div class="cmon" id="p_spreads"><div class="cmh"><b>Paying off</b><span>' + money(sp.reduce(function (a, x) { return a + x.each; }, 0)) + ' a month</span></div>' + sp.map(function (x) {
       var left = x.parts - x.made, lm = MON[ymM(x.last)] + ' ’' + String(ymY(x.last)).slice(2);
-      return '<div class="citem uline spl"><b class="um">' + x.made + '/' + x.n + '</b><span>' + esc(x.v) + ' · ' + money(x.each, true) + ' a month<small>' +
-        left + ' payment' + (left === 1 ? '' : 's') + ' left · last one ' + lm + ' · ' + money(x.tot, true) + ' in all</small></span></div>';
+      return '<button class="citem uline spl" data-act="spopen" data-v="' + esc(x.id) + '"><b class="um">' + x.made + '/' + x.n + '</b><span>' + esc(x.v) + ' · ' + money(x.each, true) + ' a month<small>' +
+        left + ' payment' + (left === 1 ? '' : 's') + ' left · last one ' + lm + ' · ' + money(x.tot, true) + ' in all</small></span><span class="chev rt" aria-hidden="true"></span></button>';
     }).join('') + '</div>' + body;
   }
   h = '<section class="card pcoming" id="p_coming"><div class="ghead"><h3>Coming up</h3><button class="linkbtn" data-act="upedit" id="up_add">+ Add</button></div>' + body;
@@ -4235,7 +4431,7 @@ function planHomeHtml() {
       '<button class="btn pri" data-act="pgo" data-v="resume">Continue</button><button class="btn" data-act="pdiscard" id="p_discard">Discard</button></section>';
   }
   var nextJan = ymKey(ymY(cur) + 1, 0);
-  if (isWide()) return planHomeWide(cur, t, inc, left, pct, n, P, nextJan);
+  if (isWide() || (isRail() && !window.__planAll)) return planHomeWide(cur, t, inc, left, pct, n, P, nextJan);   // 2.38: tablets get the four sections too
   if (!isRail() && !window.__planAll) return planHomePhone(h, cur, nextJan);
   h = '<div class="pcols"><div class="pcol">' + h + '<div class="psect">This month</div>';
   h += '<div class="pchoices"><button class="pchoice" data-act="pgo" data-v="now"><span class="pico">✎</span><span><b>Change a budget</b><small>For this month, a month ahead, or to fix a past one.</small></span><em>›</em></button>' + billsChoiceHtml() + '</div>';
@@ -5121,7 +5317,10 @@ function verNum(v) { var p = String(v || '0').split('.'); return (+p[0] || 0) * 
 // another device that has opened Piggy lately but runs an older version
 function oldDevices() {
   var cut = Date.now() - 21 * 86400000, out = [];
-  Object.keys(S.devs || {}).forEach(function (id) { var d = S.devs[id]; if (id !== S.devId && d && +d.at > cut && verNum(d.v) < verNum(VERSION)) out.push(d); });
+  // 2.38: only a device that opened Piggy *after* this one updated and still reported an older version
+  // (one that simply hasn't opened since may already be fine: it updates itself when it does)
+  var since = Math.max(cut, +S.verSince || 0);
+  Object.keys(S.devs || {}).forEach(function (id) { var d = S.devs[id]; if (id !== S.devId && d && +d.at > since && verNum(d.v) < verNum(VERSION)) out.push(d); });
   return out;
 }
 function pruneSynced() {
@@ -6397,6 +6596,7 @@ function trendYear() {
   var h = (y0Now() ? yearSoFarHtml(nowYM(), true) : '') + '<div class="ychips">' + years.slice().reverse().map(function (yy) {
     return '<button class="chip' + (yy === y0 ? ' on' : '') + '" data-act="yr" data-v="' + yy + '">' + yy + '</button>';
   }).join('') + '</div>';
+  h += '<button class="card yrbtn" data-act="yreview" data-v="' + y0 + '" id="yr_open"><span><b>' + y0 + ' in review</b><small>' + (isCur ? 'the year so far, on one page' : 'the whole year on one page') + '</small></span><i class="chev rt"></i></button>';
   var a = yearStats(y0, upTo), b = yearStats(y0 - 1, upTo);
   var span = isCur ? (upTo === 0 ? 'January' : 'Jan–' + MON[upTo]) + ' (complete months)' : 'full year';
   function vs(x, yv, goodUp) {
@@ -6477,7 +6677,7 @@ function openSheet(kind, arg) {
   SHEET = { kind: kind, arg: arg };
   UI.catTouched = false; UI.tripTouched = false; UI.catAuto = false;
   if (kind === 'settings') UI.open = {};      // every visit starts with the sections closed
-  if (kind === 'add' || kind === 'edit') { UI.split = null; UI.spread = null; UI.fmore = false; }
+  if (kind === 'add' || kind === 'edit') { UI.split = null; UI.spread = null; UI.spEdit = null; UI.fmore = false; UI.logAgain = null; }
   if (kind === 'settings') UI.alertMsg = '';
   renderSheet();
   var wasOpen = $('sheet').classList.contains('on');
@@ -6490,6 +6690,10 @@ function openSheet(kind, arg) {
     if (lt && Date.now() - LAST_TAP.at < 700 && lt.isConnected && kind !== 'add' && kind !== 'settings' && lt.offsetWidth > 200) growSheetFrom(lt);
   }
   $('sheet').scrollTop = 0;
+  if (!wasOpen) SHEET_RET = document.activeElement && document.activeElement !== document.body ? document.activeElement : (LAST_TAP.el && LAST_TAP.el.isConnected ? LAST_TAP.el : null);
+  var h2 = document.querySelector('#sheet h2');   // screen readers announce the sheet by its title; keyboard focus moves into it
+  if (h2) { if (!h2.id) h2.id = 'sheet_title'; $('sheet').setAttribute('aria-labelledby', h2.id); }
+  if (kind !== 'add' && h2) { h2.setAttribute('tabindex', '-1'); try { h2.focus({ preventScroll: true }); } catch (e) {} }
   if (kind === 'add') {
     var fa = $('f_a');
     if (fa) try { fa.focus({ preventScroll: true }); } catch (e) {}
@@ -6527,6 +6731,7 @@ function sideExtra() {
 }
 var SHEETPREP = 0;
 function closeSheet() {
+  UI.logAgain = null;
   var wasEdit = SHEET && SHEET.kind === 'edit', was = SHEET && SHEET.kind;
   SHEET_STACK = [];
   setTimeout(function () { playFresh(60); miniBar(); }, 320);
@@ -6543,7 +6748,21 @@ function closeSheet() {
   $('sheet').style.transform = '';
   $('scrim').style.opacity = '';
   lockPage(false);
+  var ret = SHEET_RET; SHEET_RET = null;          // focus goes back to what opened the sheet, if it's still there
+  if (ret && ret.isConnected && ret.focus && !$('sheet').contains(ret)) try { ret.focus({ preventScroll: true }); } catch (e) {}
 }
+var SHEET_RET = null;
+// keyboard: Tab stays inside an open sheet
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Tab' || !SHEET || PICK) return;
+  var sh = $('sheet'); if (!sh.classList.contains('on')) return;
+  var f = [].filter.call(sh.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'), function (x) { return x.offsetParent !== null; });
+  if (!f.length) return;
+  var first = f[0], last = f[f.length - 1], a = document.activeElement;
+  if (!sh.contains(a)) { e.preventDefault(); first.focus(); }
+  else if (e.shiftKey && a === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && a === last) { e.preventDefault(); first.focus(); }
+});
 
 // Pull the page down from the very top to sync.
 (function () {
@@ -6670,6 +6889,8 @@ function renderSheet() {
     h += owedSheetHtml();
   } else if (SHEET.kind === 'checkin') {
     h += checkinSheetHtml();
+  } else if (SHEET.kind === 'yreview') {
+    h += yearReviewHtml(+SHEET.arg || NOW.getFullYear());
   } else if (SHEET.kind === 'day') {
     h += daySheetHtml(SHEET.arg);
   } else if (SHEET.kind === 'status') {
@@ -7277,8 +7498,9 @@ function focusAmount() {
 
 function rerenderForm(changes) {
   var cur = formVals(), f = $('txform');
+  if (!f) return;
   var isNew = f.getAttribute('data-new') === '1';
-  var base = isNew ? SHEET.arg : findTx(f.getAttribute('data-id'));
+  var base = isNew ? (SHEET && SHEET.arg) : findTx(f.getAttribute('data-id'));
   var t = {};
   Object.keys(base || {}).forEach(function (k) { t[k] = base[k]; });
   Object.keys(cur).forEach(function (k) { t[k] = cur[k]; });
@@ -7290,6 +7512,17 @@ function rerenderForm(changes) {
   if (isNew) suggest();
 }
 
+// 2.40: the same amount at the same store (or in the same category, with no store) within 2 days, already logged
+function dupOf(v) {
+  if (!v.d || !(v.a > 0)) return null;
+  var d0 = parseD(v.d), vv = low(v.v), cc = low(v.c), hit = null;
+  S.tx.forEach(function (t) {
+    if (hit || t.k !== v.k || !t.d || Math.abs(t.a - v.a) > 0.005) return;
+    if (vv ? low(t.v) !== vv : (low(t.v) || low(t.c) !== cc)) return;
+    if (Math.abs(parseD(t.d) - d0) <= 2 * 864e5 + 36e5) hit = t;
+  });
+  return hit;
+}
 function submitForm() {
   var f = $('txform'); if (!f) return;
   var v = formVals(), err = $('f_err');
@@ -7305,6 +7538,18 @@ function submitForm() {
     if (v.ow) { err.textContent = 'Use either “spread over months” or “someone owes me” on one purchase, not both.'; err.style.color = 'var(--bad)'; return; }
     if (!v.d) { err.textContent = 'Pick a date.'; err.style.color = 'var(--bad)'; return; }
     return saveSpread(v, isNew ? null : f.getAttribute('data-id'));
+  }
+  if (isNew && !UI.logAgain) {
+    var dp = dupOf(v);
+    if (dp && UI.armed !== 'dupsave') {
+      var dd = parseD(dp.d), days = Math.round((parseD(v.d) - dd) / 864e5);
+      err.style.color = 'var(--warn)';
+      err.innerHTML = 'You logged ' + money(dp.a, true) + (dp.v ? ' at ' + esc(dp.v) : ' in ' + esc(dp.c)) + ' ' + (days === 0 ? 'that same day' : days === 1 ? 'the day before' : days === -1 ? 'the day after' : 'on ' + MON[dd.getMonth()] + ' ' + dd.getDate()) + '. Tap again to add it anyway.';
+      var sb0 = UI.addAnother ? $('f_saveadd') : $('f_save'); arm('dupsave', sb0, UI.addAnother ? 'Add anyway & next' : 'Add anyway', 10000);
+      try { err.scrollIntoView({ block: 'center', behavior: REDUCED ? 'auto' : 'smooth' }); } catch (x) { err.scrollIntoView(); }
+      return;
+    }
+    if (UI.armed === 'dupsave') UI.armed = null;
   }
   var parts = isNew && v.k === 'e' && UI.split ? splitParts().filter(function (p) { return p.c || p.a; }) : [];
   if (parts.length) {
@@ -7586,6 +7831,8 @@ function doUndo() {
   if (u.type === 'reedit') {
     // bring the form back with the changes that were discarded
     if (!findTx(u.id)) return;
+    if (SHEET) closeSheet();
+    if (UI.tab !== 'activity') { UI.tab = 'activity'; UI.q = ''; UI.am = ''; UI.fk = 'all'; UI.lim = 100000; u.top = 120; }
     UI.edit = u.id; UI.editTop = u.top; UI.tripTouched = true;
     render();
     rerenderForm(u.vals);
@@ -7868,6 +8115,7 @@ function applyPull(data) {
     Object.keys(tdv).forEach(function (id) { var a = tdv[id] || {}, b = S.devs[id]; if (id !== myDev() && (!b || (+a.at || 0) > (+b.at || 0))) S.devs[id] = a; });
     var me = S.devs[myDev()];
     if (!me || me.v !== VERSION || Date.now() - (+me.at || 0) > 3 * 86400000 || !tdv[myDev()]) { S.devs[myDev()] = { v: VERSION, at: Date.now(), n: devName() }; mine++; }
+    if (Object.keys(S.devs).some(function (id) { return id !== myDev() && verNum((S.devs[id] || {}).v) > verNum(VERSION); })) checkUpdate();
     pruneSynced();
     if (mine && S.prefsPulled) { S.prefsSent = ''; setTimeout(function () { queuePrefs(); if (S.outbox.length) flushSoon(); }, 0); }
   }
@@ -7933,14 +8181,14 @@ function disconnect() {
 
 // Two-step confirm: first tap arms, second confirms, disarms after 3 s.
 var armTimer = null;
-function arm(key, btn, label) {
+function arm(key, btn, label, ms) {
   UI.armed = key;
   if (btn) { btn.dataset.label = btn.textContent; btn.textContent = label; btn.classList.add('armed'); }
   clearTimeout(armTimer);
   armTimer = setTimeout(function () {
     UI.armed = null;
     if (btn && btn.isConnected) { btn.textContent = btn.dataset.label; btn.classList.remove('armed'); }
-  }, 3000);
+  }, ms || 3000);
 }
 
 // Same rules as the sheet script (setBudget_): from / month / year / fix, and remove.
@@ -8002,7 +8250,7 @@ function exportData() {
   var blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'runway-backup-' + todayStr() + '.json';
+  a.download = 'piggy-backup-' + todayStr() + '.json';
   document.body.appendChild(a); a.click();
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
@@ -8057,6 +8305,9 @@ function migrate(d) {
 document.addEventListener('click', function (e) {
   var el = e.target.closest ? e.target.closest('[data-act]') : null;
   if (!el) return;
+  // a tap on a sheet or picker that is already on its way out (it fades or slides for a moment) does nothing
+  if (el.closest('#sheet') && (!SHEET || !$('sheet').classList.contains('on'))) return;
+  if (el.closest('#picker') && (!PICK || !$('picker').classList.contains('on'))) return;
   var act = el.getAttribute('data-act'), v = el.getAttribute('data-v');
   switch (act) {
     case 'tab':
@@ -8216,7 +8467,7 @@ document.addEventListener('click', function (e) {
       var pord = ['month', 'ahead', 'trips', 'goals'], pdir = pord.indexOf(v) > pord.indexOf(UI.psec || 'month') ? 1 : -1;
       UI.psec = v; render(); window.scrollTo(0, 0);
       var pp = document.querySelector('.ppane'); if (pp && REDUCED) fadeIn(pp, 200);
-      else if (pp && pp.animate) pp.animate([{ opacity: 0, transform: 'translateX(' + pdir * 18 + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: EASE_OUT });
+      else if (pp && pp.animate) pp.animate([{ opacity: 0, transform: 'translateX(' + pdir * 40 + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 240, easing: EASE_OUT });
       break;
     case 'pgogrp':
       var pg2 = planState();
@@ -8275,7 +8526,8 @@ document.addEventListener('click', function (e) {
       else S.dis[v] = el.getAttribute('data-s');
       save(); queuePrefs(); flushSoon();
       var aiEl = el.closest('.ai');
-      if (aiEl && !REDUCED && aiEl.animate) { var aiH = aiEl.offsetHeight; aiEl.style.overflow = 'hidden'; var aiA = aiEl.animate([{ opacity: 1, height: aiH + 'px' }, { opacity: 0, height: '0px' }], { duration: 200, easing: 'ease' }); aiA.onfinish = function () { keepScroll(render); }; }
+      if (aiEl && REDUCED && aiEl.animate) { var aiF = aiEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-in', fill: 'forwards' }); aiF.onfinish = function () { keepScroll(render); }; }
+      else if (aiEl && !REDUCED && aiEl.animate) { var aiH = aiEl.offsetHeight; aiEl.style.overflow = 'hidden'; var aiA = aiEl.animate([{ opacity: 1, height: aiH + 'px' }, { opacity: 0, height: '0px' }], { duration: 200, easing: 'ease' }); aiA.onfinish = function () { keepScroll(render); }; }
       else keepScroll(render);
       break;
     case 'bconfirm':
@@ -8456,6 +8708,13 @@ document.addEventListener('click', function (e) {
       if (PICK) closePicker(); closeSheet();
       if (wasSettings && !S.demo && S.cfg.url && (S.scriptV || 0) >= 10 && S.prefsPulled && prefsHash() !== S.prefsSent) flushSoon();
       break;
+    case 'refreshnow':           // 2.38: the computer's version of pulling down to refresh
+      if (el.classList.contains('spin')) break;
+      checkUpdate();
+      if (S.demo || localMode()) { render(); toast(S.demo ? 'These are sample numbers — nothing to refresh' : 'Everything’s on this device — nothing to refresh'); break; }
+      el.classList.add('spin');
+      sync().then(function () { el.classList.remove('spin'); render(); toast(S.syncErr ? 'Couldn’t reach your sheet' : 'Up to date'); }, function () { el.classList.remove('spin'); toast('Couldn’t reach your sheet'); });
+      break;
     case 'syncstat':
     case 'sync':
       if (S.demo || localMode()) { openSheet('settings', 'conn'); break; }
@@ -8500,6 +8759,7 @@ document.addEventListener('click', function (e) {
       });
       break;
     case 'checkin': openSheet('checkin'); break;
+    case 'yreview': openSheet('yreview', +v || NOW.getFullYear()); break;
     case 'unhidev':
       var uk = v.split('|');
       hideVendor(uk[0], uk.slice(1).join('|'), false);
@@ -8523,6 +8783,25 @@ document.addEventListener('click', function (e) {
       if (SHEET) closeSheet();
       keepScroll(render); toast('Week checked ✓'); confetti(); break;
     case 'ciok': S.ciOk = S.ciOk || {}; var cot = findTx(v); S.ciOk[cot ? txSig(cot) : v] = 1; save(); queuePrefs(); flushSoon(); renderSheet(); keepScroll(render); break;
+    case 'spopen': {   // 2.40: a "Paying off" line opens its latest payment with Change the spread ready
+      var spo = S.spreads[v], pts = spo ? S.tx.filter(function (t) { return spMatches(spo, t); }) : [];
+      if (!pts.length) break;
+      pts.sort(function (a, b) { return spreadInfo(b).i - spreadInfo(a).i; });
+      var pt = pts[0];
+      closeSheet(); UI.tab = 'activity'; UI.q = ''; UI.am = ''; UI.fk = 'all'; UI.asort = 'new'; UI.lim = 100000; UI.edit = pt.id; UI.editTop = null;
+      UI.split = null; UI.spread = null; UI.fmore = true; UI.spEdit = spEditStart(spo, spreadSiblings(pt)); render();
+      anchorTx(pt.id, 120, true);
+      setTimeout(function () { var bx = $('f_spedbox'); if (bx) bx.scrollIntoView({ block: 'center', behavior: REDUCED ? 'auto' : 'smooth' }); }, 60);
+      break;
+    }
+    case 'logagain': {   // 2.40: a copy of this entry, dated today, ready to check and add
+      var la = findTx($('txform').getAttribute('data-id')); if (!la) break;
+      var nd = newTxDraft(la.k), td = todayStr(), tp = tripFor(td);
+      nd.d = td; nd.y = ymY(nowYM()); nd.m = ymM(nowYM()); nd.v = la.v; nd.c = la.c; nd.a = la.a; nd.n = la.n || ''; nd.fs = la.fs || ''; nd.tr = tp ? tp.name : '';
+      UI.edit = null; render();
+      UI.logAgain = la.id; openSheet('add', nd); UI.logAgain = la.id; UI.catTouched = true;
+      break;
+    }
     case 'ciedit':
       closeSheet(); UI.tab = 'activity'; UI.q = ''; UI.am = ''; UI.fk = 'all'; UI.asort = 'new'; UI.lim = 100000; UI.edit = v; UI.editTop = null; render();
       anchorTx(v, 120, true); break;
@@ -8623,6 +8902,32 @@ document.addEventListener('click', function (e) {
     case 'fspread': UI.spread = { n: 3 }; UI.split = null; rerenderForm(); break;
     case 'fspreadoff': UI.spread = null; rerenderForm(); break;
     case 'fspreadn': if (UI.spread) { UI.spread.n = +v; var sb = $('f_spreadbox'); if (sb) { sb.querySelectorAll('[data-act=fspreadn]').forEach(function (c) { var on = +c.getAttribute('data-v') === UI.spread.n; c.classList.toggle('on', on); c.setAttribute('aria-checked', on); }); } refreshSpread(); } break;
+    case 'spedit': { var st0 = findTx($('txform').getAttribute('data-id')), sid0 = st0 && spFor(st0); if (!sid0) break; UI.spEdit = spEditStart(S.spreads[sid0], spreadSiblings(st0)); rerenderForm(); var bx = $('f_spedbox'); if (bx) bx.scrollIntoView({ block: 'nearest' }); break; }
+    case 'speditoff': UI.spEdit = null; rerenderForm(); break;
+    case 'spmode': case 'spstep':
+      if (!UI.spEdit) break;
+      var stv = $('sp_tot'), sev = $('sp_each'); if (stv && parseAmt(stv.value) > 0) UI.spEdit.tot = parseAmt(stv.value); if (sev && parseAmt(sev.value) > 0) UI.spEdit.each = parseAmt(sev.value);
+      if (act === 'spmode') UI.spEdit.mode = v; else UI.spEdit.left = Math.max(1, Math.min(SP_MAX, UI.spEdit.left + (+v)));
+      rerenderForm(); var fb = document.querySelector('[data-act="' + act + '"][data-v="' + v + '"]'); if (fb && !fb.disabled) fb.focus();
+      break;
+    case 'spsave':
+      lock('save', function () {
+        var tx0 = findTx($('txform').getAttribute('data-id')), id0 = tx0 && spFor(tx0); if (!id0 || !UI.spEdit) return;
+        var old = S.spreads[id0], sib = spreadSiblings(tx0), E = UI.spEdit, tv = $('sp_tot'), ev = $('sp_each'); if (tv) E.tot = parseAmt(tv.value); if (ev) E.each = parseAmt(ev.value);
+        var pl = spPlan(old, sib, E); if (pl.err) return;
+        var nid2 = 's' + hashStr([id0, E.tot, pl.n, Date.now()].join('|'));
+        var nsp = JSON.parse(JSON.stringify(old)); nsp.tot = Math.round(E.tot * 100) / 100; nsp.n = pl.n; nsp.amts = pl.amts; nsp.done = {}; nsp.at = Date.now(); delete nsp.del;
+        for (var di = 1; di <= pl.top; di++) nsp.done[di] = 1;      // payments made (or deleted) never come back
+        var befores = [];
+        sib.forEach(function (t) { var i = spreadInfo(t).i; befores.push({ id: t.id, before: editTx(t.id, spPart(nsp, i)), after: pick(spPart(nsp, i)) }); });
+        old.del = 1; S.spreads[nid2] = nsp; save(); queuePrefs();
+        UI.spEdit = null; UI.edit = null; if (SHEET) closeSheet(); render(); flushSoon();
+        toast(pl.left ? 'Spread updated · ' + money(pl.each, true) + ' a month for ' + pl.left + ' more' : 'Paid off', function () {
+          befores.forEach(function (b) { var ft = resolveTx(b.id, b.after); if (ft) editTx(ft.id, b.before); });
+          S.spreads[nid2].del = 1; old.del = 0; save(); queuePrefs(); render(); flushSoon(); toast('Back as it was');
+        });
+      });
+      break;
     case 'fspreaddel':
       e.preventDefault();
       if (UI.armed !== 'sdel') { arm('sdel', el, 'Sure? Tap again'); break; }
@@ -8646,17 +8951,18 @@ document.addEventListener('click', function (e) {
     case 'more': UI.lim += 200; keepScroll(function () { $('txlist').innerHTML = txListHtml(); }); break;
     case 'edit':
       if (isWide() && UI.tab === 'activity') {
-        UI.edit = UI.edit === v ? null : v; UI.editTop = el.getBoundingClientRect().top; UI.catTouched = false; UI.tripTouched = true; UI.fmore = false; UI.spread = null; UI.split = null;
+        UI.edit = UI.edit === v ? null : v; UI.editTop = el.getBoundingClientRect().top; UI.catTouched = false; UI.tripTouched = true; UI.fmore = false; UI.spread = null; UI.split = null; UI.spEdit = null;
         keepScroll(function () { $('txlist').innerHTML = txListHtml(); });
         syncEditPanel(!UI.kbNav); UI.kbNav = false;
         break;
       }
       var etop = el.getBoundingClientRect().top;
-      UI.edit = UI.edit === v ? null : v; UI.catTouched = false; UI.tripTouched = true; UI.fmore = false; UI.spread = null; UI.split = null;
+      UI.edit = UI.edit === v ? null : v; UI.catTouched = false; UI.tripTouched = true; UI.fmore = false; UI.spread = null; UI.split = null; UI.spEdit = null;
       if (UI.edit) UI.editTop = etop;
       flipRows(function () { $('txlist').innerHTML = txListHtml(); });
       var nf = UI.edit && $('txform');
-      if (nf && !REDUCED && nf.animate) { var fh = nf.offsetHeight; nf.style.overflow = 'hidden'; nf.animate([{ height: '0px', opacity: 0 }, { height: fh + 'px', opacity: 1 }], { duration: 300, easing: EASE_OUT }).onfinish = function () { nf.style.overflow = ''; }; }
+      if (nf && REDUCED) fadeIn(nf, 200);
+      else if (nf && !REDUCED && nf.animate) { var fh = nf.offsetHeight; nf.style.overflow = 'hidden'; nf.animate([{ height: '0px', opacity: 0 }, { height: fh + 'px', opacity: 1 }], { duration: 300, easing: EASE_OUT }).onfinish = function () { nf.style.overflow = ''; }; }
       anchorTx(v, etop, false);           // the tapped entry stays put even if another open form above closes
       if (UI.edit) glideTo(v, 'open');    // …then slides up so the form is in view
       break;
@@ -8671,7 +8977,8 @@ document.addEventListener('click', function (e) {
       if (fm) fm.hidden = !UI.fmore;
       el.setAttribute('aria-expanded', UI.fmore); el.querySelector('.chev').classList.toggle('up', UI.fmore);
       var fms = el.querySelector('small'); if (fms) fms.style.display = UI.fmore ? 'none' : '';
-      if (UI.fmore && fm && !REDUCED && fm.animate) fm.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' });
+      if (UI.fmore && fm && REDUCED) fadeIn(fm, 180);
+      else if (UI.fmore && fm && !REDUCED && fm.animate) fm.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' });
       break;
     case 'fkind':
       e.preventDefault(); rerenderForm({ k: v, c: '' });
@@ -8739,6 +9046,9 @@ document.addEventListener('click', function (e) {
         if (!REDUCED && row0 && row0.animate) {          // the entry slides away first, then the rest move up
           [row0, fm0].forEach(function (x) { if (x && x.animate) x.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(-28px)' }], { duration: 200, easing: 'ease-in', fill: 'forwards' }); });
           setTimeout(go, 200);
+        } else if (REDUCED && row0 && row0.animate && !window.__instantNumbers) {      // reduce motion: it fades away instead
+          [row0, fm0].forEach(function (x) { if (x && x.animate) x.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-in', fill: 'forwards' }); });
+          setTimeout(go, 160);
         } else go();
       });
       break;
@@ -8930,6 +9240,7 @@ document.addEventListener('input', function (e) {
   else if (t.hasAttribute && t.hasAttribute('data-split-a') && UI.split) { UI.split[+t.getAttribute('data-split-a')].a = t.value; refreshSplit(); }
   else if (t.id === 'f_a' && UI.split) refreshSplit();
   else if ((t.id === 'f_a' || t.id === 'f_d') && UI.spread) refreshSpread();
+  else if ((t.id === 'sp_tot' || t.id === 'sp_each') && UI.spEdit) { var pv0 = parseAmt(t.value); if (t.id === 'sp_tot') UI.spEdit.tot = pv0 || 0; else UI.spEdit.each = pv0 || 0; spEditLive(); }
   if (t.id === 'f_a' || t.id === 'f_ow') refreshOwed();
   else if (/^gl_(target|base|by)$/.test(t.id)) { var gn = $('gl_need'); if (gn) gn.innerHTML = goalNeedText(); }
 });
@@ -8993,7 +9304,7 @@ document.addEventListener('click', function (e) {
   if (!sm || e.defaultPrevented) return;
   var d = sm.parentNode;
   if (d && d.tagName === 'DETAILS' && !d.open && !d.getAttribute('data-anim')) accordion(d);
-  if (REDUCED) return;
+  if (REDUCED) { if (d && d.tagName === 'DETAILS' && !d.open) setTimeout(function () { var kids = d.children; for (var ki = 0; ki < kids.length; ki++) if (kids[ki] !== sm) fadeIn(kids[ki], 200); }, 0); return; }
   if (!d || d.tagName !== 'DETAILS' || d.getAttribute('data-anim') || !d.animate) return;
   e.preventDefault();
   var cs = getComputedStyle(d), shut = sm.offsetHeight + (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
@@ -9060,8 +9371,9 @@ function goHome() {
 }
 document.addEventListener('visibilitychange', function () {
   if (document.visibilityState === 'hidden') { HIDDEN_AT = Date.now(); return; }
+  NOW = FIXED_NOW || new Date();      // the date may have moved on while Piggy was in the background (a new day, or month)
   if (HIDDEN_AT && Date.now() - HIDDEN_AT > 5 * 60000) { BILLS_CHECK = true; BILL_LATER = {}; }
-  if (HIDDEN_AT && Date.now() - HIDDEN_AT > AWAY_MS) { if (!S.cfg.url && spreadTick()) { CACHE = {}; VER++; } goHome(); }
+  if (HIDDEN_AT && Date.now() - HIDDEN_AT > AWAY_MS) { if (!S.cfg.url && spreadTick()) { CACHE = {}; VER++; } goHome(); HOME_AT = Date.now(); checkUpdate(); }
   if (document.visibilityState === 'visible' && S && !S.demo) {
     NOW = FIXED_NOW || new Date();
     if (UI.tab === 'month' && UI.ym !== null && HIDDEN_AT && Date.now() - HIDDEN_AT > AWAY_MS) UI.ym = nowYM();
@@ -9094,6 +9406,7 @@ function boot() {
     } catch (e) {}
     if (S.demo && !S.tx.length) buildDemo();
     S.mopen = {}; UI.heroOpen = false;            // each time the app opens, every section starts closed
+    if (S.lastVer !== VERSION) { S.lastVer = VERSION; S.verSince = Date.now(); save(); }
     if (!S.demo && !S.cfg.url) spreadTick();      // on this phone only: spread payments whose month has come (with a sheet: after it syncs)
     applyTheme();
     render();
@@ -9183,12 +9496,22 @@ document.addEventListener('focusout', function (e) { var sh = $('sheet'); if (SH
 
 // Works offline and opens instantly: a service worker keeps a copy of the app on the phone.
 var BOOTED_AT = Date.now();
+// 2.38: a tab left open for days used to keep its old version until reloaded by hand. Now, on coming back to it
+// (and every half hour), it asks for the page; the service worker compares it with its copy and says when it changed.
+var UPD_AT = 0, HOME_AT = 0;
+function checkUpdate() {
+  if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol) || Date.now() - UPD_AT < 60000) return;
+  UPD_AT = Date.now();
+  fetch('./', { cache: 'no-cache' }).catch(function () {});
+  navigator.serviceWorker.getRegistration().then(function (r) { if (r) r.update(); }).catch(function () {});
+}
+setInterval(function () { if (document.visibilityState === 'visible') checkUpdate(); }, 30 * 60000);
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
   navigator.serviceWorker.addEventListener('message', function (e) {
     if (e.data && e.data.type === 'updated') {
-      var busy = SHEET || PICK || UI.edit || (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));
-      if (Date.now() - BOOTED_AT < 15000 && !busy) { location.reload(); return; }
+      var busy = SHEET || PICK || UI.edit || TOUR || (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));
+      if ((Date.now() - BOOTED_AT < 15000 || Date.now() - HOME_AT < 15000) && !busy) { location.reload(); return; }
       toast('A new version of ' + appName() + ' is ready', function () { location.reload(); }, 'Reload');
     }
   });
@@ -9261,6 +9584,45 @@ document.addEventListener('click', function (e) {     // a hold isn't a tap
   if (HELD) { HELD = false; if (e.target.closest && e.target.closest('#f_sugg')) { e.stopPropagation(); e.preventDefault(); } }
 }, true);
 
+// ---- 2.38: swipe left/right on Plan to move between This month, Ahead, Trips and Goals
+var PSW = null;
+var PSEC_ORDER = ['month', 'ahead', 'trips', 'goals'];
+function planSwipeOk() { var P = S && S.plan; return UI.tab === 'plan' && !SHEET && !PICK && !TOUR && !UI.edit && !(P && P.step && P.step !== 'home') && !!document.querySelector('.ppane'); }
+document.addEventListener('touchstart', function (e) {
+  PSW = null;
+  if (e.touches.length !== 1 || !planSwipeOk()) return;
+  var tg = e.target;
+  if (tg.closest && tg.closest('input, select, textarea, .hscroll, .chips.scroll, .cal, [data-hscroll], .swipe, .psegs, #tour')) return;
+  if (!tg.closest || !tg.closest('#view')) return;
+  PSW = { x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, axis: null, t: e.timeStamp, pane: document.querySelector('.ppane') };
+}, { passive: true });
+document.addEventListener('touchmove', function (e) {
+  if (!PSW) return;
+  var dx = e.touches[0].clientX - PSW.x, dy = e.touches[0].clientY - PSW.y;
+  if (!PSW.axis) { if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return; PSW.axis = Math.abs(dx) > Math.abs(dy) * 1.3 ? 'x' : 'y'; }
+  if (PSW.axis !== 'x') { PSW = null; return; }
+  var i = PSEC_ORDER.indexOf(UI.psec || 'month'), edge = (dx > 0 && i === 0) || (dx < 0 && i === PSEC_ORDER.length - 1);
+  PSW.dx = edge ? dx * 0.25 : dx;                                  // a little give at the ends
+  if (!REDUCED && PSW.pane) { PSW.pane.style.transition = 'none'; PSW.pane.style.transform = 'translateX(' + PSW.dx + 'px)'; PSW.pane.style.opacity = String(1 - Math.min(0.35, Math.abs(PSW.dx) / 900)); }
+}, { passive: true });
+document.addEventListener('touchend', function (e) {
+  if (!PSW || PSW.axis !== 'x') { PSW = null; return; }
+  var w = window.innerWidth, i = PSEC_ORDER.indexOf(UI.psec || 'month'), dx = PSW.dx, fast = Math.abs(dx) > 40 && e.timeStamp - PSW.t < 260;   // event times: a quick flick counts
+  var go = (Math.abs(dx) > w * 0.22 || fast) ? (dx < 0 ? 1 : -1) : 0, ni = i + go, pane = PSW.pane;
+  PSW = null;
+  if (go && ni >= 0 && ni < PSEC_ORDER.length) {
+    var b = document.querySelector('.psegs [data-act=psec][data-v="' + PSEC_ORDER[ni] + '"]');
+    if (pane) { pane.style.transform = ''; pane.style.opacity = ''; pane.style.transition = ''; }
+    if (b) b.click();                                                 // same as tapping the section: slides the new one in
+    return;
+  }
+  if (pane) {                                                         // not far enough: spring back
+    if (REDUCED || !pane.animate) { pane.style.transform = ''; pane.style.opacity = ''; pane.style.transition = ''; return; }
+    var a = pane.animate([{ transform: 'translateX(' + dx + 'px)', opacity: pane.style.opacity || 1 }, { transform: 'none', opacity: 1 }], { duration: 220, easing: EASE_OUT });
+    pane.style.transform = ''; pane.style.opacity = ''; pane.style.transition = '';
+  }
+}, { passive: true });
+
 // ---- swiping Activity rows
 var SW = null, SWIPED_AT = 0;
 document.addEventListener('touchstart', function (e) {
@@ -9320,7 +9682,7 @@ document.addEventListener('visibilitychange', function () {
 });
 
 // test hook
-window.__runway = { spPart: function (sp, i) { return spPart(sp, i); }, planTotals: function (k) { return planTotals(k); }, get S() { return S; }, UI: UI, sync: sync, applyPull: applyPull, monthStats: monthStats, budgetTotals: budgetTotals, render: render, save: function () { return save(); }, fitSheet: fitSheet, get FULLH() { return FULLH; }, setNow: function (d) { FIXED_NOW = d; NOW = d; }, planState: function () { return planState(); }, autoPay: function () { return autoPayBills(); }, closeSheet: function () { if (SHEET) closeSheet(); } };
+window.__runway = { oldDevices: function () { return oldDevices(); }, spPart: function (sp, i) { return spPart(sp, i); }, planTotals: function (k) { return planTotals(k); }, get S() { return S; }, UI: UI, sync: sync, applyPull: applyPull, monthStats: monthStats, budgetTotals: budgetTotals, render: render, save: function () { return save(); }, fitSheet: fitSheet, get FULLH() { return FULLH; }, setNow: function (d) { FIXED_NOW = d; NOW = d; }, planState: function () { return planState(); }, autoPay: function () { return autoPayBills(); }, closeSheet: function () { if (SHEET) closeSheet(); } };
 
 boot();
 })();

@@ -6,7 +6,7 @@
 // Hosts like Cloudflare redirect "/index.html" to "/". Safari refuses to show a page that a service
 // worker answers with a redirected response, so the page is always fetched as "./" and every copy
 // is re-made as a plain response before it is stored or served.
-var CACHE = 'piggy-shell-11';
+var CACHE = 'piggy-shell-15';
 var PAGE = './';
 var FILES = ['./manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
