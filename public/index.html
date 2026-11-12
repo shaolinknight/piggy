@@ -1323,7 +1323,7 @@ button,[data-act],summary,.chip{touch-action:manipulation}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.41';
+var VERSION = '2.42';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -3480,6 +3480,24 @@ function spreadTick() {
       if (ymKey(t.y, t.m) > cur) deleteTx(t.id); else sp.done[i] = 1;
     });
     changed = true;
+  });
+  // 2.42: a spread whose schedule went missing (some payments logged, the later ones nowhere): rebuild the schedule.
+  // Months already gone by stay as they are; only the payments still to come are scheduled again.
+  var lone = {};
+  S.tx.forEach(function (t) {
+    var si = t.k === 'e' && spreadInfo(t); if (!si || spFor(t)) return;
+    var gk = [low(t.v), low(t.c), si.tot, si.n].join('|'); (lone[gk] = lone[gk] || []).push(t);
+  });
+  Object.keys(lone).forEach(function (gk) {
+    var parts = lone[gk].sort(function (a, b) { return spreadInfo(a).i - spreadInfo(b).i; }), t0 = parts[0], si0 = spreadInfo(t0);
+    var known = Object.keys(S.spreads).some(function (id) { return spMatches(S.spreads[id], t0); });   // deleted on purpose: leave it
+    if (known || parts.length >= si0.n) return;
+    var d1 = t0.d ? addMonthsStr(t0.d, -(si0.i - 1)) : (t0.y + '-' + pad(t0.m + 1) + '-01');
+    var sp = { v: t0.v, c: t0.c, tot: si0.tot, n: si0.n, d: d1, note: spreadBase(t0), tr: t0.tr || '', fs: t0.fs || '', done: {}, at: Date.now() };
+    if (spPartKey(sp, sp.n) <= cur) return;                                          // nothing left to come
+    for (var i = 1; i <= sp.n; i++) if (spPartKey(sp, i) <= cur) sp.done[i] = 1;
+    parts.forEach(function (t) { sp.done[spreadInfo(t).i] = 1; });
+    S.spreads['m' + hashStr(gk + '|' + d1)] = sp; changed = true;
   });
   // payments whose month has come
   Object.keys(S.spreads).forEach(function (id) {
@@ -7966,7 +7984,9 @@ function prefsSnap(p) { var o = {}; Object.keys(p).forEach(function (k) { if (k 
 function prefsChanged(p) {
   var base = S.prefsBase, now = prefsSnap(p), out = [];
   if (!base) return null;                                   // never seen the sheet's copy: send everything
-  Object.keys(now).forEach(function (k) { if (k !== 'at' && now[k] !== base[k]) out.push(k); });
+  // a setting the sheet's copy didn't have yet (new in this version) and that's still empty here isn't a change:
+  // sending it would wipe what another device has already saved under it (2.42)
+  Object.keys(now).forEach(function (k) { if (k !== 'at' && now[k] !== base[k] && !(base[k] === undefined && /^(\{\}|\[\]|0|null|""|false)$/.test(now[k]))) out.push(k); });
   return out;
 }
 function prefsHash() { var p = prefsObj(); delete p.at; delete p.hu; delete p.bc; delete p.bmo; return JSON.stringify(p); }
