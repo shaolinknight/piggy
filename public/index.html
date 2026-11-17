@@ -1322,7 +1322,12 @@ button,[data-act],summary,.chip{touch-action:manipulation}
 #qdock{display:none}
 #qdock.on{display:block;position:fixed;left:0;right:0;bottom:var(--tabh,64px);z-index:29;padding:8px 16px;
   background:color-mix(in srgb,var(--bg) 84%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);border-top:.5px solid var(--b1)}
-#qdock.kb{bottom:auto;padding-bottom:8px}
+#qdock.qtop{bottom:auto;top:0;padding-top:calc(env(safe-area-inset-top) + 8px);border-top:0;border-bottom:.5px solid var(--b1)}
+.tabs{transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .2s ease}
+body.qtyping .tabs{transform:translateY(105%);opacity:0;pointer-events:none}
+#fab{transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .2s ease}
+body.qtyping #fab{transform:translateY(160%);opacity:0;pointer-events:none}
+@media (prefers-reduced-motion: reduce){.tabs,#fab{transition:opacity .2s ease}body.qtyping .tabs,body.qtyping #fab{transform:none}}
 #qdock .search{max-width:488px;margin:0 auto}
 .qbtns{display:contents}
 body.qb main{padding-bottom:136px}
@@ -1402,7 +1407,7 @@ body.padon main{padding-bottom:340px}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.46';
+var VERSION = '2.47';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -3308,7 +3313,7 @@ function renderQDock() {
   var d = $('qdock'); if (!d) return;
   var on = qBottom();
   document.body.classList.toggle('qb', on);
-  if (!on) { if (d.innerHTML) { d.innerHTML = ''; d.className = ''; d.style.top = ''; } return; }
+  if (!on) { document.body.classList.remove('qtyping'); if (d.innerHTML) { d.innerHTML = ''; d.className = ''; d.style.top = ''; } return; }
   var tb = document.querySelector('.tabs'); if (tb) document.documentElement.style.setProperty('--tabh', tb.offsetHeight + 'px');
   var q = $('q'), btns = qBtnsHtml();
   if (!q || !d.contains(q)) d.innerHTML = '<div class="search"><input id="q" type="search" enterkeyhint="search" placeholder="Search stores, notes, months" value="' + esc(UI.q) + '" autocomplete="off"><span class="qbtns" id="qbtns">' + btns + '</span></div>';
@@ -3319,14 +3324,20 @@ function renderQDock() {
   d.classList.add('on');
   fitQDock();
 }
-function fitQDock() {
-  var d = $('qdock'), vv = window.visualViewport;
-  if (!d || !d.classList.contains('on')) return;
+function fitQDock() {                                  // typing in the bottom search: it sits at the top (out of the keyboard's way)
+  var d = $('qdock'); if (!d || !d.classList.contains('on')) return;
   var q = $('q'), typing = q && document.activeElement === q && d.contains(q);
-  if (vv && typing && !isMouse() && Math.max(FULLH, window.innerHeight) - vv.height > 80) {
-    var z = parseFloat(document.body.style.zoom) || 1;            // larger text zooms the page
-    d.classList.add('kb'); d.style.top = Math.round((vv.offsetTop + vv.height) / z - d.offsetHeight) + 'px';
-  } else if (d.classList.contains('kb')) { d.classList.remove('kb'); d.style.top = ''; }
+  qdockMove(!!typing);
+}
+// the search bar glides between the bottom (above the tabs) and the top of the screen; the tabs step aside while you type
+function qdockMove(top) {
+  var d = $('qdock'); if (!d || !d.classList.contains('on') || d.classList.contains('qtop') === top) return;
+  var r0 = d.getBoundingClientRect();
+  d.classList.toggle('qtop', top);
+  document.body.classList.toggle('qtyping', top);
+  var r1 = d.getBoundingClientRect(), dy = r0.top - r1.top;
+  if (REDUCED || !d.animate) { fadeIn(d, 180); return; }
+  if (Math.abs(dy) > 2) d.animate([{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], { duration: 340, easing: EASE_IOS });
 }
 
 function txListHtml() {
@@ -6845,6 +6856,7 @@ function sheetBack() {
 }
 function openSheet(kind, arg) {
   if (PAD) { try { PAD.el.blur(); } catch (e) {} padHide(true); }      // a new popup: the keypad's job (if any) starts over inside it
+  var qa = document.activeElement; if (qa && qa.id === 'q' && $('qdock') && $('qdock').contains(qa)) { try { qa.blur(); } catch (e) {} qdockMove(false); }   // the bottom search lets go (tabs come back)
   if (kind === 'add' && UI.edit && document.querySelector('#view #txform, #insp #txform')) {   // one form at a time: the entry being changed closes
     UI.edit = null;
     if ($('txlist')) $('txlist').innerHTML = txListHtml();
@@ -6914,6 +6926,8 @@ function sideExtra() {
 var SHEETPREP = 0;
 function closeSheet() {
   padHide(true);
+  clearTimeout(PADKB_T);
+  setTimeout(function () { var sh = $('sheet'); if (!SHEET && sh && (sh.classList.contains('padup') || sh.classList.contains('padkb'))) { sh.classList.remove('padup'); sh.classList.remove('padkb'); sh.style.bottom = ''; sh.style.maxHeight = ''; } }, 340);
   UI.logAgain = null;
   var wasEdit = SHEET && SHEET.kind === 'edit', was = SHEET && SHEET.kind;
   SHEET_STACK = [];
@@ -7193,13 +7207,13 @@ function deviceSetHtml() {
   var qp = S.cfg.qpos === 'bottom' ? 'bottom' : 'top', hp = S.cfg.haptic === false ? 'off' : 'on', np = S.cfg.npad === false ? 'off' : 'on', val = [];
   var kbName = isPhone() ? 'Phone keyboard' : 'Built-in keyboard';
   if (showH) val.push(np === 'on' ? 'Piggy keypad' : kbName);
-  if (showQ) val.push(qp === 'bottom' ? 'Search near thumb' : 'Search at top');
+  if (showQ) val.push(qp === 'bottom' ? 'Search at bottom' : 'Search at top');
   if (showH) val.push('Haptics ' + hp);
   var h = '<details class="set" data-sec="device"' + (isOpen('device') ? ' open' : '') + '><summary>' + (isPhone() ? 'This phone' : 'This device') + '<span>' + val.join(' · ') + '</span></summary><div class="inner">';
   if (showH) h += '<div class="flabel">Typing amounts</div>' + seg('npad', { on: 'Piggy keypad', off: kbName }, np) +
     '<div class="hint" style="margin-bottom:12px">Piggy’s keypad has bigger keys, doesn’t make the screen jump, and adds up: type 12.50+4.25 for a split bill.</div>';
-  if (showQ) h += '<div class="flabel">Search &amp; filters in Activity</div>' + seg('qpos', { top: 'At the top', bottom: 'Near my thumb' }, qp) +
-    '<div class="hint" style="margin-bottom:12px">Near my thumb puts them just above the tabs, like Safari’s address bar.</div>';
+  if (showQ) h += '<div class="flabel">Search &amp; filters in Activity</div>' + seg('qpos', { top: 'Top', bottom: 'Bottom' }, qp) +
+    '<div class="hint" style="margin-bottom:12px">Bottom puts them just above the tabs, like Safari’s address bar. While you type, they glide up to the top.</div>';
   if (showH) h += '<div class="flabel">Haptics</div>' + seg('haptic', { on: 'On', off: 'Off' }, hp) +
     '<div class="hint">A light tap you can feel when you save or delete, and when a swipe has gone far enough to do something. Follows your phone’s System Haptics setting.</div>';
   return h + '<div class="hint" style="margin-top:10px">These only change ' + (isPhone() ? 'this phone' : 'this device') + '.</div></div></details>';
@@ -9684,25 +9698,30 @@ function fitSheet(ensure) {
   var vv = window.visualViewport, sh = $('sheet');
   if (!vv || !sh) return;
   if (isMouse()) { if (sh.classList.contains('kb')) unfitSheet(sh); return; }   // no on-screen keyboard on a computer
-  if (PAD && sh.contains(PAD.el)) { if (sh.classList.contains('kb')) { unfitSheet(sh); padFit(true); } return; }   // Piggy's keypad, not the keyboard
+  if (PAD && sh.contains(PAD.el)) { if (sh.classList.contains('kb')) unfitSheet(sh); padFit(true); return; }   // Piggy's keypad, not the keyboard
   var w = Math.round(vv.width * (vv.scale || 1));
   if (w !== FULLW) { FULLW = w; FULLH = 0; }                    // turned the phone: measure again
   var typing = SHEET && typingIn(sh);
   if (!typing || vv.height > FULLH) FULLH = Math.max(FULLH, vv.height, window.innerHeight || 0);
   var up = SHEET && FULLH - vv.height > 80;
   if (up) {
-    var gap = safeTopPx() + 6;
+    var gap = safeTopPx() + 6, fromPad = sh.classList.contains('padkb') || sh.classList.contains('padup'), t0 = fromPad ? sh.getBoundingClientRect() : null;
+    if (fromPad) { sh.classList.remove('padup'); sh.classList.remove('padkb'); sh.style.maxHeight = ''; clearTimeout(PADKB_T); }
     sh.classList.add('kb');
     sh.style.top = Math.round(vv.offsetTop + gap) + 'px';
     sh.style.bottom = 'auto';
     sh.style.height = Math.max(200, Math.round(vv.height - gap)) + 'px';
     sh.style.maxHeight = 'none';
+    if (t0 && !REDUCED && sh.animate) {                 // from where it sat on the keypad to above the keyboard, in one move
+      var t1 = sh.getBoundingClientRect(), dyb = t0.bottom - t1.bottom;
+      if (Math.abs(dyb) > 2 && Math.abs(dyb) < 500) sh.animate([{ transform: 'translateY(' + dyb + 'px)' }, { transform: 'none' }], { duration: 260, easing: EASE_IOS });
+    }
     if (ensure) keepInView(sh);
   } else if (sh.classList.contains('kb') && !typing) unfitSheet(sh);   // moving between boxes: the keyboard can blink, keep the layout
 }
 function unfitSheet(sh) {
   sh = sh || $('sheet'); if (!sh) return;
-  sh.classList.remove('kb'); sh.style.top = ''; sh.style.bottom = ''; sh.style.height = ''; sh.style.maxHeight = '';
+  sh.classList.remove('kb'); sh.classList.remove('padkb'); sh.style.top = ''; sh.style.bottom = ''; sh.style.height = ''; sh.style.maxHeight = '';
 }
 var FIT_T = [];
 function refitSoon() {          // the iPhone settles the keyboard size over a few frames; check a few times
@@ -9713,8 +9732,19 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', function () { fitSheet(false); refitSoon(); fitPicker(); fitQDock(); });
   window.visualViewport.addEventListener('scroll', function () { fitSheet(false); fitQDock(); });
 }
-document.addEventListener('focusin', function (e) { var sh = $('sheet'); if (SHEET && sh && sh.contains(e.target)) refitSoon(); if (e.target.id === 'q') [0, 150, 350].forEach(function (ms) { setTimeout(fitQDock, ms); }); });
-document.addEventListener('focusout', function (e) { if (e.target.id === 'q') setTimeout(fitQDock, 60); });
+document.addEventListener('focusin', function (e) { var sh = $('sheet'); if (SHEET && sh && sh.contains(e.target)) refitSoon(); if (e.target.id === 'q') fitQDock(); });
+document.addEventListener('focusout', function (e) { if (e.target.id === 'q') setTimeout(fitQDock, 40); });
+// bottom search: move the bar to the top first, then focus it, so the phone has nothing to scroll or lift above the keyboard
+document.addEventListener('pointerdown', function (e) {
+  var q = e.target && e.target.id === 'q' && $('qdock') && $('qdock').contains(e.target) ? e.target : null;
+  if (q && document.activeElement !== q) e.preventDefault();
+});
+document.addEventListener('click', function (e) {
+  var q = e.target && e.target.id === 'q' && $('qdock') && $('qdock').contains(e.target) ? e.target : null;
+  if (!q || document.activeElement === q) return;
+  qdockMove(true);
+  try { q.focus({ preventScroll: true }); } catch (er) { q.focus(); }
+});
 window.addEventListener('resize', function () { if ($('qdock') && $('qdock').classList.contains('on')) renderQDock(); });
 // With the keyboard already up, tapping another box moves the cursor there without the iPhone
 // scrolling and nudging the page around (that's what made it jump). We keep it in view ourselves.
@@ -9769,6 +9799,10 @@ document.addEventListener('click', function (e) {
 
 // ---- 2.44: after an update, a popup with what's new (once per update; also in Settings → What's new)
 var NEWS = [
+  { v: '2.47', items: [
+    ['🔢', 'Smoother keypad', 'Going back to the amount shows the whole form again, and Next slides you into the store box in one smooth move.'],
+    ['🔍', 'Search at the bottom, done right', 'The setting is now Top or Bottom. With Bottom, tap search and the bar glides to the top while you type, and the tabs step aside. When you’re done, it glides back down.']
+  ] },
   { v: '2.46', items: [
     ['🔢', 'The keypad stays put on iPhone', 'You can type a whole amount: the keypad stays up until you tap Next, Done, or somewhere else. Keys don’t vibrate any more. Haptics are still on for saving, deleting and swipes.']
   ] },
@@ -9967,6 +10001,7 @@ function padShow(a) {
 }
 function padHide(fast) {
   if (!PAD) return;
+  if (fast === 'kb') return padToKeyboard();
   padCommit();
   if (PAD.el) { PAD.el.classList.remove('padsel'); PAD.el.classList.remove('padact'); }
   PAD = null;
@@ -9976,6 +10011,25 @@ function padHide(fast) {
   padFit(false);
   if (fast || REDUCED || !np.animate) { if (REDUCED && !fast) { np.style.transition = 'opacity .15s'; np.style.opacity = '0'; setTimeout(function () { np.style.transition = ''; done(); }, 150); } else done(); return; }
   np.animate([{ transform: 'none' }, { transform: 'translateY(100%)' }], { duration: 220, easing: 'ease-in' }).onfinish = done;
+}
+// another box took over: the keypad fades as the keyboard rises; the popup doesn't drop in between
+var PADKB_T = null;
+function padToKeyboard() {
+  padCommit();
+  if (PAD.el) { PAD.el.classList.remove('padsel'); PAD.el.classList.remove('padact'); }
+  PAD = null;
+  var np = $('npad'), sh = $('sheet');
+  document.body.classList.remove('padon');
+  if (np && !np.hidden) {
+    if (np.animate && !REDUCED) np.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-out' }).onfinish = function () { if (!PAD) np.hidden = true; };
+    else np.hidden = true;
+  }
+  if (!sh || !sh.classList.contains('padup')) return;
+  sh.classList.add('padkb');                          // fitSheet takes it from here when the keyboard is up
+  clearTimeout(PADKB_T);
+  PADKB_T = setTimeout(function () {                   // no keyboard came (a hardware keyboard, say): settle down gently
+    if (!PAD && sh.classList.contains('padkb') && !sh.classList.contains('kb')) { sh.classList.remove('padkb'); padFit(false); }
+  }, 900);
 }
 // the sheet sits on top of the keypad, the way it sits on top of the keyboard
 function padFit(on) {
@@ -9988,9 +10042,10 @@ function padFit(on) {
   if (inSheet) {
     sh.classList.add('padup');
     sh.style.bottom = Math.round(ph) + 'px';
-    sh.style.maxHeight = Math.max(220, Math.round(window.innerHeight / z - ph - safeTopPx() - 8)) + 'px';
+    var fullH = Math.max(window.innerHeight, FULLH || 0, window.visualViewport ? window.visualViewport.height : 0);
+    sh.style.maxHeight = Math.max(220, Math.round(fullH / z - ph - safeTopPx() - 8)) + 'px';
   } else if (sh.classList.contains('padup')) {
-    sh.classList.remove('padup'); sh.style.bottom = ''; sh.style.maxHeight = '';
+    sh.classList.remove('padup'); sh.classList.remove('padkb'); sh.style.bottom = ''; sh.style.maxHeight = '';
   } else if (on && PAD) {                             // a form on the page itself: keep the amount above the keypad
     var r = PAD.el.getBoundingClientRect(), lim = window.innerHeight - ph * z - 16;
     if (r.bottom > lim) window.scrollBy(0, r.bottom - lim + 40);
@@ -9998,7 +10053,12 @@ function padFit(on) {
   } else return;
   var dy = before - sh.getBoundingClientRect().top;
   if (dy && SHEET && sh.classList.contains('on') && getComputedStyle(sh).transform === 'none' && !REDUCED && sh.animate && Math.abs(dy) < 600) sh.animate([{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], { duration: on ? 300 : 220, easing: on ? EASE_IOS : 'ease-out' });
-  if (on) { var a = PAD.el.closest('.field') || PAD.el, ar = a.getBoundingClientRect(), sr = sh.getBoundingClientRect(); if (ar.top < sr.top + 8 || ar.bottom > sr.bottom - 70) sh.scrollTop += ar.top - sr.top - 12; }
+  if (on) {                                          // the amount in view; the top of the form too, if it fits
+    var a = PAD.el.closest('.field') || PAD.el, sr = sh.getBoundingClientRect(), keep = sh.scrollTop;
+    if (PAD.el.id === 'f_a') sh.scrollTop = 0;
+    var ar = a.getBoundingClientRect();
+    if (ar.top < sr.top + 8 || ar.bottom > sr.bottom - 70) { sh.scrollTop = keep; ar = a.getBoundingClientRect(); sh.scrollTop += ar.top - sr.top - 12; }
+  }
 }
 // after the form is drawn again (Expense/Income, a category…), keep going in the new amount box
 function padReattach() {
@@ -10014,7 +10074,7 @@ function padReattach() {
 document.addEventListener('focusin', function (e) {
   var t = e.target;
   if (padable(t) && padOn()) { if (!t.readOnly) { t.readOnly = true; t.setAttribute('inputmode', 'none'); } padShow(t); }
-  else if (PAD && t !== PAD.el && !(t.closest && t.closest('#npad'))) padHide(true);    // the keyboard is taking over
+  else if (PAD && t !== PAD.el && !(t.closest && t.closest('#npad'))) padHide(t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' ? 'kb' : true);    // the keyboard is taking over
 });
 document.addEventListener('focusout', function (e) {
   if (!PAD || e.target !== PAD.el) return;
@@ -10023,7 +10083,7 @@ document.addEventListener('focusout', function (e) {
     var a = document.activeElement;
     if (a === PAD.el || padable(a)) return;
     if (!PAD.el.isConnected && padFind(PAD.key)) return padReattach();
-    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) padHide(true);   // another box took over (its keyboard is coming up)
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) padHide(a.tagName === 'SELECT' ? true : 'kb');   // another box took over (its keyboard is coming up)
     // otherwise focus just went nowhere (an iPhone does that when you tap a button): the keypad stays; a tap elsewhere puts it away
   }, 0);
 });
@@ -10040,6 +10100,12 @@ document.addEventListener('click', function (e) {
     try { PAD.el.blur(); } catch (er) {} padHide();
   }, 0);
 }, true);
+// tapping the "$" (or anywhere in an amount box) is the same as tapping the number
+document.addEventListener('click', function (e) {
+  var w = e.target.closest ? e.target.closest('.amtwrap, .spa') : null;
+  if (!w || e.target.tagName === 'INPUT') return;
+  var i = w.querySelector('input'); if (i && document.activeElement !== i) { try { i.focus(); } catch (er) {} if (PAD && PAD.el !== i && padable(i) && padOn()) padShow(i); }
+});
 // a hardware keyboard (iPad) types into the keypad too
 document.addEventListener('keydown', function (e) {
   if (!PAD || e.target !== PAD.el || e.metaKey || e.ctrlKey || e.altKey) return;
