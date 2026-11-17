@@ -1290,6 +1290,83 @@ button,[data-act],summary,.chip{touch-action:manipulation}
   .band .bside+.bside{border-left:1px solid var(--b1)}
   .lhead,.lrow{grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr) minmax(0,.7fr) minmax(0,.9fr) minmax(0,1fr) 16px;column-gap:10px}
 }
+/* ---- 2.43: smoother on phones ---- */
+/* the page can't scroll sideways, without becoming its own scroller (so pinned headings work on phones too) */
+@supports (overflow:clip){html,body,#app{overflow-x:clip}}
+#minibar.on{pointer-events:auto;cursor:pointer}
+/* Activity: each month's heading stays pinned at the top while you scroll through it; tap it to jump */
+@media (max-width:959px){
+  .mgrp>.mhead{position:sticky;top:env(safe-area-inset-top);z-index:4;margin:8px 0 0;padding:8px 2px 6px;background:var(--bg);
+    transition:box-shadow .2s ease;-webkit-tap-highlight-color:transparent;cursor:pointer}
+  .mgrp>.mhead>span:first-child::after{content:'';display:inline-block;width:6px;height:6px;margin:0 0 2px 7px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg);opacity:.45}
+  .mgrp>.mhead.stuck{box-shadow:0 .5px 0 var(--b1);background:color-mix(in srgb,var(--bg) 90%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px)}
+  .mgrp>.mhead:active{color:var(--t1)}
+}
+@media (max-width:699px){.mgrp>.mhead{top:calc(44px + env(safe-area-inset-top))}}
+/* bigger text: the pinned heading stays on one line (month and what was spent) */
+[data-fs=l] .mgrp>.mhead small,[data-fs=xl] .mgrp>.mhead small,[data-fs=l] .mgrp>.mhead .mhin,[data-fs=xl] .mgrp>.mhead .mhin{display:none}
+.mgrp>.mhead>span{white-space:nowrap}
+/* Plan's section tabs: nothing peeks through the gap above them while they're pinned */
+@media (max-width:699px){.psegs{box-shadow:0 -7px 0 var(--bg)}}
+.jgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:6px 0 14px}
+.jbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:56px;border-radius:var(--r2);background:var(--p1);border:1px solid var(--b1);color:var(--t1)}
+.jbtn b{font-size:16px}
+.jbtn small{font-size:12px;color:var(--t3);font-variant-numeric:tabular-nums}
+.jbtn.on{background:var(--ac);border-color:var(--ac);color:var(--bf)}
+.jbtn.on small{color:inherit;opacity:.8}
+/* long lists only draw the months you can see */
+.list.cv{content-visibility:auto}
+/* swiping back out of a sheet */
+#sheet.edging{will-change:transform}
+/* "Near my thumb": search and filters just above the tabs */
+#qdock{display:none}
+#qdock.on{display:block;position:fixed;left:0;right:0;bottom:var(--tabh,64px);z-index:29;padding:8px 16px;
+  background:color-mix(in srgb,var(--bg) 84%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);border-top:.5px solid var(--b1)}
+#qdock.kb{bottom:auto;padding-bottom:8px}
+#qdock .search{max-width:488px;margin:0 auto}
+.qbtns{display:contents}
+body.qb main{padding-bottom:136px}
+body.qb.on-bulk #bulk_bar{bottom:calc(var(--tabh,64px) + 66px)}
+body.locked #qdock{visibility:hidden}
+/* ---- 2.44: Piggy's keypad for amounts ---- */
+#npad{position:fixed;left:0;right:0;bottom:0;z-index:46;margin:0 auto;max-width:520px;background:var(--p2);border-top:1px solid var(--b1);
+  padding:6px 8px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -10px 28px -12px rgba(0,0,0,.28);touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+@media (min-width:521px){#npad{border-radius:18px 18px 0 0;border-left:1px solid var(--b1);border-right:1px solid var(--b1)}}
+#npad[hidden]{display:none}
+.nptop{display:flex;align-items:center;justify-content:space-between;min-height:30px;padding:0 4px 4px}
+#np_hint{font-size:12px;color:var(--t3);font-variant-numeric:tabular-nums}
+#np_hint.sum{font-size:14px;color:var(--t1);font-weight:600}
+#np_paste{font-size:14px;font-weight:600;color:var(--ac);padding:6px 8px;margin:-6px -4px -6px 0;background:none;border:0}
+.npkeys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.npk{height:clamp(42px,7vh,56px);border-radius:12px;background:var(--p1);border:1px solid var(--b1);color:var(--t1);font-size:24px;font-weight:500;
+  font-variant-numeric:tabular-nums;box-shadow:0 1px 0 var(--b1);transition:transform .08s ease,background-color .12s ease;padding:0}
+.npk.op{background:color-mix(in srgb,var(--ac) 13%,var(--p1));color:var(--ac);font-weight:700}
+.npk.del{font-size:21px}
+.npk.sm{font-size:19px}
+.npk.go{background:var(--ac);border-color:var(--ac);color:var(--bf);font-size:17px;font-weight:700}
+.npk.down{transform:scale(.95);background:color-mix(in srgb,var(--t1) 12%,var(--p1))}
+.npk.op.down{background:color-mix(in srgb,var(--ac) 26%,var(--p1))}
+.npk.go.down{background:color-mix(in srgb,var(--t1) 18%,var(--ac))}
+.amtin.padin,input.padin{caret-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+.amtin.padsel,input.padsel{background:color-mix(in srgb,var(--ac) 12%,transparent)}
+.padexpr{margin-top:6px;font-size:14px;color:var(--t2);font-variant-numeric:tabular-nums;text-align:right;padding-right:4px;word-break:break-all}
+.padexpr i{font-style:normal;color:var(--ac);font-weight:700}
+.padexpr b{color:var(--t1)}
+.padexpr b.neg{color:var(--bad)}
+#sheet.padup .btns.stickybar{padding-bottom:10px}
+#sheet.padup{padding-bottom:0}
+body.padon main{padding-bottom:340px}
+@media (prefers-reduced-motion: reduce){.npk{transition:background-color .12s ease}.npk.down{transform:none}}
+.nwl{list-style:none;margin:6px 0 14px;padding:0;display:flex;flex-direction:column;gap:14px}
+.nwi{display:flex;gap:12px;align-items:flex-start}
+.nwic{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:19px;background:color-mix(in srgb,var(--ac) 13%,var(--p1));border:1px solid var(--b1)}
+.nwi b{display:block;font-size:16px;margin:1px 0 2px}
+.nwi small{display:block;font-size:14px;line-height:1.4;color:var(--t2)}
+.nwold{border-top:1px solid var(--b1);padding:10px 0}
+.nwold summary{display:flex;justify-content:space-between;font-weight:600;cursor:pointer;list-style:none}
+.nwold summary span{font-weight:400;color:var(--t3);font-size:14px}
+.nwold summary::-webkit-details-marker{display:none}
 </style>
 </head>
 <body>
@@ -1315,7 +1392,8 @@ button,[data-act],summary,.chip{touch-action:manipulation}
 <div id="scrim" data-act="close"></div>
 <div id="sheet" role="dialog" aria-modal="true"></div>
 <div id="picker" role="dialog" aria-modal="true" aria-label="Choose a category"></div>
-<div id="minibar" aria-hidden="true"><span id="miniT"></span></div>
+<div id="minibar" aria-hidden="true" data-act="gotop"><span id="miniT"></span></div>
+<div id="qdock"></div>
 <div id="toast" role="status"><span id="toastTxt"></span><button id="toastBtn" data-act="undo">Undo</button></div>
 
 <script>
@@ -1323,7 +1401,7 @@ button,[data-act],summary,.chip{touch-action:manipulation}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.42';
+var VERSION = '2.44';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1486,7 +1564,7 @@ function parseD(s) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m
 function shortDate(s) { var d = parseD(s); return d ? MON[d.getMonth()] + ' ' + d.getDate() : ''; }
 function parseAmt(s) {
   var t = String(s == null ? '' : s).replace(/[\s$,]/g, '');
-  if (!/^-?\d*\.?\d+$/.test(t)) return NaN;
+  if (!/^-?(\d+\.?\d*|\.\d+)$/.test(t)) return NaN;              // "12." (still typing) counts as 12
   return r2(parseFloat(t));
 }
 function low(s) { return String(s || '').trim().toLowerCase(); }
@@ -1845,6 +1923,8 @@ function render() {
   else if (UI.tab === 'plan') html = viewPlan();
   else html = viewTrends();
   $('view').innerHTML = html;
+  if (PAD && !PAD.el.isConnected) padReattach();
+  renderQDock();
   deskInit();
   setTimeout(function () { syncEditPanel(false); sideExtra(); }, 0);
   $('view').setAttribute('data-v', UI.tab === 'plan' ? 'plan-' + (planState().step || 'home') : UI.tab);
@@ -2339,6 +2419,17 @@ function miniBar() {
   }
   if ($('miniT').textContent !== title) $('miniT').textContent = title;
   mb.classList.toggle('on', show);
+  stuckHeads();
+}
+// 2.43: the month heading pinned at the top of Activity gets a hairline under it
+function stuckHeads() {
+  if (UI.tab !== 'activity' || isWide()) return;
+  var hs = document.querySelectorAll('#txlist .mgrp>.mhead'); if (!hs.length) return;
+  var top = stickTop() + 1;
+  for (var i = 0; i < hs.length; i++) {
+    var r = hs[i].getBoundingClientRect(), on = r.top <= top && hs[i].parentNode.getBoundingClientRect().bottom > r.bottom + 4;
+    if (hs[i].classList.contains('stuck') !== on) hs[i].classList.toggle('stuck', on);
+  }
 }
 var MINI_RAF = 0;
 window.addEventListener('scroll', function () { if (!MINI_RAF) MINI_RAF = requestAnimationFrame(function () { MINI_RAF = 0; miniBar(); }); }, { passive: true });
@@ -2363,6 +2454,11 @@ window.addEventListener('scroll', function () { if (!MINI_RAF) MINI_RAF = reques
     } else { t.style.transform = ''; t.style.opacity = ''; toastTimer = setTimeout(function () { t.classList.remove('on'); UNDO = null; }, 2500); }
   }, { passive: true });
 })();
+// 2.43: back to the top of the page — a glide, or a quick fade with Reduce Motion on
+function glideTop() {
+  if (REDUCED) { window.scrollTo(0, 0); fadeIn($('view'), 200, 0.5); return; }
+  try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); }
+}
 // A new screen fades in instead of snapping.
 function viewIn() {
   var v = $('view'); if (!v) return;
@@ -3109,6 +3205,37 @@ function activityMonths() {
   S.tx.forEach(function (t) { if (spreadLater(t)) return; var k = ymKey(t.y, t.m); cnt[k] = (cnt[k] || 0) + 1; });
   return Object.keys(cnt).map(Number).sort(function (a, b) { return b - a; }).map(function (k) { return [k, cnt[k]]; });
 }
+// 2.43: tap a month heading in Activity to jump to another month
+function ajumpMonths() {
+  if (UI.am !== '') return activityMonths();            // looking at one month: pick any month to look at instead
+  var cnt = {};
+  filteredTx().forEach(function (t) { var k = ymKey(t.y, t.m); cnt[k] = (cnt[k] || 0) + 1; });
+  return Object.keys(cnt).map(Number).sort(function (a, b) { return b - a; }).map(function (k) { return [k, cnt[k]]; });
+}
+function ajumpHtml(cur) {
+  var ms = ajumpMonths(), h = '<div class="shead"><h2>Jump to a month</h2><button data-act="close">Close</button></div>', y = null;
+  if (UI.q || UI.fk !== 'all') h += '<div class="hint" style="margin:-4px 0 10px">Months with entries that match what you’re looking at.</div>';
+  ms.forEach(function (x) {
+    var yy = ymY(x[0]);
+    if (yy !== y) { h += (y !== null ? '</div>' : '') + '<div class="flabel">' + yy + '</div><div class="jgrid">'; y = yy; }
+    h += '<button class="jbtn' + (x[0] === cur ? ' on' : '') + '" data-act="ajumpgo" data-v="' + x[0] + '"' + (x[0] === cur ? ' aria-current="true"' : '') + '><b>' + MON[ymM(x[0])] + '</b><small>' + x[1] + '</small></button>';
+  });
+  return h + (y !== null ? '</div>' : '');
+}
+function stickTop() { var mb = $('minibar'); return isPhone() && mb ? mb.getBoundingClientRect().height : 0; }
+function ajumpGo(k) {
+  if (UI.am !== '') { UI.am = String(k); UI.lim = 120; render(); window.scrollTo(0, 0); viewIn(); return; }
+  var sec = document.querySelector('#txlist .mgrp[data-k="' + k + '"]');
+  if (!sec) { UI.lim = 100000; $('txlist').innerHTML = txListHtml(); sec = document.querySelector('#txlist .mgrp[data-k="' + k + '"]'); }
+  if (!sec) return;
+  // months not drawn yet only have a guessed height; draw them all once so the landing spot is exact (they stay measured after)
+  var cvs = document.querySelectorAll('#txlist .list.cv');
+  for (var i = 0; i < cvs.length; i++) cvs[i].style.contentVisibility = 'visible';
+  var y = sec.getBoundingClientRect().top + window.scrollY - stickTop() - 2;
+  setTimeout(function () { for (var j = 0; j < cvs.length; j++) cvs[j].style.contentVisibility = ''; }, 1500);
+  if (REDUCED) { window.scrollTo(0, y); fadeIn(sec, 220, 0.4); return; }
+  try { window.scrollTo({ top: y, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, y); }
+}
 var SORTS = [['new', 'Newest first'], ['old', 'Oldest first'], ['big', 'Biggest first'], ['small', 'Smallest first'], ['store', 'Store A–Z'], ['storez', 'Store Z–A'], ['cat', 'Category A–Z'], ['catz', 'Category Z–A']];
 function flatSort() { return UI.asort !== 'new' && UI.asort !== 'old'; }
 function sortName() { for (var i = 0; i < SORTS.length; i++) if (SORTS[i][0] === UI.asort) return SORTS[i][1]; return ''; }
@@ -3161,9 +3288,7 @@ function viewActivity() {
       '<aside class="card insp" id="insp" data-id="' + esc(ed) + '" aria-label="Selected entry">' + inspHtml() + '</aside></div>';
     return h;
   }
-  h += '<div class="search"><input id="q" type="search" placeholder="Search stores, notes, months" value="' + esc(UI.q) + '" autocomplete="off">' +
-    ('<button class="fbtn' + (nf ? ' on' : '') + '" data-act="afilter" id="a_filter">Filter' + (nf ? ' · ' + nf : '') + '</button>') +
-    '<button class="fbtn' + (UI.bulk ? ' on' : '') + '" data-act="bulk" id="a_select">' + (UI.bulk ? 'Done' : 'Select') + '</button></div>';
+  if (!qBottom()) h += '<div class="search"><input id="q" type="search" enterkeyhint="search" placeholder="Search stores, notes, months" value="' + esc(UI.q) + '" autocomplete="off">' + qBtnsHtml() + '</div>';
   if (!(S.tips && S.tips.swipe) && S.tx.length) h += '<div class="swtip">Tip: swipe an entry left to delete it, or right to change its category or trip.</div>';
   if (!UI.bulk && !UI.q) h += owedLineHtml();
   h += '<div id="txlist">' + txListHtml() + '</div>';
@@ -3171,11 +3296,43 @@ function viewActivity() {
   return h;
 }
 
+function qBtnsHtml() {
+  var nf = activeFilters();
+  return '<button class="fbtn' + (nf ? ' on' : '') + '" data-act="afilter" id="a_filter">Filter' + (nf ? ' · ' + nf : '') + '</button>' +
+    '<button class="fbtn' + (UI.bulk ? ' on' : '') + '" data-act="bulk" id="a_select">' + (UI.bulk ? 'Done' : 'Select') + '</button>';
+}
+// 2.43: "Near my thumb" — Activity's search and filters sit just above the tabs (a setting, this device only)
+function qBottom() { return !!(S && S.cfg.qpos === 'bottom' && UI.tab === 'activity' && isPhone() && !firstLoad()); }      // phones only: a tablet or computer has room up top
+function renderQDock() {
+  var d = $('qdock'); if (!d) return;
+  var on = qBottom();
+  document.body.classList.toggle('qb', on);
+  if (!on) { if (d.innerHTML) { d.innerHTML = ''; d.className = ''; d.style.top = ''; } return; }
+  var tb = document.querySelector('.tabs'); if (tb) document.documentElement.style.setProperty('--tabh', tb.offsetHeight + 'px');
+  var q = $('q'), btns = qBtnsHtml();
+  if (!q || !d.contains(q)) d.innerHTML = '<div class="search"><input id="q" type="search" enterkeyhint="search" placeholder="Search stores, notes, months" value="' + esc(UI.q) + '" autocomplete="off"><span class="qbtns" id="qbtns">' + btns + '</span></div>';
+  else {
+    if (document.activeElement !== q && q.value !== UI.q) q.value = UI.q;
+    if ($('qbtns').innerHTML !== btns) $('qbtns').innerHTML = btns;
+  }
+  d.classList.add('on');
+  fitQDock();
+}
+function fitQDock() {
+  var d = $('qdock'), vv = window.visualViewport;
+  if (!d || !d.classList.contains('on')) return;
+  var q = $('q'), typing = q && document.activeElement === q && d.contains(q);
+  if (vv && typing && !isMouse() && Math.max(FULLH, window.innerHeight) - vv.height > 80) {
+    var z = parseFloat(document.body.style.zoom) || 1;            // larger text zooms the page
+    d.classList.add('kb'); d.style.top = Math.round((vv.offsetTop + vv.height) / z - d.offsetHeight) + 'px';
+  } else if (d.classList.contains('kb')) { d.classList.remove('kb'); d.style.top = ''; }
+}
+
 function txListHtml() {
   var list = filteredTx();
   var sum = activitySummary(list);
   if (!list.length) return sum + '<div class="card empty"><b>No entries' + (UI.q ? ' match “' + esc(UI.q) + '”' : UI.am !== '' ? ' that month' : '') + '</b>' + (UI.q || UI.am !== '' ? 'Try another month or word.' : 'Tap + to log one.') + '</div>';
-  var h = sum, curKey = null, open = false, shown = 0, flat = flatSort(), cnt = {}, wide = isWide();
+  var h = sum, curKey = null, open = false, grp = false, shown = 0, flat = flatSort(), cnt = {}, wide = isWide();
   list.forEach(function (x) { var kk = ymKey(x.y, x.m); cnt[kk] = (cnt[kk] || 0) + 1; });
   if (wide) h += tableHeadHtml();
   if (flat) {
@@ -3187,16 +3344,16 @@ function txListHtml() {
     // stop at a month boundary, never halfway through a month
     if (shown >= UI.lim && (flat || k !== curKey)) break;
     if (!flat && k !== curKey) {
-      if (open) h += '</div>';
+      if (open) h += '</div>' + (grp ? '</section>' : '');
       var s = monthStats(k), filt = UI.q || UI.fk !== 'all';
       if (filt) { var fs0 = 0, fi0 = 0; list.forEach(function (x) { if (ymKey(x.y, x.m) === k) { if (x.k === 'e') fs0 += share(x); else fi0 += x.a; } }); s = { spentAll: fs0, inc: fi0 }; }
-      h += '<div class="mhead"><span>' + MONTHS[t.m] + ' ' + t.y + ' <small>· ' + cnt[k] + (filt ? ' found' : ' entries') + '</small></span><span class="num">' + (filt && !s.spentAll && s.inc ? '' : 'spent <span data-count="' + s.spentAll + '" data-ck="am' + k + (filt ? 'f' : '') + '">' + money(s.spentAll) + '</span>') + (s.inc ? (filt && !s.spentAll ? 'in ' : ' · in ') + money(s.inc) : '') + '</span></div><div class="list">';
+      h += '<section class="mgrp" data-k="' + k + '"><div class="mhead"' + (wide ? '' : ' data-act="ajump" data-v="' + k + '" role="button" tabindex="0" aria-label="' + MONTHS[t.m] + ' ' + t.y + ', jump to another month"') + '><span>' + MONTHS[t.m] + ' ' + t.y + ' <small>· ' + cnt[k] + (filt ? ' found' : ' entries') + '</small></span><span class="num">' + (filt && !s.spentAll && s.inc ? '' : 'spent <span data-count="' + s.spentAll + '" data-ck="am' + k + (filt ? 'f' : '') + '">' + money(s.spentAll) + '</span>') + (s.inc ? (filt && !s.spentAll ? 'in ' + money(s.inc) : '<span class="mhin"> · in ' + money(s.inc) + '</span>') : '') + '</span></div><div class="list' + (UI.edit && !wide ? '' : ' cv') + '" style="contain-intrinsic-size:auto ' + (cnt[k] * 62) + 'px">'; grp = true;
       curKey = k; open = true;
     }
     h += txItem(t);
     if (UI.edit === t.id && !wide) h += txForm(t, false);
   }
-  if (open) h += '</div>';
+  if (open) h += '</div>' + (grp ? '</section>' : '');
   if (shown < list.length) h += '<button class="more" data-act="more" id="a_more">Show more (' + (list.length - shown) + ' older)</button>';
   return h;
 }
@@ -3269,7 +3426,7 @@ function txForm(t, isNew) {
   var moreOpen = UI.fmore || window.__openMore === true || refund || !!t.n || !!(t.fs) || +t.ow > 0 || !!UI.split || !!UI.spread;
   var h = '<form class="form" id="txform" data-id="' + esc(t.id || '') + '" data-new="' + (isNew ? 1 : 0) + '" data-m="' + t.m + '" data-y="' + t.y + '" autocomplete="off">';
   h += '<div class="seg' + (isNew ? '' : ' kseg') + '" role="tablist"><button type="button" class="' + (kind === 'e' ? 'on' : '') + '" data-act="fkind" data-v="e">Expense</button><button type="button" class="' + (kind === 'i' ? 'on' : '') + '" data-act="fkind" data-v="i">Income</button></div>';
-  h += '<div class="field"><label for="f_a">Amount</label><div class="amtwrap"><span class="cur" aria-hidden="true">$</span><input id="f_a" class="amtin" inputmode="decimal" placeholder="0.00" value="' + (t.a ? Math.abs(t.a).toFixed(2) : '') + '"></div></div>';
+  h += '<div class="field"><label for="f_a">Amount</label><div class="amtwrap"><span class="cur" aria-hidden="true">$</span><input id="f_a" ' + (padOn() ? 'class="amtin padin" readonly inputmode="none"' : 'class="amtin" inputmode="decimal"') + ' placeholder="0.00" value="' + (t.a ? Math.abs(t.a).toFixed(2) : '') + '"></div>' + (padOn() ? '<div class="padexpr" id="f_expr" aria-live="polite" hidden></div>' : '') + '</div>';
   h += '<div class="field"><label for="f_v">' + (kind === 'i' ? 'From' : 'Store / vendor') + '</label><input id="f_v" name="piggy_v" autocomplete="off" enterkeyhint="next" value="' + esc(t.v) + '" placeholder="' + (kind === 'i' ? 'work' : 'costco') + '"><div class="sugg" id="f_sugg"></div></div>';
   var tripField = kind === 'e' ? '<div class="field' + (tripUp ? ' tripup' : '') + '" id="f_tripf"><span class="flabel">' + (tripUp ? '✈️ Trip' : 'Trip') + '</span><div class="cchips" id="f_trips">' + tripChips(t, isNew) + '</div>' +
     '<div class="tripnew" id="f_tripnew" hidden><input id="f_tripname" placeholder="Trip name, e.g. Moab" autocomplete="off"><button type="button" class="btn" data-act="ftripcreate">Create</button></div>' +
@@ -3343,7 +3500,7 @@ function payWithHtml(t) {
 function owedHtml(t) {
   var ow = +t.ow || 0, open = ow > 0;
   var h = '<div class="field owf"><button type="button" class="linkbtn" data-act="fowopen" id="f_owopen"' + (open ? ' hidden' : '') + '>Split the bill / someone owes me</button>' +
-    '<div id="f_owbox"' + (open ? '' : ' hidden') + '><span class="flabel">Others owe me</span><div class="owrow"><span class="spa"><span class="cur" aria-hidden="true">$</span><input id="f_ow" inputmode="decimal" placeholder="0.00" value="' + (ow ? ow.toFixed(2) : '') + '" aria-label="Amount others owe you"></span>' +
+    '<div id="f_owbox"' + (open ? '' : ' hidden') + '><span class="flabel">Others owe me</span><div class="owrow"><span class="spa"><span class="cur" aria-hidden="true">$</span><input id="f_ow" ' + padAttrs() + ' placeholder="0.00" value="' + (ow ? ow.toFixed(2) : '') + '" aria-label="Amount others owe you"></span>' +
     '<span class="chips owsplit"><button type="button" class="chip" data-act="fowsplit" data-v="2">Split 2</button><button type="button" class="chip" data-act="fowsplit" data-v="3">3</button><button type="button" class="chip" data-act="fowsplit" data-v="4">4</button></span></div>' +
     '<div class="hint" id="f_owhint">' + owedHint(t.a, ow, t.pb) + '</div></div><input type="hidden" id="f_pb" value="' + esc(t.pb || '') + '"></div>';
   return h;
@@ -3389,7 +3546,7 @@ function splitHtml() {
   UI.split.forEach(function (p, i) {
     h += '<div class="sprow"><select data-split-c="' + i + '" aria-label="Category ' + (i + 2) + '"><option value="">Category…</option>' + cats.map(function (c) {
       return '<option value="' + esc(c) + '"' + (c === p.c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select>' +
-      '<span class="spa"><span class="cur" aria-hidden="true">$</span><input data-split-a="' + i + '" inputmode="decimal" placeholder="0.00" value="' + esc(p.a || '') + '" aria-label="Amount ' + (i + 2) + '"></span>' +
+      '<span class="spa"><span class="cur" aria-hidden="true">$</span><input data-split-a="' + i + '" ' + padAttrs() + ' placeholder="0.00" value="' + esc(p.a || '') + '" aria-label="Amount ' + (i + 2) + '"></span>' +
       '<button type="button" class="obtn" data-act="fsplitrm" data-v="' + i + '" aria-label="Remove">×</button></div>';
   });
   return h + '<button type="button" class="linkbtn" data-act="fsplitadd">+ Another category</button></div>';
@@ -6686,6 +6843,12 @@ function sheetBack() {
   closeSheet();
 }
 function openSheet(kind, arg) {
+  if (PAD) { try { PAD.el.blur(); } catch (e) {} padHide(true); }      // a new popup: the keypad's job (if any) starts over inside it
+  if (kind === 'add' && UI.edit && document.querySelector('#view #txform, #insp #txform')) {   // one form at a time: the entry being changed closes
+    UI.edit = null;
+    if ($('txlist')) $('txlist').innerHTML = txListHtml();
+    if ($('insp')) syncEditPanel(false);
+  }
   if (TOUR && !TOUR.nav) { var tov = $('tour'); if (tov && tov.parentNode) tov.parentNode.removeChild(tov); TOUR = null; }   // a sheet wins (unless the tour opened it)
   if (SHEET && $('sheet').classList.contains('on') && SHEET.kind !== kind) {
     var at = -1; SHEET_STACK.forEach(function (x, i) { if (x.kind === kind) at = i; });
@@ -6749,6 +6912,7 @@ function sideExtra() {
 }
 var SHEETPREP = 0;
 function closeSheet() {
+  padHide(true);
   UI.logAgain = null;
   var wasEdit = SHEET && SHEET.kind === 'edit', was = SHEET && SHEET.kind;
   SHEET_STACK = [];
@@ -6757,6 +6921,7 @@ function closeSheet() {
   if (wasEdit && UI.edit) { UI.edit = null; if ($('txlist')) $('txlist').innerHTML = txListHtml(); }
   if (HU_PENDING) setTimeout(maybeHeadsUp, 450);
   else if (BILLS_PENDING || ((was === 'headsup' || was === 'settings') && BILLS_CHECK)) setTimeout(maybeBills, 450);
+  if (NEWS_PENDING) setTimeout(maybeNews, 900);          // after anything above has had its turn
   CLOSED_AT = Date.now();
   maybeTour();
   playPending();
@@ -6784,24 +6949,25 @@ document.addEventListener('keydown', function (e) {
 
 // Pull the page down from the very top to sync.
 (function () {
-  var y0 = null, armed = false, ind = null;
+  var y0 = null, x0 = 0, armed = false, ind = null;
   function el() {
     if (!ind) { ind = document.createElement('div'); ind.id = 'ptr'; ind.innerHTML = '<span></span>'; document.body.appendChild(ind); }
     return ind;
   }
   document.addEventListener('touchstart', function (e) {
     if (SHEET || PICK || window.scrollY > 0 || e.touches.length !== 1) { y0 = null; return; }
-    y0 = e.touches[0].clientY; armed = false;
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; armed = false;
   }, { passive: true });
   document.addEventListener('touchmove', function (e) {
     if (y0 === null) return;
-    var d = e.touches[0].clientY - y0;
-    if (d < 0 || window.scrollY > 0) { y0 = null; el().className = ''; $('app').style.transform = ''; return; }
+    var d = e.touches[0].clientY - y0, sx = Math.abs(e.touches[0].clientX - x0);
+    if (d < 0 || window.scrollY > 0 || (sx > 10 && sx > d) || ESW || (MSW && MSW.axis === 'x')) { y0 = null; el().className = ''; $('app').style.transform = ''; return; }   // a sideways swipe isn't a pull
     var p = el(); p.className = 'show' + (d > 80 ? ' ready' : '');
     var rub = 74 * (1 - Math.exp(-d / 150));                 // resists more the further you pull
     p.style.transform = 'translate(-50%,' + rub.toFixed(1) + 'px)';
     if (!REDUCED) { var ap0 = $('app'); ap0.style.transition = 'none'; ap0.style.transform = 'translateY(' + (rub * 0.7).toFixed(1) + 'px)'; }
     p.firstChild.textContent = d > 80 ? 'Release to sync' : 'Pull to sync';
+    if (d > 80 && !armed) haptic('tick');
     armed = d > 80;
   }, { passive: true });
   document.addEventListener('touchend', function () {
@@ -6835,6 +7001,7 @@ document.addEventListener('keydown', function (e) {
       if (d <= 0 || dx > Math.abs(d)) { active = false; return; }   // scrolling up or sideways: let it scroll
     }
     var now = Date.now(); vel = (d - lastY) / Math.max(1, now - lastT); lastY = d; lastT = now;
+    if (d > 110 && dy <= 110) haptic('tick');
     dy = Math.max(0, d);
     e.preventDefault();
     s.style.transition = 'none';
@@ -6865,6 +7032,10 @@ function renderSheet() {
     h += starterHtml();
   } else if (SHEET.kind === 'settings') {
     h += settingsHtml();
+  } else if (SHEET.kind === 'news') {
+    h += newsHtml(SHEET.arg);
+  } else if (SHEET.kind === 'ajump') {
+    h += ajumpHtml(SHEET.arg);
   } else if (SHEET.kind === 'cat') {
     h += catSheetHtml(SHEET.arg.c, SHEET.arg.k);
   } else if (SHEET.kind === 'tripassign') {
@@ -7010,6 +7181,27 @@ function backupHtml() {
     '<input type="file" id="importFile" accept="application/json,.json" class="sr">' +
     '<div class="hint">Your sheet is the real backup once connected. This file also keeps your settings and any unsynced changes.</div></div></details>';
   return h;
+}
+// 2.43: settings that belong to this device only (they don't sync to your other devices)
+function deviceSetHtml() {
+  var showQ = isPhone(), showH = !isMouse();
+  if (!showQ && !showH) return '';
+  var seg = function (act, opts, cur) {
+    return '<div class="seg">' + Object.keys(opts).map(function (k) { return '<button class="' + (cur === k ? 'on' : '') + '" data-act="' + act + '" data-v="' + k + '" aria-pressed="' + (cur === k) + '">' + opts[k] + '</button>'; }).join('') + '</div>';
+  };
+  var qp = S.cfg.qpos === 'bottom' ? 'bottom' : 'top', hp = S.cfg.haptic === false ? 'off' : 'on', np = S.cfg.npad === false ? 'off' : 'on', val = [];
+  var kbName = isPhone() ? 'Phone keyboard' : 'Built-in keyboard';
+  if (showH) val.push(np === 'on' ? 'Piggy keypad' : kbName);
+  if (showQ) val.push(qp === 'bottom' ? 'Search near thumb' : 'Search at top');
+  if (showH) val.push('Haptics ' + hp);
+  var h = '<details class="set" data-sec="device"' + (isOpen('device') ? ' open' : '') + '><summary>' + (isPhone() ? 'This phone' : 'This device') + '<span>' + val.join(' · ') + '</span></summary><div class="inner">';
+  if (showH) h += '<div class="flabel">Typing amounts</div>' + seg('npad', { on: 'Piggy keypad', off: kbName }, np) +
+    '<div class="hint" style="margin-bottom:12px">Piggy’s keypad has bigger keys, doesn’t make the screen jump, and adds up: type 12.50+4.25 for a split bill.</div>';
+  if (showQ) h += '<div class="flabel">Search &amp; filters in Activity</div>' + seg('qpos', { top: 'At the top', bottom: 'Near my thumb' }, qp) +
+    '<div class="hint" style="margin-bottom:12px">Near my thumb puts them just above the tabs, like Safari’s address bar.</div>';
+  if (showH) h += '<div class="flabel">Haptics</div>' + seg('haptic', { on: 'On', off: 'Off' }, hp) +
+    '<div class="hint">A light tap you can feel when you save or delete, and when a swipe has gone far enough to do something. Follows your phone’s System Haptics setting.</div>';
+  return h + '<div class="hint" style="margin-top:10px">These only change ' + (isPhone() ? 'this phone' : 'this device') + '.</div></div></details>';
 }
 function appearanceHtml() {
   var pal = PALETTES[S.cfg.pal] || PALETTES.coastline, sty = STYLES[S.cfg.style] || STYLES.classic;
@@ -7361,6 +7553,7 @@ function settingsHtml() {
     '<div class="hint" style="margin-bottom:12px">When you open ' + esc(appName()) + ' from the Home Screen (or come back after 5 minutes away), the add form is already up. Close it to see your month.</div>' +
     '<button class="btn" style="width:100%" data-act="qlink" id="q_link">Copy the quick-add link</button>' +
     '<details class="itip"><summary>ⓘ <span>Using the link with Siri or the Action button</span></summary><div class="hint">In the Shortcuts app make a shortcut with <b>Open URLs</b> and paste the link. It opens in Safari (iPhone opens links there, not in the Home Screen app), so connect your sheet once in Safari too — entries from either place land in the same sheet.</div></details></div></details>';
+  h += deviceSetHtml();
   h += '<div class="sgrp">Look &amp; categories</div>' + appearanceHtml();
   h += catOrderHtml();
   h += hiddenSuggHtml();
@@ -7370,7 +7563,8 @@ function settingsHtml() {
       return '<button class="tlrow" data-act="tour" data-v="' + id + '"' + (id === 'intro' ? ' id="s_tour"' : '') + '><span><b>' + T.name + '</b><small>' + T.sub + ' · ' + T.steps.length + ' steps</small></span><i aria-hidden="true">' + (dn ? '✓' : '›') + '</i></button>'; }).join('') +
     '</div></details>';
 
-  h += '<div class="hint" style="text-align:center;margin-top:14px">' + esc(appName()) + ' ' + VERSION + '</div>';
+  h += '<button class="btn" data-act="news" style="width:100%;margin-top:14px">✨ What’s new</button>';
+  h += '<div class="hint" style="text-align:center;margin-top:10px">' + esc(appName()) + ' ' + VERSION + '</div>';
   return h;
 }
 
@@ -7510,7 +7704,7 @@ function focusAmount() {
 ['mousedown', 'pointerdown'].forEach(function (ev) {
   document.addEventListener(ev, function (e) {
     var b = e.target.closest ? e.target.closest('#txform[data-new="1"] [data-act=fkind]') : null;
-    if (b && typingIn($('sheet'))) e.preventDefault();
+    if (b && (typingIn($('sheet')) || (PAD && $('sheet').contains(PAD.el)))) e.preventDefault();
   });
 });
 
@@ -7528,6 +7722,7 @@ function rerenderForm(changes) {
   wrap.innerHTML = txForm(t, isNew);
   f.parentNode.replaceChild(wrap.firstChild, f);
   if (isNew) suggest();
+  padReattach();
 }
 
 // 2.40: the same amount at the same store (or in the same category, with no store) within 2 days, already logged
@@ -7543,6 +7738,7 @@ function dupOf(v) {
 }
 function submitForm() {
   var f = $('txform'); if (!f) return;
+  padCommit();
   var v = formVals(), err = $('f_err');
   if (isNaN(v.a) || v.a === 0) { err.textContent = 'Enter an amount.'; err.style.color = 'var(--bad)'; return; }
   if (!v.c) { err.textContent = 'Pick a category.'; err.style.color = 'var(--bad)'; return; }
@@ -7695,7 +7891,7 @@ function keepScroll(fn) {
 // Put an Activity entry back on screen where it was (top = its old distance from the top of the screen).
 function txEl(id) {
   var els = document.querySelectorAll('#txlist .tx[data-act=edit]');
-  for (var i = 0; i < els.length; i++) if (els[i].getAttribute('data-v') === id) return els[i];
+  for (var i = 0; i < els.length; i++) if (els[i].getAttribute('data-v') === id) { var l = els[i].closest('.list.cv'); if (l) l.style.contentVisibility = 'visible'; return els[i]; }   // drawn, so it can be measured
   return null;
 }
 function anchorTx(id, top, flash) {
@@ -7832,6 +8028,7 @@ function sentRef(op, t) {
 var UNDO = null, toastTimer = null;
 function toast(msg, undo, label) {
   UNDO = undo || null;
+  if (undo && !label) haptic('ok');                 // something was done (and can be undone): a tap you can feel
   $('toastTxt').textContent = msg;
   $('toastBtn').textContent = label || 'Undo';
   $('toastBtn').style.display = undo ? '' : 'none';
@@ -8202,7 +8399,7 @@ function disconnect() {
 // Two-step confirm: first tap arms, second confirms, disarms after 3 s.
 var armTimer = null;
 function arm(key, btn, label, ms) {
-  UI.armed = key;
+  UI.armed = key; haptic('tick');
   if (btn) { btn.dataset.label = btn.textContent; btn.textContent = label; btn.classList.add('armed'); }
   clearTimeout(armTimer);
   armTimer = setTimeout(function () {
@@ -8322,6 +8519,8 @@ function migrate(d) {
 }
 
 // ------------------------------------------------------------------ events
+// 2.43: where you are just before a tap is handled (for swiping back)
+document.addEventListener('click', function (e) { var el = e.target.closest ? e.target.closest('[data-act]') : null; NAVSNAP = el && !TOUR ? navSnap() : null; });
 document.addEventListener('click', function (e) {
   var el = e.target.closest ? e.target.closest('[data-act]') : null;
   if (!el) return;
@@ -8331,6 +8530,16 @@ document.addEventListener('click', function (e) {
   var act = el.getAttribute('data-act'), v = el.getAttribute('data-v');
   switch (act) {
     case 'tab':
+      // 2.43: tapping the tab you're on glides to the top; tapped again at the top, it goes back to the start of that tab
+      if (UI.tab === v && !SHEET && !UI.edit && !TOUR) {
+        if (window.scrollY > 4) { glideTop(); break; }
+        var P0 = planState();
+        if (v === 'plan' && P0.step && P0.step !== 'home' && !(P0.step === 'edit' && planDraftCount() > 0)) { P0.step = 'home'; save(); render(); viewIn(); }
+        else if (v === 'trends' && UI.trend === 'compare') { UI.trend = 'overview'; render(); viewIn(); }
+        else if (v === 'month' && UI.ym !== null && UI.ym !== nowYM()) { UI.ym = nowYM(); render(); viewIn(); }
+        else if (v === 'activity' && (UI.q || activeFilters())) { UI.q = ''; UI.am = ''; UI.asort = 'new'; UI.fk = 'all'; UI.lim = 120; render(); viewIn(); }
+        break;
+      }
       // Activity starts clean each time you come back to it
       if (v === 'activity' && UI.tab !== 'activity') { UI.q = ''; UI.am = ''; UI.asort = 'new'; UI.fk = 'all'; UI.lim = 120; }
       UI.scr = UI.scr || {};
@@ -8338,6 +8547,14 @@ document.addEventListener('click', function (e) {
       var back = UI.tab === v ? 0 : (UI.scr[v] || 0);
       if (v === 'activity' && FRESH.length) back = 0;               // something new to see: start at the top
       UI.tab = v; UI.edit = null; if (SHEET) closeSheet(); render(); window.scrollTo(0, Math.min(back, document.documentElement.scrollHeight)); break;
+    case 'gotop': glideTop(); break;
+    case 'news': openSheet('news', null); break;
+    case 'sback': sheetBack(); break;
+    case 'qpos': S.cfg.qpos = v === 'bottom' ? 'bottom' : 'top'; save(); renderSheet(); render(); break;
+    case 'haptic': S.cfg.haptic = v !== 'off'; save(); renderSheet(); haptic('ok'); break;
+    case 'npad': S.cfg.npad = v !== 'off'; save(); renderSheet(); break;
+    case 'ajump': if (!UI.bulk) openSheet('ajump', +v); break;
+    case 'ajumpgo': closeSheet(); setTimeout(function () { ajumpGo(+v); }, 30); break;
     case 'goplan':
       if (SHEET) closeSheet();
       var gp = planState();
@@ -9358,6 +9575,7 @@ document.addEventListener('keydown', function (e) {
     if (e.shiftKey && $('f_saveadd')) $('f_saveadd').click(); else submitForm();
     return;
   }
+  if (e.key === 'Enter' && e.target && e.target.id === 'q' && !isMouse()) { e.target.blur(); return; }     // Search on the keyboard puts it away
   if (e.key === 'Enter' && e.target && e.target.id === 'pk_q' && PICK) {
     e.preventDefault();
     var q = low(PICK.q), hits = pickerCats().filter(function (c) { return c.indexOf(q) >= 0; });
@@ -9386,7 +9604,7 @@ function goHome() {
   if (TOUR) { var tv = $('tour'); if (tv && tv.parentNode) tv.parentNode.removeChild(tv); TOUR = null; }
   if (PICK) closePicker();
   if (SHEET) closeSheet();
-  UI.tab = 'month'; UI.ym = nowYM(); UI.edit = null; UI.psec = UI.psec && 'month';
+  UI.tab = 'month'; UI.ym = nowYM(); UI.edit = null; UI.psec = UI.psec && 'month'; NAVBACK = [];
   render(); window.scrollTo(0, 0);
 }
 document.addEventListener('visibilitychange', function () {
@@ -9426,6 +9644,7 @@ function boot() {
     } catch (e) {}
     if (S.demo && !S.tx.length) buildDemo();
     S.mopen = {}; UI.heroOpen = false;            // each time the app opens, every section starts closed
+    if (S.newsSeen === undefined) S.newsSeen = S.lastVer || VERSION;      // a new install has nothing to catch up on
     if (S.lastVer !== VERSION) { S.lastVer = VERSION; S.verSince = Date.now(); save(); }
     if (!S.demo && !S.cfg.url) spreadTick();      // on this phone only: spread payments whose month has come (with a sheet: after it syncs)
     applyTheme();
@@ -9435,6 +9654,7 @@ function boot() {
     if (wantAdd || S.cfg.launchAdd) openSheet('add', newTxDraft(/^i/.test(wantAdd) ? 'i' : 'e'));
     if (S.demo && !S.cfg.url && !S.welcomed && !S.tx.some(function (t) { return !t.demo; }) && !window.__noWelcome && !wantAdd) setTimeout(function () { if (!SHEET) openSheet('welcome'); }, 400);
     if (!S.demo) sync().then(function () { setTimeout(celebrations, 600); setTimeout(maybeHeadsUp, 900); }, function () { setTimeout(maybeHeadsUp, 900); });
+    setTimeout(maybeNews, S.demo ? 900 : 1600);
   });
 }
 
@@ -9448,7 +9668,7 @@ function safeTopPx() {
 }
 function typingIn(sh) {
   var a = document.activeElement;
-  return a && sh.contains(a) && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && !/^(button|checkbox|radio|hidden|submit|file|date)$/.test(a.type))) ? a : null;
+  return a && sh.contains(a) && !a.readOnly && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && !/^(button|checkbox|radio|hidden|submit|file|date)$/.test(a.type))) ? a : null;
 }
 function keepInView(sh) {
   var a = typingIn(sh); if (!a) return;
@@ -9463,6 +9683,7 @@ function fitSheet(ensure) {
   var vv = window.visualViewport, sh = $('sheet');
   if (!vv || !sh) return;
   if (isMouse()) { if (sh.classList.contains('kb')) unfitSheet(sh); return; }   // no on-screen keyboard on a computer
+  if (PAD && sh.contains(PAD.el)) { if (sh.classList.contains('kb')) { unfitSheet(sh); padFit(true); } return; }   // Piggy's keypad, not the keyboard
   var w = Math.round(vv.width * (vv.scale || 1));
   if (w !== FULLW) { FULLW = w; FULLH = 0; }                    // turned the phone: measure again
   var typing = SHEET && typingIn(sh);
@@ -9488,10 +9709,12 @@ function refitSoon() {          // the iPhone settles the keyboard size over a f
   FIT_T = [0, 120, 300, 600].map(function (ms) { return setTimeout(function () { fitSheet(ms >= 300); }, ms); });
 }
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', function () { fitSheet(false); refitSoon(); fitPicker(); });
-  window.visualViewport.addEventListener('scroll', function () { fitSheet(false); });
+  window.visualViewport.addEventListener('resize', function () { fitSheet(false); refitSoon(); fitPicker(); fitQDock(); });
+  window.visualViewport.addEventListener('scroll', function () { fitSheet(false); fitQDock(); });
 }
-document.addEventListener('focusin', function (e) { var sh = $('sheet'); if (SHEET && sh && sh.contains(e.target)) refitSoon(); });
+document.addEventListener('focusin', function (e) { var sh = $('sheet'); if (SHEET && sh && sh.contains(e.target)) refitSoon(); if (e.target.id === 'q') [0, 150, 350].forEach(function (ms) { setTimeout(fitQDock, ms); }); });
+document.addEventListener('focusout', function (e) { if (e.target.id === 'q') setTimeout(fitQDock, 60); });
+window.addEventListener('resize', function () { if ($('qdock') && $('qdock').classList.contains('on')) renderQDock(); });
 // With the keyboard already up, tapping another box moves the cursor there without the iPhone
 // scrolling and nudging the page around (that's what made it jump). We keep it in view ourselves.
 var TAPF = null;
@@ -9543,44 +9766,462 @@ document.addEventListener('click', function (e) {
   if (e.target && e.target.id === 'toastTxt') { clearTimeout(toastTimer); $('toast').classList.remove('on'); UNDO = null; }
 });
 
-// ---- Plan: swipe in from the left edge to go back
+// ---- 2.44: after an update, a popup with what's new (once per update; also in Settings → What's new)
+var NEWS = [
+  { v: '2.44', items: [
+    ['🔢', 'A keypad made for amounts', 'Tap Amount and Piggy’s own keypad slides up instead of the phone keyboard. The keys are bigger, and the screen doesn’t jump.'],
+    ['➕', 'Add it up as you type', 'Type 12.50+4.25 for a split bill, or 80−15 for a return. The total goes in the box, and the sum shows underneath.'],
+    ['⌫', 'Quick fixes', 'Hold ⌫ to clear the amount. Paste puts in an amount you copied. Next takes you to the store. Prefer the phone keyboard? Settings → This phone.'],
+    ['✨', 'What’s new, when it’s new', 'After an update, this popup tells you what changed. You can find it again in Settings → What’s new.'],
+    ['🛠️', 'Smoother all round', 'Fixes for things that could trip you up. Tapping + while you’re changing an entry now saves the new one properly, and jumping to an entry far down Activity lands in the right place.']
+  ] },
+  { v: '2.43', items: [
+    ['👉', 'Swipe between months', 'On Month, swipe left or right to see the next or previous month.'],
+    ['↩️', 'Swipe back from the left edge', 'Closes a popup, leaves a Plan step or Compare, or takes you back to where a tap took you from.'],
+    ['📌', 'Month headings stay put', 'In Activity, the month you’re scrolling through stays pinned at the top. Tap it to jump to any month.'],
+    ['⬆️', 'Tap the tab to go to the top', 'Tap it again at the top to start that tab over.'],
+    ['📳', 'Haptics', 'A light tap you can feel when you save, delete, or swipe far enough to do something.'],
+    ['👍', 'Search near your thumb', 'Settings → This phone puts Activity’s search and filters just above the tabs.']
+  ] },
+  { v: '2.42', items: [
+    ['🔁', 'Payment plans that heal', 'If a spread purchase’s plan goes missing (say, a sheet tab was deleted), Piggy rebuilds it from the payments already logged.']
+  ] }
+];
+var NEWS_PENDING = false;
+function verNum(v) { var p = String(v || '0').split('.'); return (+p[0] || 0) * 1000 + (+p[1] || 0); }
+function newsSince(v) { return NEWS.filter(function (n) { return verNum(n.v) > verNum(v); }); }
+function maybeNews() {
+  if (!S || window.__noNews) return;
+  var list = newsSince(S.newsSeen);
+  if (!list.length) { NEWS_PENDING = false; if (S.newsSeen !== VERSION) { S.newsSeen = VERSION; save(); } return; }
+  if (SHEET || PICK || UI.edit || TOUR || PAD || HU_PENDING || entryInProgress()) { NEWS_PENDING = true; return; }
+  NEWS_PENDING = false;
+  openSheet('news', { since: S.newsSeen });
+  S.newsSeen = VERSION; save();                       // shown once; it's in Settings after that
+}
+function newsHtml(arg) {
+  var since = arg && arg.since, list = since ? newsSince(since) : NEWS.slice(0, 3);
+  if (!list.length) list = NEWS.slice(0, 1);
+  var item = function (it) { return '<li class="nwi"><span class="nwic" aria-hidden="true">' + it[0] + '</span><span><b>' + esc(it[1]) + '</b><small>' + esc(it[2]) + '</small></span></li>'; };
+  var h = '<div class="shead"><h2>' + (since ? 'New in ' + esc(appName()) + ' ' + VERSION : 'What’s new') + '</h2><button data-act="sback">' + (SHEET_STACK.length ? 'Back' : 'Close') + '</button></div>';
+  if (since) h += '<div class="hint" style="margin:-6px 0 12px">You’ve been updated from ' + esc(since) + '.</div>';
+  list.forEach(function (n, i) {
+    if (i === 0) { h += (since && list.length === 1 ? '' : '<div class="flabel">' + n.v + (n.v === VERSION ? ' · this version' : '') + '</div>') + '<ul class="nwl">' + n.items.map(item).join('') + '</ul>'; return; }
+    h += '<details class="nwold"><summary>' + n.v + '<span>' + n.items.length + ' change' + (n.items.length === 1 ? '' : 's') + '</span></summary><ul class="nwl">' + n.items.map(item).join('') + '</ul></details>';
+  });
+  return h + '<div class="btns"><button class="btn pri" data-act="sback" style="flex:1">Got it</button></div>';
+}
+
+// ---- 2.44: Piggy's own keypad for amounts (phones and tablets). The iPhone keyboard never opens for the amount, so
+// nothing jumps; it adds and subtracts (12.50+4.25), and the amount box always holds the plain total for the rest of the app.
+var PAD = null;                 // { el: the amount input, expr: '12.50+4.25', fresh: a value is there and the next digit replaces it }
+function padOn() { return !!(S && S.cfg.npad !== false && !isMouse() && !window.__noPad); }
+function padAttrs() { return padOn() ? 'class="padin" readonly inputmode="none"' : 'inputmode="decimal"'; }
+function padable(t) { return !!(t && t.tagName === 'INPUT' && (t.id === 'f_a' || t.id === 'f_ow' || t.hasAttribute('data-split-a'))); }
+function padKeyOf(t) { return t.id || ('s' + t.getAttribute('data-split-a')); }
+function padFind(k) { return k.charAt(0) === 's' && k !== 'f_a' ? document.querySelector('[data-split-a="' + k.slice(1) + '"]') : $(k); }
+function padEl() {
+  var np = $('npad');
+  if (np) return np;
+  np = document.createElement('div'); np.id = 'npad'; np.setAttribute('role', 'group'); np.setAttribute('aria-label', 'Amount keypad'); np.hidden = true;
+  var keys = [['1'], ['2'], ['3'], ['+', 'op', 'Plus'], ['4'], ['5'], ['6'], ['-', 'op', 'Minus', '−'], ['7'], ['8'], ['9'], ['del', 'op del', 'Delete. Hold to clear', '⌫'], ['.', '', 'Decimal point'], ['0'], ['00', 'sm'], ['next', 'go', '', 'Next']];
+  np.innerHTML = '<div class="nptop"><span id="np_hint">Hold ⌫ to clear</span>' + (navigator.clipboard && navigator.clipboard.readText ? '<button type="button" id="np_paste" tabindex="-1">Paste</button>' : '') + '</div>' +
+    '<div class="npkeys">' + keys.map(function (k) {
+      return '<button type="button" tabindex="-1" data-k="' + k[0] + '" class="npk' + (k[1] ? ' ' + k[1] : '') + '"' + (k[2] ? ' aria-label="' + k[2] + '"' : '') + '>' + (k[3] || k[0]) + '</button>';
+    }).join('') + '</div>';
+  document.body.appendChild(np);
+  var HOLD = null;
+  var up = function () { if (HOLD) { clearTimeout(HOLD.t); HOLD = null; } var d = np.querySelector('.npk.down'); if (d) d.classList.remove('down'); };
+  np.addEventListener('pointerdown', function (e) {
+    var b = e.target.closest ? e.target.closest('button') : null;
+    e.preventDefault();                                   // the amount box keeps focus: no keyboard, no blur
+    if (!b || !PAD) return;
+    up(); b.classList.add('down');
+    var k = b.getAttribute('data-k');
+    if (!k || k === 'next') return;                       // Next and Paste act on the tap (click), which may open the keyboard
+    padKey(k);
+    if (k === 'del') HOLD = { t: setTimeout(function () { HOLD = null; if (PAD) { PAD.expr = ''; PAD.fresh = false; padApply(); haptic('ok'); } }, 450) };
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { np.addEventListener(ev, up); });
+  np.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button') : null; if (!b || !PAD) return;
+    e.stopPropagation();
+    if (b.id === 'np_paste') return padPaste();
+    if (b.getAttribute('data-k') === 'next') padNext();
+  });
+  return np;
+}
+function padNum(s) { var m = String(s || '').replace(/[\s$,]/g, '').match(/^\d*\.?\d*$/); return m ? m[0] : ''; }
+function padTerms(expr) {                               // '12.50+4.25-3' → [12.5, 4.25, -3]
+  var out = [], m, re = /([+\-]?)([\d.]*)/g, s = expr;
+  if (!s) return out;
+  while ((m = re.exec(s)) && m[0] !== '') { var n = parseFloat(m[2]); out.push({ op: m[1] || '+', n: isNaN(n) ? 0 : n, raw: m[2] }); }
+  return out;
+}
+function padTotal(expr) { return r2(padTerms(expr).reduce(function (s, t) { return t.op === '-' ? s - t.n : s + t.n; }, 0)); }
+function padHasOp(expr) { return /[+\-]/.test(expr); }
+function padKey(k) {
+  var e = PAD.expr, last = e.slice(-1), cur = (e.match(/[\d.]*$/) || [''])[0];
+  if (PAD.fresh && /^[\d.]|^00$/.test(k)) { e = ''; cur = ''; last = ''; }
+  if (PAD.fresh && k === 'del') { e = ''; PAD.fresh = false; PAD.expr = e; padApply(); haptic('tick'); return; }
+  PAD.fresh = false;
+  if (k === 'del') e = e.slice(0, -1);
+  else if (k === '+' || k === '-') {
+    if (!e) return padNudge();
+    if (/[+\-]$/.test(e)) e = e.slice(0, -1) + k;     // changed your mind about the sign
+    else if ((e.match(/[+\-]/g) || []).length >= 9) return padNudge();
+    else e += k;
+  } else if (k === '.') {
+    if (cur.indexOf('.') >= 0) return padNudge();
+    e += cur === '' ? '0.' : '.';
+  } else {                                             // digits and 00
+    var dec = cur.indexOf('.');
+    if (dec >= 0 && cur.length - dec - 1 + k.length > 2) { if (k === '00' && cur.length - dec - 1 === 1) k = '0'; else return padNudge(); }
+    var whole = dec >= 0 ? cur.slice(0, dec) : cur;
+    if (dec < 0 && (whole + k).replace(/^0+/, '').length > 7) return padNudge();
+    if (dec < 0 && whole === '0') { e = e.slice(0, -1); if (k === '00') k = '0'; }   // no 007
+    if (dec < 0 && whole === '' && k === '00') k = '0';
+    e += k;
+  }
+  PAD.expr = e; padApply(); haptic('tick');
+}
+function padNudge() { var f = PAD && PAD.el && (PAD.el.closest('.amtwrap') || PAD.el.closest('.spa')); if (f && !REDUCED && f.animate) f.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(4px)' }, { transform: 'none' }], { duration: 220 }); }
+function padValue(expr) {
+  if (!expr) return '';
+  if (!padHasOp(expr)) return expr;                    // still one number: show it as typed ("12.")
+  var t = padTotal(expr); return t < 0 ? '' : t.toFixed(2);
+}
+function padApply() {                                   // expression → amount box (+ the sum under it) → the rest of the form
+  var a = PAD && PAD.el; if (!a) return;
+  var v = padValue(PAD.expr), x = PAD.el.id === 'f_a' ? $('f_expr') : null, hint = $('np_hint');
+  if (a.value !== v) { a.value = v; a.dispatchEvent(new Event('input', { bubbles: true })); }
+  a.classList.toggle('padsel', !!PAD.fresh && !!v);
+  if (x) {
+    if (padHasOp(PAD.expr)) {
+      var tot = padTotal(PAD.expr), parts = padTerms(PAD.expr).map(function (t, i) { return (i || t.op === '-' ? '<i>' + (t.op === '-' ? '−' : '+') + '</i> ' : '') + esc(t.raw); });
+      x.innerHTML = parts.join(' ') + (tot < 0 ? ' <b class="neg">is below $0</b>' : ' <b>= ' + money(tot, true) + '</b>');
+      x.hidden = false;
+    } else { x.innerHTML = ''; x.hidden = true; }
+  }
+  if (hint) {                                          // owed / split amounts: the sum shows on the keypad itself
+    var hx = !x && padHasOp(PAD.expr) ? padTerms(PAD.expr).map(function (t, i) { return (i || t.op === '-' ? (t.op === '-' ? '− ' : '+ ') : '') + t.raw; }).join(' ') + ' = ' + (padTotal(PAD.expr) < 0 ? 'below $0' : money(padTotal(PAD.expr), true)) : 'Hold ⌫ to clear';
+    if (hint.textContent !== hx) hint.textContent = hx;
+    hint.classList.toggle('sum', hx.charAt(0) !== 'H');
+  }
+  var nb = $('npad') && $('npad').querySelector('[data-k=next]');
+  if (nb) { var done = nextField() ? 'Next' : 'Done'; if (nb.textContent !== done) nb.textContent = done; }
+}
+function nextField() { var v = $('f_v'); return PAD.el.id === 'f_a' && v && !v.value.trim() && v.closest('form') === PAD.el.closest('form') ? v : null; }
+function padNext() {
+  var nf = nextField(); padCommit();
+  if (nf) { try { nf.focus(); } catch (e) {} }        // inside the tap, so the keyboard comes up for the store
+  else { try { PAD.el.blur(); } catch (e) {} padHide(); }
+}
+function padPaste() {
+  try {
+    navigator.clipboard.readText().then(function (t) {
+      if (!PAD) return;
+      var m = String(t || '').replace(/,/g, '').match(/\d+(?:\.\d{1,2})?/);
+      if (!m) { toast('Nothing on the clipboard looks like an amount'); return; }
+      PAD.expr = String(parseFloat(m[0])); PAD.fresh = false; padApply(); haptic('ok');
+    }, function () {});
+  } catch (e) {}
+}
+function padCommit() {                                  // "12." → "12.00" when you move on
+  if (!PAD || !PAD.el) return;
+  var a = PAD.el, n = parseAmt(a.value);
+  if (a.value && !isNaN(n) && a.value !== n.toFixed(2)) { a.value = n.toFixed(2); a.dispatchEvent(new Event('input', { bubbles: true })); }
+  PAD.expr = a.value; PAD.fresh = !!a.value;
+  var x = $('f_expr'); if (x) { x.hidden = true; x.innerHTML = ''; }
+  var hint = $('np_hint'); if (hint) { hint.textContent = 'Hold ⌫ to clear'; hint.classList.remove('sum'); }
+}
+function padShow(a) {
+  var np = padEl();
+  if (PAD && PAD.el === a) return;
+  var was = !!PAD;
+  if (was) { padCommit(); PAD.el.classList.remove('padsel'); }      // moving from one amount to another
+  PAD = { el: a, key: padKeyOf(a), expr: padNum(a.value), fresh: !!a.value, at: performance.now() };
+  if (PAD.expr && !isNaN(parseAmt(PAD.expr))) PAD.expr = parseAmt(PAD.expr).toFixed(2);
+  padApply();
+  if (!was) {
+    np.hidden = false; document.body.classList.add('padon');
+    if (REDUCED || !np.animate) fadeIn(np, 160);
+    else np.animate([{ transform: 'translateY(100%)' }, { transform: 'none' }], { duration: 300, easing: EASE_IOS });
+  }
+  padFit(true);
+}
+function padHide(fast) {
+  if (!PAD) return;
+  padCommit();
+  if (PAD.el) PAD.el.classList.remove('padsel');
+  PAD = null;
+  var np = $('npad'); if (!np || np.hidden) return;
+  document.body.classList.remove('padon');
+  var done = function () { if (!PAD) np.hidden = true; np.style.opacity = ''; };
+  padFit(false);
+  if (fast || REDUCED || !np.animate) { if (REDUCED && !fast) { np.style.transition = 'opacity .15s'; np.style.opacity = '0'; setTimeout(function () { np.style.transition = ''; done(); }, 150); } else done(); return; }
+  np.animate([{ transform: 'none' }, { transform: 'translateY(100%)' }], { duration: 220, easing: 'ease-in' }).onfinish = done;
+}
+// the sheet sits on top of the keypad, the way it sits on top of the keyboard
+function padFit(on) {
+  var sh = $('sheet'), np = $('npad');
+  if (!sh) return;
+  var inSheet = on && PAD && SHEET && sh.contains(PAD.el);
+  if (inSheet && sh.classList.contains('kb')) unfitSheet(sh);       // coming from the store box: the keyboard is on its way down
+  var z = parseFloat(document.body.style.zoom) || 1, ph = np && !np.hidden ? np.getBoundingClientRect().height / z : 0;
+  var before = sh.getBoundingClientRect().top;
+  if (inSheet) {
+    sh.classList.add('padup');
+    sh.style.bottom = Math.round(ph) + 'px';
+    sh.style.maxHeight = Math.max(220, Math.round(window.innerHeight / z - ph - safeTopPx() - 8)) + 'px';
+  } else if (sh.classList.contains('padup')) {
+    sh.classList.remove('padup'); sh.style.bottom = ''; sh.style.maxHeight = '';
+  } else if (on && PAD) {                             // a form on the page itself: keep the amount above the keypad
+    var r = PAD.el.getBoundingClientRect(), lim = window.innerHeight - ph * z - 16;
+    if (r.bottom > lim) window.scrollBy(0, r.bottom - lim + 40);
+    return;
+  } else return;
+  var dy = before - sh.getBoundingClientRect().top;
+  if (dy && SHEET && sh.classList.contains('on') && getComputedStyle(sh).transform === 'none' && !REDUCED && sh.animate && Math.abs(dy) < 600) sh.animate([{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], { duration: on ? 300 : 220, easing: on ? EASE_IOS : 'ease-out' });
+  if (on) { var a = PAD.el.closest('.field') || PAD.el, ar = a.getBoundingClientRect(), sr = sh.getBoundingClientRect(); if (ar.top < sr.top + 8 || ar.bottom > sr.bottom - 70) sh.scrollTop += ar.top - sr.top - 12; }
+}
+// after the form is drawn again (Expense/Income, a category…), keep going in the new amount box
+function padReattach() {
+  if (!PAD || PAD.el.isConnected) return;
+  var a = padFind(PAD.key);
+  if (!a) return padHide(true);
+  var expr = PAD.expr, fresh = PAD.fresh, was = parseAmt(padValue(expr)), now = parseAmt(a.value);
+  if (!(was === now || (isNaN(was) && isNaN(now)))) { expr = padNum(a.value); if (expr && !isNaN(now)) expr = now.toFixed(2); fresh = !!expr; }
+  PAD.el = a; PAD.expr = expr; PAD.fresh = fresh; PAD.key = padKeyOf(a);
+  try { a.focus({ preventScroll: true }); } catch (e) {}
+  padApply();
+}
+document.addEventListener('focusin', function (e) {
+  var t = e.target;
+  if (padable(t) && padOn()) { if (!t.readOnly) { t.readOnly = true; t.setAttribute('inputmode', 'none'); } padShow(t); }
+  else if (PAD && t !== PAD.el && !(t.closest && t.closest('#npad'))) padHide(true);    // the keyboard is taking over
+});
+document.addEventListener('focusout', function (e) {
+  if (!PAD || e.target !== PAD.el) return;
+  setTimeout(function () {
+    if (!PAD) return;
+    var a = document.activeElement;
+    if (a === PAD.el || padable(a)) return;
+    if (!PAD.el.isConnected && padFind(PAD.key)) return padReattach();
+    padHide(!!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)));
+  }, 0);
+});
+// a tap anywhere else (not a key, not the amount, not Expense/Income) puts the keypad away once the tap has done its job
+document.addEventListener('click', function (e) {
+  if (!PAD || performance.now() - PAD.at < 450) return;          // the tap that opened it (the sheet moves up under the finger)
+  var t = e.target;
+  if (!t.closest || t.closest('#npad') || t === PAD.el || padable(t) || t.closest('.amtwrap') || t.closest('.spa') || t.closest('[data-act=fkind]') || t.closest('label[for=f_a]')) return;
+  setTimeout(function () {
+    if (!PAD) return;
+    var a = document.activeElement;
+    if (a && a !== PAD.el && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;     // the focus handler deals with that
+    if (!PAD.el.isConnected) { if (padable(document.activeElement)) return; return padHide(); }
+    try { PAD.el.blur(); } catch (er) {} padHide();
+  }, 0);
+}, true);
+// a hardware keyboard (iPad) types into the keypad too
+document.addEventListener('keydown', function (e) {
+  if (!PAD || e.target !== PAD.el || e.metaKey || e.ctrlKey || e.altKey) return;
+  var k = e.key, map = { Backspace: 'del', Delete: 'del', '+': '+', '-': '-', '.': '.', ',': '.' };
+  if (/^\d$/.test(k)) map[k] = k;
+  if (k === 'Enter' || k === 'Tab') { e.preventDefault(); return padNext(); }
+  if (k === 'Escape') { e.preventDefault(); try { PAD.el.blur(); } catch (er) {} return padHide(); }
+  if (map[k]) { e.preventDefault(); padKey(map[k]); }
+});
+window.addEventListener('resize', function () { if (PAD) setTimeout(function () { if (PAD) padFit(true); }, 50); });
+
+// ---- 2.43: haptics. Android has navigator.vibrate; on iPhone (iOS 18+) flicking a hidden switch gives a light tap you can feel.
+var HAPT = null, HAPT_AT = 0;
+function haptic(kind) {
+  if (!S || S.cfg.haptic === false || isMouse()) return;
+  var now = Date.now(); if (now - HAPT_AT < 70) return; HAPT_AT = now;
+  if (navigator.vibrate) { try { navigator.vibrate(kind === 'ok' ? 14 : 8); } catch (e) {} return; }
+  if (!/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent)) return;          // an iPad says "Macintosh"; a Mac has no touch so never gets here
+  try {
+    if (!HAPT) {
+      HAPT = document.createElement('label'); HAPT.setAttribute('aria-hidden', 'true'); HAPT.id = 'hapt';
+      HAPT.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none';
+      HAPT.innerHTML = '<input type="checkbox" switch tabindex="-1">';
+      ['click', 'change', 'input'].forEach(function (ev) { HAPT.addEventListener(ev, function (e) { e.stopPropagation(); }); });
+      document.body.appendChild(HAPT);
+    }
+    var a = document.activeElement;
+    HAPT.click();
+    if (a && a !== document.activeElement && a.focus) try { a.focus({ preventScroll: true }); } catch (e) {}
+  } catch (e) {}
+}
+
+// ---- 2.43: swipe in from the left edge to go back — out of a sheet, a Plan step, Compare, or back to where a tap took you from
+var NAVBACK = [], NAVSNAP = null;
+function navSnap() {
+  return { tab: UI.tab, ym: UI.ym, q: UI.q, am: UI.am, fk: UI.fk, asort: UI.asort, lim: UI.lim, psec: UI.psec, trend: UI.trend, period: UI.period, y: document.body.classList.contains('locked') ? LOCKY : window.scrollY,
+    sheet: SHEET && !/^(add|edit|welcome|starter|bulk|ajump)$/.test(SHEET.kind) ? { kind: SHEET.kind, arg: SHEET.arg, top: $('sheet').scrollTop } : null };
+}
+function navWhere() { return UI.tab + '|' + (UI.tab === 'plan' ? planState().step || 'home' : UI.tab === 'trends' ? UI.trend : ''); }
+function navPop() {
+  var s = NAVBACK.pop(); if (!s) return;
+  if (PICK) closePicker();
+  if (SHEET) closeSheet();
+  UI.ym = s.ym; UI.q = s.q; UI.am = s.am; UI.fk = s.fk; UI.asort = s.asort; UI.lim = s.lim; UI.psec = s.psec; UI.trend = s.trend; UI.period = s.period; UI.edit = null;
+  UI.tab = s.tab; UI.lastTab = s.tab;                       // no sideways tab slide: the back swipe already moved it
+  render(); window.scrollTo(0, Math.min(s.y, document.documentElement.scrollHeight)); slideView(-1);
+  if (s.sheet) setTimeout(function () { if (SHEET) return; try { openSheet(s.sheet.kind, s.sheet.arg); $('sheet').scrollTop = s.sheet.top || 0; } catch (e) { if (SHEET) closeSheet(); } }, REDUCED ? 0 : 140);
+}
+function edgeTip() {
+  S.tips = S.tips || {};
+  if (S.tips.edge || isWide() || isMouse()) return;
+  S.tips.edge = 1; save();
+  setTimeout(function () { if (!$('toast').classList.contains('on')) toast('Tip: swipe in from the left edge to go back'); }, 700);
+}
+function backTarget() {
+  if (TOUR || PICK || (UI.bulk && !UI.bulkOne)) return null;
+  if (SHEET) {
+    var sh = $('sheet');
+    if (!sh.classList.contains('on') || sh.classList.contains('kb') || isWide()) return null;
+    return { el: sh, sheet: true };
+  }
+  var top = NAVBACK[NAVBACK.length - 1];
+  if (top && top.to === navWhere()) return { el: $('view'), go: navPop };     // a tap brought you straight here: back to where you were
+  var P = S && S.plan;
+  if (UI.tab === 'plan' && P && P.step && P.step !== 'home') return { el: $('view'), go: function () { planState().step = 'home'; save(); render(); window.scrollTo(0, 0); viewIn(); } };
+  if (UI.tab === 'trends' && UI.trend === 'compare') return { el: $('view'), go: function () { UI.trend = 'overview'; render(); window.scrollTo(0, 0); viewIn(); } };
+  if (NAVBACK.length) return { el: $('view'), go: navPop };
+  return null;
+}
+function edgeBackOk() { return !!backTarget(); }
 var ESW = null;
-function edgeBackOk() { var P = S && S.plan; return UI.tab === 'plan' && !SHEET && !PICK && P && P.step && P.step !== 'home'; }
 document.addEventListener('touchstart', function (e) {
   ESW = null;
-  if (e.touches.length !== 1 || !edgeBackOk() || e.touches[0].clientX > 30) return;
-  ESW = { x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, t: Date.now(), on: false };
+  if (e.touches.length !== 1 || e.touches[0].clientX > 30) return;
+  var b = backTarget(); if (!b) return;
+  if (b.sheet && !b.el.contains(e.target)) return;
+  if (e.target.closest && e.target.closest('input, textarea, select, svg[data-lchart]')) return;
+  ESW = { x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, t: Date.now(), on: false, b: b, past: false };
 }, { passive: true });
 document.addEventListener('touchmove', function (e) {
   if (!ESW) return;
-  var dx = e.touches[0].clientX - ESW.x, dy = e.touches[0].clientY - ESW.y;
+  var dx = e.touches[0].clientX - ESW.x, dy = e.touches[0].clientY - ESW.y, el = ESW.b.el;
   if (!ESW.on) {
     if (Math.abs(dy) > 12 && Math.abs(dy) > dx) { ESW = null; return; }
-    if (dx > 10) { ESW.on = true; $('view').classList.add('edging'); }
+    if (dx > 10) { ESW.on = true; el.classList.add('edging'); el.style.transition = 'none'; }
   }
   if (ESW.on) {
     e.preventDefault();
     ESW.dx = Math.max(0, dx);
-    $('view').style.transform = 'translateX(' + ESW.dx + 'px)';
+    el.style.transform = 'translateX(' + ESW.dx + 'px)';
+    if (ESW.b.sheet) $('scrim').style.opacity = String(Math.max(0, 1 - ESW.dx / window.innerWidth));
+    var past = ESW.dx > Math.min(110, window.innerWidth * 0.3);
+    if (past && !ESW.past) haptic('tick');
+    ESW.past = past;
   }
 }, { passive: false });
 function edgeEnd() {
   var w = ESW; ESW = null;
   if (!w || !w.on) return;
-  var v = $('view'), fast = w.dx > 40 && w.dx / Math.max(1, Date.now() - w.t) > 0.5;
-  v.classList.remove('edging');
-  if (w.dx > Math.min(110, window.innerWidth * 0.3) || fast) {
-    var done = function () { v.style.transition = ''; v.style.transform = ''; planState().step = 'home'; save(); render(); window.scrollTo(0, 0); viewIn(); };
+  var el = w.b.el, W = window.innerWidth, fast = w.dx > 40 && w.dx / Math.max(1, Date.now() - w.t) > 0.5;
+  el.classList.remove('edging');
+  if (w.dx > Math.min(110, W * 0.3) || fast) {
+    if (w.b.sheet) {
+      if (SHEET_STACK.length) {                                   // back to the sheet this one was opened from
+        el.style.transform = ''; sheetBack();
+        el.style.transition = 'none'; el.style.transform = REDUCED ? '' : 'translateX(-36px)'; el.style.opacity = REDUCED ? '.4' : '';
+        void el.offsetWidth; el.style.transition = REDUCED ? 'opacity .2s ease' : 'transform .3s ' + EASE_IOS; el.style.transform = ''; el.style.opacity = '';
+        setTimeout(function () { el.style.transition = ''; }, 320);
+        return;
+      }
+      var shut = function () { el.style.transition = 'none'; closeSheet(); requestAnimationFrame(function () { requestAnimationFrame(function () { el.style.transition = ''; }); }); };
+      if (REDUCED) return shut();
+      el.style.transition = 'transform .18s ease-out'; el.style.transform = 'translateX(' + W + 'px)'; $('scrim').style.opacity = '0';
+      return setTimeout(shut, 180);
+    }
+    var done = function () { el.style.transition = ''; el.style.transform = ''; w.b.go(); };
     if (REDUCED) return done();
-    v.style.transition = 'transform .16s ease-out'; v.style.transform = 'translateX(' + window.innerWidth + 'px)';
+    el.style.transition = 'transform .16s ease-out'; el.style.transform = 'translateX(' + W + 'px)';
     setTimeout(done, 160);
   } else {
-    v.style.transition = REDUCED ? '' : 'transform .18s ease-out'; v.style.transform = '';
-    setTimeout(function () { v.style.transition = ''; }, 200);
+    el.style.transition = REDUCED ? '' : 'transform .18s ease-out'; el.style.transform = '';
+    if (w.b.sheet) $('scrim').style.opacity = '';
+    setTimeout(function () { el.style.transition = ''; }, 200);
   }
 }
 document.addEventListener('touchend', edgeEnd);
 document.addEventListener('touchcancel', edgeEnd);
+// where a tap took you somewhere else, remember where you were (the snapshot is taken just before the tap is handled)
+document.addEventListener('click', function (e) {
+  var s = NAVSNAP; NAVSNAP = null; if (!s) return;
+  var el = e.target.closest ? e.target.closest('[data-act]') : null, act = el && el.getAttribute('data-act');
+  if (!act || TOUR) return;
+  if (act === 'tab') { NAVBACK = []; return; }
+  var moved = UI.tab !== s.tab || (s.sheet && !SHEET && (UI.ym !== s.ym || UI.am !== s.am || UI.q !== s.q));
+  if (!moved) return;
+  s.to = navWhere();
+  if (s.sheet) SHEET_STACK = [];         // a popup opened on the new screen closes to it; the old one comes back with the swipe after
+  NAVBACK.push(s); if (NAVBACK.length > 8) NAVBACK.shift();
+  edgeTip();
+});
+
+// ---- 2.43: swipe left/right on Month to move between months
+var MSW = null;
+function monthSwipeOk() { return UI.tab === 'month' && !SHEET && !PICK && !TOUR && !isWide() && !firstLoad() && !UI.edit; }
+function hScrolls(el) {
+  for (; el && el.id !== 'view' && el !== document.body; el = el.parentElement) {
+    if (el.scrollWidth > el.clientWidth + 2) { var ox = getComputedStyle(el).overflowX; if (ox === 'auto' || ox === 'scroll') return true; }
+  }
+  return false;
+}
+document.addEventListener('touchstart', function (e) {
+  MSW = null;
+  if (ESW || e.touches.length !== 1 || !monthSwipeOk()) return;
+  var tg = e.target;
+  if (!tg.closest || !tg.closest('#view') || tg.closest('input, select, textarea, .hscroll, .chips.scroll, .cal, [data-hscroll], .swipe, svg[data-lchart], #tour') || hScrolls(tg)) return;
+  var r = dataRange(), cur = nowYM(), key = UI.ym === null ? cur : UI.ym;
+  MSW = { x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, axis: null, t: e.timeStamp, v: $('view'), key: key, prev: key > r.lo, next: key < cur, past: false };
+}, { passive: true });
+document.addEventListener('touchmove', function (e) {
+  if (!MSW) return;
+  var dx = e.touches[0].clientX - MSW.x, dy = e.touches[0].clientY - MSW.y;
+  if (!MSW.axis) { if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return; MSW.axis = Math.abs(dx) > Math.abs(dy) * 1.3 ? 'x' : 'y'; }
+  if (MSW.axis !== 'x') { MSW = null; return; }
+  e.preventDefault();
+  var ok = dx > 0 ? MSW.prev : MSW.next;
+  MSW.dx = ok ? dx : dx * 0.22;                                       // nothing that way: just a little give
+  var v = MSW.v, past = ok && Math.abs(dx) > window.innerWidth * 0.22;
+  if (past && !MSW.past) haptic('tick');
+  MSW.past = past;
+  v.style.transition = 'none';
+  if (REDUCED) v.style.opacity = String(1 - Math.min(0.4, Math.abs(MSW.dx) / 500));
+  else { v.style.transform = 'translateX(' + MSW.dx + 'px)'; v.style.opacity = String(1 - Math.min(0.35, Math.abs(MSW.dx) / 900)); }
+}, { passive: false });
+function monthSwipeEnd(e) {
+  var m = MSW; MSW = null;
+  if (!m || m.axis !== 'x') return;
+  var v = m.v, W = window.innerWidth, dx = m.dx, fast = Math.abs(dx) > 40 && e.timeStamp - m.t < 260;
+  var dir = dx < 0 ? 1 : -1, ok = dir > 0 ? m.next : m.prev;
+  if (ok && (Math.abs(dx) > W * 0.22 || fast)) {
+    if (!m.past) haptic('tick');
+    var go = function () {
+      v.style.transition = 'none'; v.style.transform = ''; v.style.opacity = '';
+      UI.ym = m.key + dir; render();
+      if (REDUCED || !v.animate) fadeIn(v, 200);
+      else v.animate([{ transform: 'translateX(' + (dir * W * 0.3) + 'px)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 280, easing: EASE_OUT });
+      requestAnimationFrame(function () { v.style.transition = ''; });
+    };
+    if (REDUCED) return go();
+    v.style.transition = 'transform .14s ease-in, opacity .14s ease-in'; v.style.transform = 'translateX(' + (-dir * W * 0.45) + 'px)'; v.style.opacity = '0';
+    setTimeout(go, 140);
+    return;
+  }
+  var from = v.style.transform, op = v.style.opacity || 1;               // not far enough: spring back
+  v.style.transform = ''; v.style.opacity = ''; v.style.transition = '';
+  if (!REDUCED && v.animate && from) v.animate([{ transform: from, opacity: op }, { transform: 'none', opacity: 1 }], { duration: 220, easing: EASE_OUT });
+}
+document.addEventListener('touchend', monthSwipeEnd);
+document.addEventListener('touchcancel', function () { if (MSW) { var v = MSW.v; MSW = null; v.style.transform = ''; v.style.opacity = ''; v.style.transition = ''; } });
 
 // ---- press and hold a name suggestion to stop suggesting it
 var HOLD = null, HELD = false;
@@ -9592,7 +10233,7 @@ document.addEventListener('pointerdown', function (e) {
     var v = b.getAttribute('data-v'), f = $('txform'); if (!f) return;
     var kind = f.querySelector('.seg .on').getAttribute('data-v');
     HELD = true; HOLD = null;
-    if (navigator.vibrate) try { navigator.vibrate(10); } catch (er) {}
+    haptic('ok');
     hideVendor(kind, v, true); suggest();
     toast('“' + v + '” won’t be suggested', function () { hideVendor(kind, v, false); suggest(); });
   }, 550) };
@@ -9610,7 +10251,7 @@ var PSEC_ORDER = ['month', 'ahead', 'trips', 'goals'];
 function planSwipeOk() { var P = S && S.plan; return UI.tab === 'plan' && !SHEET && !PICK && !TOUR && !UI.edit && !(P && P.step && P.step !== 'home') && !!document.querySelector('.ppane'); }
 document.addEventListener('touchstart', function (e) {
   PSW = null;
-  if (e.touches.length !== 1 || !planSwipeOk()) return;
+  if (ESW || e.touches.length !== 1 || !planSwipeOk()) return;
   var tg = e.target;
   if (tg.closest && tg.closest('input, select, textarea, .hscroll, .chips.scroll, .cal, [data-hscroll], .swipe, .psegs, #tour')) return;
   if (!tg.closest || !tg.closest('#view')) return;
@@ -9633,6 +10274,7 @@ document.addEventListener('touchend', function (e) {
   if (go && ni >= 0 && ni < PSEC_ORDER.length) {
     var b = document.querySelector('.psegs [data-act=psec][data-v="' + PSEC_ORDER[ni] + '"]');
     if (pane) { pane.style.transform = ''; pane.style.opacity = ''; pane.style.transition = ''; }
+    haptic('tick');
     if (b) b.click();                                                 // same as tapping the section: slides the new one in
     return;
   }
@@ -9647,7 +10289,7 @@ document.addEventListener('touchend', function (e) {
 var SW = null, SWIPED_AT = 0;
 document.addEventListener('touchstart', function (e) {
   var row = e.target.closest ? e.target.closest('.swipe') : null;
-  if (!row || UI.bulk || UI.edit === row.getAttribute('data-id') || e.touches.length !== 1) { SW = null; return; }
+  if (!row || ESW || UI.bulk || UI.edit === row.getAttribute('data-id') || e.touches.length !== 1) { SW = null; return; }
   SW = { row: row, btn: row.querySelector('.tx'), x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, axis: null };
 }, { passive: true });
 document.addEventListener('touchmove', function (e) {
@@ -9660,7 +10302,9 @@ document.addEventListener('touchmove', function (e) {
   var w = SW.row.offsetWidth, lim = w * 0.6, show = Math.max(-w, Math.min(w, dx));
   if (Math.abs(show) > lim) show = (show > 0 ? 1 : -1) * (lim + (Math.abs(show) - lim) * 0.35);   // a little resistance at the end
   SW.row.classList.add('moving'); SW.row.classList.toggle('l', dx < 0); SW.row.classList.toggle('r', dx > 0);
-  SW.row.classList.toggle('go', Math.abs(dx) > 90);
+  var goNow = Math.abs(dx) > 90;
+  if (goNow && !SW.row.classList.contains('go')) haptic('tick');
+  SW.row.classList.toggle('go', goNow);
   SW.btn.style.transform = 'translateX(' + show + 'px)';
 }, { passive: false });
 document.addEventListener('touchend', function () {
@@ -9702,7 +10346,7 @@ document.addEventListener('visibilitychange', function () {
 });
 
 // test hook
-window.__runway = { oldDevices: function () { return oldDevices(); }, spPart: function (sp, i) { return spPart(sp, i); }, planTotals: function (k) { return planTotals(k); }, get S() { return S; }, UI: UI, sync: sync, applyPull: applyPull, monthStats: monthStats, budgetTotals: budgetTotals, render: render, save: function () { return save(); }, fitSheet: fitSheet, get FULLH() { return FULLH; }, setNow: function (d) { FIXED_NOW = d; NOW = d; }, planState: function () { return planState(); }, autoPay: function () { return autoPayBills(); }, closeSheet: function () { if (SHEET) closeSheet(); } };
+window.__runway = { backTarget: function () { var b = backTarget(); return b && { el: b.el.id, sheet: !!b.sheet }; }, get ESW() { return ESW; }, get MSW() { return MSW && { axis: MSW.axis, dx: MSW.dx }; }, oldDevices: function () { return oldDevices(); }, spPart: function (sp, i) { return spPart(sp, i); }, planTotals: function (k) { return planTotals(k); }, get S() { return S; }, UI: UI, sync: sync, applyPull: applyPull, monthStats: monthStats, budgetTotals: budgetTotals, render: render, save: function () { return save(); }, fitSheet: fitSheet, get FULLH() { return FULLH; }, setNow: function (d) { FIXED_NOW = d; NOW = d; }, planState: function () { return planState(); }, autoPay: function () { return autoPayBills(); }, closeSheet: function () { if (SHEET) closeSheet(); } };
 
 boot();
 })();
