@@ -1401,7 +1401,7 @@ body.padon main{padding-bottom:340px}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.44';
+var VERSION = '2.45';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -9768,6 +9768,9 @@ document.addEventListener('click', function (e) {
 
 // ---- 2.44: after an update, a popup with what's new (once per update; also in Settings → What's new)
 var NEWS = [
+  { v: '2.45', items: [
+    ['🔢', 'The keypad works properly on iPhone', 'It no longer disappears after the first number, and tapping a key never picks a category or skips the store by accident. You can type a whole amount, use + and −, and tap Next to go to the store.']
+  ] },
   { v: '2.44', items: [
     ['🔢', 'A keypad made for amounts', 'Tap Amount and Piggy’s own keypad slides up instead of the phone keyboard. The keys are bigger, and the screen doesn’t jump.'],
     ['➕', 'Add it up as you type', 'Type 12.50+4.25 for a split bill, or 80−15 for a return. The total goes in the box, and the sum shows underneath.'],
@@ -9814,6 +9817,12 @@ function newsHtml(arg) {
 
 // ---- 2.44: Piggy's own keypad for amounts (phones and tablets). The iPhone keyboard never opens for the amount, so
 // nothing jumps; it adds and subtracts (12.50+4.25), and the amount box always holds the plain total for the rest of the app.
+var PAD_DOWN = 0;
+window.addEventListener('click', function (e) {
+  if (HAPT_BUSY || (e.target && e.target.closest && e.target.closest('#hapt'))) return;      // the haptic switch, not a finger
+  if (PAD_DOWN && performance.now() - PAD_DOWN < 700 && !(e.target.closest && e.target.closest('#npad'))) { e.preventDefault(); e.stopImmediatePropagation(); }
+  PAD_DOWN = 0;
+}, true);
 var PAD = null;                 // { el: the amount input, expr: '12.50+4.25', fresh: a value is there and the next digit replaces it }
 function padOn() { return !!(S && S.cfg.npad !== false && !isMouse() && !window.__noPad); }
 function padAttrs() { return padOn() ? 'class="padin" readonly inputmode="none"' : 'inputmode="decimal"'; }
@@ -9834,6 +9843,7 @@ function padEl() {
   var up = function () { if (HOLD) { clearTimeout(HOLD.t); HOLD = null; } var d = np.querySelector('.npk.down'); if (d) d.classList.remove('down'); };
   np.addEventListener('pointerdown', function (e) {
     var b = e.target.closest ? e.target.closest('button') : null;
+    PAD_DOWN = performance.now();
     e.preventDefault();                                   // the amount box keeps focus: no keyboard, no blur
     if (!b || !PAD) return;
     up(); b.classList.add('down');
@@ -10036,23 +10046,28 @@ document.addEventListener('keydown', function (e) {
 window.addEventListener('resize', function () { if (PAD) setTimeout(function () { if (PAD) padFit(true); }, 50); });
 
 // ---- 2.43: haptics. Android has navigator.vibrate; on iPhone (iOS 18+) flicking a hidden switch gives a light tap you can feel.
-var HAPT = null, HAPT_AT = 0;
+var HAPT = null, HAPT_AT = 0, HAPT_BUSY = false;
+// the haptic switch's own click/focus events are not taps: nothing else in the app sees them
+['click', 'focusin', 'focusout', 'change', 'input'].forEach(function (ev) {
+  window.addEventListener(ev, function (e) { if (HAPT_BUSY || (e.target && e.target.id === 'hapt') || (e.target && e.target.closest && e.target.closest('#hapt'))) e.stopImmediatePropagation(); }, true);
+});
 function haptic(kind) {
   if (!S || S.cfg.haptic === false || isMouse()) return;
-  var now = Date.now(); if (now - HAPT_AT < 70) return; HAPT_AT = now;
+  var now = performance.now(); if (now - HAPT_AT < 45) return; HAPT_AT = now;
   if (navigator.vibrate) { try { navigator.vibrate(kind === 'ok' ? 14 : 8); } catch (e) {} return; }
   if (!/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent)) return;          // an iPad says "Macintosh"; a Mac has no touch so never gets here
   try {
     if (!HAPT) {
       HAPT = document.createElement('label'); HAPT.setAttribute('aria-hidden', 'true'); HAPT.id = 'hapt';
-      HAPT.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none';
+      HAPT.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;clip-path:inset(50%)';
       HAPT.innerHTML = '<input type="checkbox" switch tabindex="-1">';
       ['click', 'change', 'input'].forEach(function (ev) { HAPT.addEventListener(ev, function (e) { e.stopPropagation(); }); });
       document.body.appendChild(HAPT);
     }
     var a = document.activeElement;
-    HAPT.click();
-    if (a && a !== document.activeElement && a.focus) try { a.focus({ preventScroll: true }); } catch (e) {}
+    HAPT_BUSY = true;
+    try { HAPT.click(); } finally { HAPT_BUSY = false; }
+    if (a && a !== document.activeElement && a.focus) try { HAPT_BUSY = true; a.focus({ preventScroll: true }); } catch (e) {} finally { HAPT_BUSY = false; }
   } catch (e) {}
 }
 
