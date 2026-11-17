@@ -1349,6 +1349,7 @@ body.locked #qdock{visibility:hidden}
 .npk.op.down{background:color-mix(in srgb,var(--ac) 26%,var(--p1))}
 .npk.go.down{background:color-mix(in srgb,var(--t1) 18%,var(--ac))}
 .amtin.padin,input.padin{caret-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+.amtin.padact,input.padact{outline:2px solid var(--ac);outline-offset:-1px;border-color:var(--ac)}
 .amtin.padsel,input.padsel{background:color-mix(in srgb,var(--ac) 12%,transparent)}
 .padexpr{margin-top:6px;font-size:14px;color:var(--t2);font-variant-numeric:tabular-nums;text-align:right;padding-right:4px;word-break:break-all}
 .padexpr i{font-style:normal;color:var(--ac);font-weight:700}
@@ -1401,7 +1402,7 @@ body.padon main{padding-bottom:340px}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.45';
+var VERSION = '2.46';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -9768,6 +9769,9 @@ document.addEventListener('click', function (e) {
 
 // ---- 2.44: after an update, a popup with what's new (once per update; also in Settings → What's new)
 var NEWS = [
+  { v: '2.46', items: [
+    ['🔢', 'The keypad stays put on iPhone', 'You can type a whole amount: the keypad stays up until you tap Next, Done, or somewhere else. Keys don’t vibrate any more. Haptics are still on for saving, deleting and swipes.']
+  ] },
   { v: '2.45', items: [
     ['🔢', 'The keypad works properly on iPhone', 'It no longer disappears after the first number, and tapping a key never picks a category or skips the store by accident. You can type a whole amount, use + and −, and tap Next to go to the store.']
   ] },
@@ -9850,7 +9854,7 @@ function padEl() {
     var k = b.getAttribute('data-k');
     if (!k || k === 'next') return;                       // Next and Paste act on the tap (click), which may open the keyboard
     padKey(k);
-    if (k === 'del') HOLD = { t: setTimeout(function () { HOLD = null; if (PAD) { PAD.expr = ''; PAD.fresh = false; padApply(); haptic('ok'); } }, 450) };
+    if (k === 'del') HOLD = { t: setTimeout(function () { HOLD = null; if (PAD) { PAD.expr = ''; PAD.fresh = false; padApply(); } }, 450) };
   });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { np.addEventListener(ev, up); });
   np.addEventListener('click', function (e) {
@@ -9873,7 +9877,7 @@ function padHasOp(expr) { return /[+\-]/.test(expr); }
 function padKey(k) {
   var e = PAD.expr, last = e.slice(-1), cur = (e.match(/[\d.]*$/) || [''])[0];
   if (PAD.fresh && /^[\d.]|^00$/.test(k)) { e = ''; cur = ''; last = ''; }
-  if (PAD.fresh && k === 'del') { e = ''; PAD.fresh = false; PAD.expr = e; padApply(); haptic('tick'); return; }
+  if (PAD.fresh && k === 'del') { e = ''; PAD.fresh = false; PAD.expr = e; padApply(); return; }
   PAD.fresh = false;
   if (k === 'del') e = e.slice(0, -1);
   else if (k === '+' || k === '-') {
@@ -9893,7 +9897,7 @@ function padKey(k) {
     if (dec < 0 && whole === '' && k === '00') k = '0';
     e += k;
   }
-  PAD.expr = e; padApply(); haptic('tick');
+  PAD.expr = e; padApply();
 }
 function padNudge() { var f = PAD && PAD.el && (PAD.el.closest('.amtwrap') || PAD.el.closest('.spa')); if (f && !REDUCED && f.animate) f.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(4px)' }, { transform: 'none' }], { duration: 220 }); }
 function padValue(expr) {
@@ -9906,6 +9910,7 @@ function padApply() {                                   // expression → amount
   var v = padValue(PAD.expr), x = PAD.el.id === 'f_a' ? $('f_expr') : null, hint = $('np_hint');
   if (a.value !== v) { a.value = v; a.dispatchEvent(new Event('input', { bubbles: true })); }
   a.classList.toggle('padsel', !!PAD.fresh && !!v);
+  a.classList.add('padact');
   if (x) {
     if (padHasOp(PAD.expr)) {
       var tot = padTotal(PAD.expr), parts = padTerms(PAD.expr).map(function (t, i) { return (i || t.op === '-' ? '<i>' + (t.op === '-' ? '−' : '+') + '</i> ' : '') + esc(t.raw); });
@@ -9933,7 +9938,7 @@ function padPaste() {
       if (!PAD) return;
       var m = String(t || '').replace(/,/g, '').match(/\d+(?:\.\d{1,2})?/);
       if (!m) { toast('Nothing on the clipboard looks like an amount'); return; }
-      PAD.expr = String(parseFloat(m[0])); PAD.fresh = false; padApply(); haptic('ok');
+      PAD.expr = String(parseFloat(m[0])); PAD.fresh = false; padApply();
     }, function () {});
   } catch (e) {}
 }
@@ -9949,7 +9954,7 @@ function padShow(a) {
   var np = padEl();
   if (PAD && PAD.el === a) return;
   var was = !!PAD;
-  if (was) { padCommit(); PAD.el.classList.remove('padsel'); }      // moving from one amount to another
+  if (was) { padCommit(); PAD.el.classList.remove('padsel'); PAD.el.classList.remove('padact'); }      // moving from one amount to another
   PAD = { el: a, key: padKeyOf(a), expr: padNum(a.value), fresh: !!a.value, at: performance.now() };
   if (PAD.expr && !isNaN(parseAmt(PAD.expr))) PAD.expr = parseAmt(PAD.expr).toFixed(2);
   padApply();
@@ -9963,7 +9968,7 @@ function padShow(a) {
 function padHide(fast) {
   if (!PAD) return;
   padCommit();
-  if (PAD.el) PAD.el.classList.remove('padsel');
+  if (PAD.el) { PAD.el.classList.remove('padsel'); PAD.el.classList.remove('padact'); }
   PAD = null;
   var np = $('npad'); if (!np || np.hidden) return;
   document.body.classList.remove('padon');
@@ -10018,7 +10023,8 @@ document.addEventListener('focusout', function (e) {
     var a = document.activeElement;
     if (a === PAD.el || padable(a)) return;
     if (!PAD.el.isConnected && padFind(PAD.key)) return padReattach();
-    padHide(!!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)));
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) padHide(true);   // another box took over (its keyboard is coming up)
+    // otherwise focus just went nowhere (an iPhone does that when you tap a button): the keypad stays; a tap elsewhere puts it away
   }, 0);
 });
 // a tap anywhere else (not a key, not the amount, not Expense/Income) puts the keypad away once the tap has done its job
@@ -10052,7 +10058,7 @@ var HAPT = null, HAPT_AT = 0, HAPT_BUSY = false;
   window.addEventListener(ev, function (e) { if (HAPT_BUSY || (e.target && e.target.id === 'hapt') || (e.target && e.target.closest && e.target.closest('#hapt'))) e.stopImmediatePropagation(); }, true);
 });
 function haptic(kind) {
-  if (!S || S.cfg.haptic === false || isMouse()) return;
+  if (!S || S.cfg.haptic === false || isMouse() || PAD) return;          // never while Piggy's keypad is up
   var now = performance.now(); if (now - HAPT_AT < 45) return; HAPT_AT = now;
   if (navigator.vibrate) { try { navigator.vibrate(kind === 'ok' ? 14 : 8); } catch (e) {} return; }
   if (!/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent)) return;          // an iPad says "Macintosh"; a Mac has no touch so never gets here
