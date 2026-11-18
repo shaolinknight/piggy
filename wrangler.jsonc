@@ -1,5 +1,7 @@
 {
   "name": "piggy",
   "compatibility_date": "2026-10-01",
-  "assets": { "directory": "./public" }
+  "assets": { "directory": "./public" },
+  // branch builds run `wrangler preview`, which needs this block; Piggy has no bindings or secrets, so it stays empty
+  "previews": {}
 }
