@@ -74,12 +74,14 @@ for (var mode of ['offline', 'http500', 'error']) {
   })(mode);
 }
 
-test('a pull that never answers times out after 25 s and keeps the saved data', async function ({ page, app, mock }) {
+test('a pull that never answers times out after 45 s and keeps the saved data', async function ({ page, app, mock }) {
   await syncedOnce(app);
   mock.fail('timeout', { action: 'pull' });
   await page.reload();
   await expect.poll(function () { return mock.log.some(function (l) { return l.status === 'held'; }); }).toBe(true);
-  await page.clock.fastForward(26000);
+  await page.clock.fastForward(40000);
+  await expect(page.locator('#syncTxt')).not.toHaveText('Sync issue');     // still waiting at 40 s (2.49: was 25 s)
+  await page.clock.fastForward(6000);
   await expect(page.locator('#syncTxt')).toHaveText('Sync issue');
   expect(await app.S(function () { return window.__runway.S.syncErr; })).toMatch(/took too long/);
   await expect(page.locator(HERO)).toBeVisible();

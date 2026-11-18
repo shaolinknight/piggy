@@ -8093,7 +8093,8 @@ var SYNCING = false, flushTimer = null;
 function api(payload) {
   var url = S.cfg.url;
   var slow = payload.action === 'spendview' || payload.action === 'alerts' || payload.action === 'alertsetup';
-  var timeout = new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, slow ? 120000 : 25000); });
+  // 2.49: a full read of a real sheet takes 7-14 s and Google is sometimes slower still, so the pull gets 45 s
+  var timeout = new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, slow ? 120000 : payload.action === 'pull' ? 45000 : 25000); });
   var req;
   if (payload.action === 'pull' || payload.action === 'ping') {
     req = fetch(url + (url.indexOf('?') >= 0 ? '&' : '?') + 'action=' + payload.action + '&pass=' + encodeURIComponent(S.cfg.pass) +
