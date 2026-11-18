@@ -2048,5 +2048,52 @@
   "last-modified": null,
   "conditionalRequestHonoured": false,
   "note": "No ETag/Last-Modified and If-None-Match is ignored, so the service worker re-downloads the whole page (~217 KB) on every open."
+ },
+ "iphone": {
+  "note": "Owner iPhone, iOS 26, Safari tab on the audit/baseline preview with ?perf=1, real Google Sheet (v19 script). ms from page start. Read off screenshots, 2026-11-18 ~3:26-3:30 pm.",
+  "entries": 1646,
+  "pullKB": 125,
+  "savedKB": 360,
+  "runs": [
+   {
+    "what": "first ever open (no service worker, sample data)",
+    "pageReceived": 1710,
+    "boot": 1765,
+    "firstRender": 1806,
+    "firstPaint": 1822
+   },
+   {
+    "what": "connecting the sheet for the first time (same page)",
+    "pullRoundTrip": 15962
+   },
+   {
+    "what": "warm reopen 1",
+    "pageReceived": 29,
+    "boot": 112,
+    "firstRender": 140,
+    "cardShown": 140,
+    "firstPaint": 157,
+    "outboxSent": 2615,
+    "pullSent": 2615,
+    "pullAnswered": 11591,
+    "freshRender": 11614,
+    "pullRoundTrip": 8976
+   },
+   {
+    "what": "warm reopen 2",
+    "pageReceived": 21,
+    "boot": 36,
+    "firstRender": 61,
+    "cardShown": 61,
+    "firstPaint": 71,
+    "outboxSent": 62,
+    "pullSent": 62,
+    "pullAnswered": 13514,
+    "freshRender": 13537,
+    "pullRoundTrip": 13452
+   }
+  ],
+  "homeScreen": "Opened with sample data and no timing box: iOS gives a Home Screen web app its own storage, separate from Safari. First launch failed to load once; worked after quitting and reopening.",
+  "missing": "Open after an hour+ idle (Apps Script cold start) not captured yet."
  }
 }
