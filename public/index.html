@@ -8109,7 +8109,7 @@ function api(payload) {
     return res.text().then(function (t) {
       if (PERF) PERF_INFO.pullKB = Math.round(t.length / 1024);
       var d = JSON.parse(t);
-      if (PERF && d) { PERF_INFO.serverMs = d.ms; PERF_INFO.same = !!d.same; PERF_INFO.parts = d.t; }
+      if (PERF && d) { PERF_INFO.serverMs = d.ms; PERF_INFO.same = !!d.same; PERF_INFO.parts = d.t; if (d.watch) PERF_INFO.watch = d.watch; }
       if (d && d.ok && !d.same) d._sig = pullSig(t);
       return d;
     });
@@ -9894,6 +9894,7 @@ function perfDraw() {
     .map(function (k) { return k + ' ' + PERF_INFO.parts[k]; }).join(', ') : '';
   txt += (pull === null ? '' : 'pull round trip ' + pull + ' ms\n') +
     (PERF_INFO.serverMs != null ? 'script itself ' + PERF_INFO.serverMs + ' ms' + (PERF_INFO.same ? ' (same as before)' : '') + '\n' : '') +
+    (PERF_INFO.watch ? 'hand-edit watcher: ' + PERF_INFO.watch + '\n' : '') +
     (parts ? 'slowest: ' + parts + '\n' : '') +
     'pull ' + (PERF_INFO.pullKB != null ? PERF_INFO.pullKB + ' KB' : '–') + ' · saved ' + (PERF_INFO.savedKB != null ? PERF_INFO.savedKB + ' KB' : '–') + ' · ' + (S ? S.tx.length : 0) + ' entries\n' +
     (navigator.serviceWorker && navigator.serviceWorker.controller ? 'warm (service worker)' : 'cold (no service worker)') + '\n' +
