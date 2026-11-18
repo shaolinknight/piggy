@@ -8214,7 +8214,7 @@ function sync(full) {
     S.lastSync = Date.now();
     save();
     SYNCING = false;
-    if (same) renderSync(); else safeRender();
+    if (same) { renderSync(); safeSheet(); } else safeRender();
     perfMark('fresh'); perfHero();
     if (S.outbox.length) flushSoon();
     return true;
@@ -8425,12 +8425,16 @@ function applyPull(data) {
 
 // Don't wipe out a form the person is in the middle of filling in.
 function safeRender() {
-  var ae = document.activeElement;
-  var typingInSheet = SHEET && ae && $('sheet').contains(ae) && /INPUT|SELECT|TEXTAREA/.test(ae.tagName);
   if (UI.edit && $('txform') && $('view').contains($('txform'))) {
     $('txform').setAttribute('data-id', UI.edit);
     renderSync();
   } else keepScroll(render);
+  safeSheet();
+}
+// An open popup shows the latest too (e.g. "synced just now"), unless you're typing in it.
+function safeSheet() {
+  var ae = document.activeElement;
+  var typingInSheet = SHEET && ae && $('sheet').contains(ae) && /INPUT|SELECT|TEXTAREA/.test(ae.tagName);
   if (SHEET && SHEET.kind !== 'add' && !typingInSheet && Date.now() > SHEET_BUSY) renderSheet();
 }
 
