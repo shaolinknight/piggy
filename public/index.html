@@ -8099,6 +8099,7 @@ function api(payload) {
   }
   return Promise.race([req, timeout]).then(function (res) {
     if (!res.ok) throw new Error('http_' + res.status);
+    if (PERF && payload.action === 'pull') return res.text().then(function (t) { PERF_INFO.pullKB = Math.round(t.length / 1024); return JSON.parse(t); });
     return res.json();
   });
 }
@@ -8118,10 +8119,11 @@ function flushSoon() { clearTimeout(flushTimer); flushTimer = setTimeout(sync, 4
 function sync() {
   if (S.demo || !S.cfg.url || SYNCING) return Promise.resolve(false);
   SYNCING = true; renderSync();
+  perfMark('sync');
   queuePrefs();
   function next() {
     var op = S.outbox[0];
-    if (!op) return Promise.resolve();
+    if (!op) { perfMark('outbox'); return Promise.resolve(); }
     if (op.op === 'budgets' && (S.scriptV || 0) < 3) {
       // older connector: send the plan one row at a time
       S.outbox.splice.apply(S.outbox, [0, 1].concat(op.list.map(function (b) { return { oid: nid('o'), op: 'budget', b: b }; })));
@@ -8169,7 +8171,8 @@ function sync() {
       return next();
     });
   }
-  return next().then(function () { return api({ action: 'pull' }); }).then(function (data) {
+  return next().then(function () { perfMark('pullsent'); return api({ action: 'pull' }); }).then(function (data) {
+    perfMark('pullgot');
     if (!data || !data.ok) throw new Error((data && data.error) || 'pull_failed');
     applyPull(data);
     S.syncErr = (data.v || 1) < 6 ? 'Your sheet has an older connector. Paste the new Code.gs and deploy a new version (see setup) for trips, trip budgets, budget updates and the timezone fix.' : '';
@@ -8177,9 +8180,11 @@ function sync() {
     save();
     SYNCING = false;
     safeRender();
+    perfMark('fresh'); perfHero();
     if (S.outbox.length) flushSoon();
     return true;
   }).catch(function (e) {
+    perfMark('failed'); PERF_INFO.err = errText(e);
     SYNCING = false;
     S.syncErr = errText(e);
     save();
@@ -9652,10 +9657,13 @@ window.addEventListener('online', function () { if (S && !S.demo) sync(); });
 
 // ------------------------------------------------------------------ boot
 function boot() {
+  perfMark('boot');
   STORE.get(KEY).then(function (raw) {
+    perfMark('read'); PERF_INFO.savedKB = raw ? Math.round(raw.length / 1024) : 0;
     var d = null;
     try { d = raw ? JSON.parse(raw) : null; } catch (e) { d = null; }
     S = d ? migrate(d) : fresh();
+    perfMark('parsed');
     try {
       var qs = new URLSearchParams(location.search);
       if (qs.get('icon') && ICONS[qs.get('icon')]) S.cfg.icon = qs.get('icon');
@@ -9669,6 +9677,7 @@ function boot() {
     if (!S.demo && !S.cfg.url) spreadTick();      // on this phone only: spread payments whose month has come (with a sheet: after it syncs)
     applyTheme();
     render();
+    perfMark('render'); perfHero();
     var wantAdd = '';
     try { wantAdd = new URLSearchParams(location.search).get('add') || ''; } catch (e) {}
     if (wantAdd || S.cfg.launchAdd) openSheet('add', newTxDraft(/^i/.test(wantAdd) ? 'i' : 'e'));
@@ -9778,6 +9787,56 @@ document.addEventListener('click', function (e) {
 });
 window.addEventListener('resize', function () { if ($('qdock') && $('qdock').classList.contains('on')) renderQDock(); });
 document.addEventListener('focusout', function (e) { var sh = $('sheet'); if (SHEET && sh && sh.contains(e.target)) refitSoon(); });
+
+// ---- Phase 0 audit only (drop this before merging): ?perf=1 lists when each step of opening the app happened,
+// in ms from the moment the page started loading, so the real sheet's timings can be read off a screenshot.
+// ?perf=1 is remembered (so it also shows in the Home Screen app, which opens without it); ?perf=0 forgets it.
+var PERF = (function () {
+  try {
+    var q = new URLSearchParams(location.search).get('perf');
+    if (q === '1') localStorage.setItem('piggy.perf', '1');
+    if (q === '0') localStorage.removeItem('piggy.perf');
+    return localStorage.getItem('piggy.perf') === '1';
+  } catch (e) { return false; }
+})();
+var PERF_INFO = {}, PERF_DONE = {}, PERF_T = null;
+var PERF_ROWS = [['html', 'page received'], ['fcp', 'first paint'], ['boot', 'boot()'], ['read', 'saved copy read'], ['parsed', 'parsed + migrated'],
+  ['render', 'first render()'], ['hero', 'month card shown'], ['sync', 'sync start'], ['outbox', 'outbox sent'], ['pullsent', 'pull sent'],
+  ['pullgot', 'pull answered'], ['fresh', 'fresh render done'], ['failed', 'sync failed']];
+function perfMark(name) {                 // each step is marked once per open (the first sync is the one that counts)
+  if (PERF_DONE[name]) return;
+  PERF_DONE[name] = 1;
+  try { performance.mark('piggy:' + name); } catch (e) {}
+  if (PERF) { clearTimeout(PERF_T); PERF_T = setTimeout(perfDraw, 0); }
+}
+function perfHero() { if (document.querySelector('#view .card.hero')) perfMark('hero'); }
+function perfAt(name) {
+  if (name === 'html') { var n = performance.getEntriesByType('navigation')[0]; return n ? n.responseEnd : null; }
+  if (name === 'fcp') { var p = performance.getEntriesByName('first-contentful-paint')[0]; return p ? p.startTime : null; }
+  var m = performance.getEntriesByName('piggy:' + name)[0];
+  return m ? m.startTime : null;
+}
+function perfDraw() {
+  var el = $('perfov');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'perfov';
+    el.style.cssText = 'position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top) + 8px);z-index:99999;background:rgba(0,0,0,.84);color:#fff;' +
+      'font:12px/1.4 ui-monospace,Menlo,monospace;padding:8px 10px;border-radius:10px;white-space:pre-wrap;overflow:hidden';
+    el.addEventListener('click', function () { el.style.maxHeight = el.style.maxHeight ? '' : '1.4em'; });   // tap to fold it away
+    document.body.appendChild(el);
+  }
+  var pull = perfAt('pullsent') !== null && perfAt('pullgot') !== null ? Math.round(perfAt('pullgot') - perfAt('pullsent')) : null;
+  var txt = 'Piggy ' + VERSION + ' · ms from page start\n';
+  PERF_ROWS.map(function (r) { return [perfAt(r[0]), r[1]]; }).filter(function (r) { return r[0] !== null; })
+    .sort(function (a, b) { return a[0] - b[0]; })
+    .forEach(function (r) { txt += ('      ' + Math.round(r[0])).slice(-6) + '  ' + r[1] + '\n'; });
+  txt += (pull === null ? '' : 'pull round trip ' + pull + ' ms\n') +
+    'pull ' + (PERF_INFO.pullKB != null ? PERF_INFO.pullKB + ' KB' : '–') + ' · saved ' + (PERF_INFO.savedKB != null ? PERF_INFO.savedKB + ' KB' : '–') + ' · ' + (S ? S.tx.length : 0) + ' entries\n' +
+    (navigator.serviceWorker && navigator.serviceWorker.controller ? 'warm (service worker)' : 'cold (no service worker)') + '\n' +
+    (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? 'Home Screen app' : 'browser tab') +
+    ' · ' + new Date().toLocaleTimeString() + ' · tap to fold' + (PERF_INFO.err ? '\n' + PERF_INFO.err : '');
+  el.textContent = txt;
+}
 
 // Works offline and opens instantly: a service worker keeps a copy of the app on the phone.
 var BOOTED_AT = Date.now();
