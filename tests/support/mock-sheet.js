@@ -70,7 +70,7 @@ MockSheet.prototype.handle = function (p) {
         if (this.v < 20) return this.pullPayload();
         if (p.since && this.stamp && p.since === this.stamp && this.watch) return { ok: true, v: this.v, same: true, stamp: this.stamp, ms: 3 };
         if (!this.stamp) this.touch();
-        return Object.assign(this.pullPayload(), { stamp: this.stamp, ms: 40, t: { logs: 30, grids: 5 } });
+        return Object.assign(this.pullPayload(), { stamp: this.stamp, ms: 40, t: { logs: 30, grids: 5 }, watch: this.watch ? 'on' : 'needs_auth' });
       case 'add': return locked(function () { return self.add(p.tx); });
       case 'update': return locked(function () { return self.update(p.ref, p.tx); });
       case 'delete': return locked(function () { return self.remove(p.ref); });

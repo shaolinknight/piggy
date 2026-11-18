@@ -1,10 +1,12 @@
 /**
- * PIGGY — connector between the Piggy app and your Google Sheet.   (script version 20)
+ * PIGGY — connector between the Piggy app and your Google Sheet.   (script version 21)
  *
  * Paste this whole file into your sheet's  Extensions → Apps Script  editor (a new, empty sheet is fine),
  * change PASSCODE below, then Deploy → New deployment → Web app
  * (Execute as: Me, Who has access: Anyone). Copy the web-app URL into the app.
  * After pasting a NEWER copy of this file: Deploy → Manage deployments → ✏️ → Version: New version → Deploy.
+ * Once, after pasting version 21 or later: pick piggySetup in the function list at the top of the editor, press Run and
+ * allow what Google asks. That lets the script notice edits you make by hand, so the app can skip re-reading the sheet.
  *
  * What it does
  *  - Reads every expenses/income tab that has a year in its name ("expenses 2027", "2027 income"…).
@@ -44,7 +46,7 @@ var RECUR_TAB = 'recurring';             // the tab that lists your trips (creat
 var BUDGET_SOURCE = '';              // '' = find your budget tabs automatically.
                                      // Or name one tab to always read from, e.g. '2026 budget'.
 
-var VERSION = 20;
+var VERSION = 21;
 var VIEW_MARK = 'runway spending view';
 var GOALS_TAB = 'goals';
 var PREFS_TAB = 'app settings';
@@ -161,10 +163,22 @@ function watching_() {
   try { return ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'piggyChanged'; }); } catch (e) { return false; }
 }
 function watch_() {
+  var props = PropertiesService.getScriptProperties();
   try {
     if (!watching_()) ScriptApp.newTrigger('piggyChanged').forSpreadsheet(SpreadsheetApp.getActive()).onChange().create();
-    PropertiesService.getScriptProperties().setProperty('piggy.watch', '1');
-  } catch (e) { PropertiesService.getScriptProperties().deleteProperty('piggy.watch'); }   // not allowed yet: keep reading in full
+    props.setProperty('piggy.watch', '1'); props.deleteProperty('piggy.watchErr');
+  } catch (e) {                         // not allowed yet (run piggySetup once): keep reading in full
+    props.deleteProperty('piggy.watch'); props.setProperty('piggy.watchErr', authErr_(e));
+  }
+}
+// Run this once from the editor (pick it in the function list, press Run, allow what Google asks). Google only lets
+// the script add its hand-edit watcher after you've allowed it yourself; the app can't ask for that from the phone.
+function piggySetup() {
+  watch_();
+  var ok = PropertiesService.getScriptProperties().getProperty('piggy.watch') === '1';
+  bump_();                              // the next ask from the app reads everything once, then "same as before" can start
+  Logger.log(ok ? 'All set: Piggy will now notice edits you make by hand.' : 'Not set up: ' + PropertiesService.getScriptProperties().getProperty('piggy.watchErr'));
+  return ok;
 }
 
 // ---------------------------------------------------------------- dates
@@ -266,6 +280,7 @@ function pull_(since) {
   if (PropertiesService.getScriptProperties().getProperty('piggy.watch') !== '1' || !watching_()) watch_();
   lap('watch');
   out.stamp = stamp; out.ms = new Date().getTime() - t0; out.t = t;
+  out.watch = PropertiesService.getScriptProperties().getProperty('piggy.watch') === '1' ? 'on' : (PropertiesService.getScriptProperties().getProperty('piggy.watchErr') || 'off');
   return out;
 }
 

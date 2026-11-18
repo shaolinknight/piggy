@@ -10,6 +10,8 @@ Piggy is the app in `public/` (deployed by Cloudflare). Your data lives in your 
 4. In the Apps Script editor, select everything, paste over it, and put your passcode back into the `var PASSCODE = '…';` line. Press **Save**.
 5. **Deploy → Manage deployments** → the pencil icon → **Version: New version** → **Deploy**. If Google asks to review permissions, allow them.
 
+6. **Once, the first time you update to script 21 or later:** at the top of the Apps Script editor, pick **piggySetup** in the function list (next to **Run**), press **Run**, and allow what Google asks. The log should say "All set". This lets the script notice edits you make by hand in the sheet, so Piggy can skip re-reading it when nothing changed. Without it, everything still works; Piggy just reads the whole sheet each time.
+
 The web app URL doesn't change, so there's nothing to change in Piggy.
 
 Don't use Settings → "Copy the script" for this: that button is for setting up a new sheet and puts a new passcode in the script.
@@ -19,7 +21,7 @@ Don't use Settings → "Copy the script" for this: that button is for setting up
 Phase 1 (speed).
 
 - **Calmer opening.** When nothing changed in the sheet since the last time, Piggy keeps the screen as it is after checking in, instead of rebuilding and redrawing everything.
-- **Faster checking in with script v20.** The script keeps a "last changed" stamp, updated by:
+- **Faster checking in with script v21** (run `piggySetup` once, see above). The script keeps a "last changed" stamp, updated by:
   - saves from the app;
   - typing in the sheet;
   - adding or removing rows or tabs by hand (a watcher the script installs itself).
@@ -29,14 +31,14 @@ Phase 1 (speed).
   - when you pull down to refresh;
   - after a save the sheet refused.
 
-  Works with the old script (v19) too, just without the speed-up.
+  Works with the old script (v19) too, just without the speed-up. Piggy now waits up to 45 s for the sheet (it was 25 s), since a full read of a real sheet can take 7–14 s and sometimes longer.
 - **A settings update no longer holds up checking in.** When only a settings update is waiting, Piggy asks for the sheet at the same time instead of after it.
 - **Classic fonts come with the app** instead of from Google Fonts, so a fresh open doesn't wait on Google.
 
 Files changed:
 - `public/index.html`
 - `public/sw.js` (cache `piggy-shell-23`)
-- `public/script.txt` (script v20)
+- `public/script.txt` (script v21)
 - `public/fonts/`: DM Sans and Fraunces, with their OFL licences
 - `public/_headers` (font caching)
 - `wrangler.jsonc` (`previews` block, for branch preview links)
