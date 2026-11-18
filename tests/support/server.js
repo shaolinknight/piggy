@@ -5,6 +5,7 @@
 //  - "/index.html" redirects to "/", like Cloudflare does
 //  - `deploy(path, text)` swaps a file's content in memory, so a test can ship a "new version"
 //    without touching the real files
+//  - `transform(path, buffer)` (optional) rewrites a file as it's served; perf uses it to add timing marks
 // Run on its own: `node support/server.js [port] [dir]`.
 'use strict';
 var http = require('http');
@@ -25,6 +26,7 @@ function start(opts) {
   var dir = path.resolve(opts.dir || path.join(__dirname, '..', '..', 'public'));
   var overrides = {};           // url path -> Buffer
   var hits = [];                // what was asked for, for tests that care
+  var packed = {};              // compressed bodies by encoding + ETag
 
   function read(p) {
     if (overrides[p]) return overrides[p];
@@ -41,14 +43,20 @@ function start(opts) {
     if (p === '/' || p === '') p = '/index.html';
     var body = read(p);
     if (!body) { res.writeHead(404, { 'Content-Type': 'text/plain' }); return res.end('not found'); }
+    if (opts.transform) body = Buffer.from(opts.transform(p, body));
     var type = TYPES[path.extname(p)] || 'application/octet-stream';
     var etag = '"' + crypto.createHash('sha1').update(body).digest('hex').slice(0, 16) + '"';
     var head = { 'Content-Type': type, 'Cache-Control': 'public, max-age=0, must-revalidate', ETag: etag, Vary: 'Accept-Encoding' };
     if (req.headers['if-none-match'] === etag) { res.writeHead(304, head); return res.end(); }
     var ae = String(req.headers['accept-encoding'] || '');
     if (opts.compress !== false && TEXTY.test(type) && body.length > 1024) {
-      if (/\bbr\b/.test(ae)) { head['Content-Encoding'] = 'br'; body = zlib.brotliCompressSync(body); }
-      else if (/\bgzip\b/.test(ae)) { head['Content-Encoding'] = 'gzip'; body = zlib.gzipSync(body); }
+      // compressed once per version of a file, as a CDN would (brotli at full strength takes ~1 s on 750 KB)
+      var enc = /\bbr\b/.test(ae) ? 'br' : /\bgzip\b/.test(ae) ? 'gzip' : '';
+      if (enc) {
+        var ck = enc + etag;
+        if (!packed[ck]) packed[ck] = enc === 'br' ? zlib.brotliCompressSync(body) : zlib.gzipSync(body);
+        head['Content-Encoding'] = enc; body = packed[ck];
+      }
     }
     head['Content-Length'] = body.length;
     res.writeHead(200, head);
