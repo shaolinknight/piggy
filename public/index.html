@@ -8109,6 +8109,7 @@ function api(payload) {
     return res.text().then(function (t) {
       if (PERF) PERF_INFO.pullKB = Math.round(t.length / 1024);
       var d = JSON.parse(t);
+      if (PERF && d) { PERF_INFO.serverMs = d.ms; PERF_INFO.same = !!d.same; PERF_INFO.parts = d.t; }
       if (d && d.ok && !d.same) d._sig = pullSig(t);
       return d;
     });
@@ -9885,7 +9886,11 @@ function perfDraw() {
   PERF_ROWS.map(function (r) { return [perfAt(r[0]), r[1]]; }).filter(function (r) { return r[0] !== null; })
     .sort(function (a, b) { return a[0] - b[0]; })
     .forEach(function (r) { txt += ('      ' + Math.round(r[0])).slice(-6) + '  ' + r[1] + '\n'; });
+  var parts = PERF_INFO.parts ? Object.keys(PERF_INFO.parts).sort(function (a, b) { return PERF_INFO.parts[b] - PERF_INFO.parts[a]; }).slice(0, 3)
+    .map(function (k) { return k + ' ' + PERF_INFO.parts[k]; }).join(', ') : '';
   txt += (pull === null ? '' : 'pull round trip ' + pull + ' ms\n') +
+    (PERF_INFO.serverMs != null ? 'script itself ' + PERF_INFO.serverMs + ' ms' + (PERF_INFO.same ? ' (same as before)' : '') + '\n' : '') +
+    (parts ? 'slowest: ' + parts + '\n' : '') +
     'pull ' + (PERF_INFO.pullKB != null ? PERF_INFO.pullKB + ' KB' : '–') + ' · saved ' + (PERF_INFO.savedKB != null ? PERF_INFO.savedKB + ' KB' : '–') + ' · ' + (S ? S.tx.length : 0) + ' entries\n' +
     (navigator.serviceWorker && navigator.serviceWorker.controller ? 'warm (service worker)' : 'cold (no service worker)') + '\n' +
     (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? 'Home Screen app' : 'browser tab') +
