@@ -17,7 +17,7 @@ var crypto = require('crypto');
 var TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json',
   '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.txt': 'text/plain; charset=utf-8',
-  '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.css': 'text/css; charset=utf-8'
+  '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.css': 'text/css; charset=utf-8', '.woff2': 'font/woff2'
 };
 var TEXTY = /^(text\/|application\/(json|manifest\+json)|image\/svg)/;
 

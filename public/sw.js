@@ -8,7 +8,7 @@
 // is re-made as a plain response before it is stored or served.
 var CACHE = 'piggy-shell-22';
 var PAGE = './';
-var FILES = ['./manifest.webmanifest', './icon-192.png', './icon-512.png'];
+var FILES = ['./manifest.webmanifest', './icon-192.png', './icon-512.png', './fonts/dm-sans-latin.woff2', './fonts/fraunces-latin.woff2'];
 
 // a copy of a response with no redirect history, safe to hand to the browser
 function clean(res) {
@@ -74,6 +74,8 @@ self.addEventListener('fetch', function (e) {
     e.respondWith(caches.open(CACHE).then(function (c) {
       return c.match(req).then(function (hit) {
         if (hit && hit.redirected) hit = null;
+        // a font file never changes under the same name (a new one gets a new name), so there's nothing to refresh
+        if (hit && /\/fonts\/[^/]+\.woff2$/.test(url.pathname)) return hit;
         var net = fetch(req).then(clean).then(function (res) {
           if (res && (res.ok || res.type === 'opaque')) c.put(req, res.clone());
           return res;
