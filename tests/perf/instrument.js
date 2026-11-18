@@ -54,8 +54,10 @@ module.exports = function instrument(opts) {
     T.fetch.push(e);
     return f.apply(this, arguments).then(function (r) {
       e.headers = now();
-      var j = r.json;
+      // the body has arrived (the app reads it as JSON, or from 2.49 the pull as text, to fingerprint it)
+      var j = r.json, tx = r.text;
       r.json = function () { return j.call(r).then(function (d) { e.json = now(); return d; }); };
+      r.text = function () { return tx.call(r).then(function (d) { e.json = now(); return d; }); };
       return r;
     }, function (err) { e.failed = now(); throw err; });
   };
