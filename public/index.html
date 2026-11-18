@@ -1414,7 +1414,7 @@ body.padon main{padding-bottom:340px}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.48';
+var VERSION = '2.49';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -9933,6 +9933,11 @@ document.addEventListener('click', function (e) {
 
 // ---- 2.44: after an update, a popup with what's new (once per update; also in Settings → What's new)
 var NEWS = [
+  { v: '2.49', items: [
+    ['⚡', 'Calmer opening', 'When nothing has changed in your sheet, Piggy keeps the screen just as it is after checking in, so numbers don’t jump under your finger.'],
+    ['🚀', 'Much faster checking in, with the new sheet script', 'Update the script in your sheet (keep your passcode; the setup guide shows how) and Piggy only reads your whole sheet when something changed. Pulling down to refresh still reads everything.'],
+    ['🔤', 'Fonts built in', 'Piggy’s Classic fonts now come with the app, so opening it fresh never waits on Google Fonts.']
+  ] },
   { v: '2.48', items: [
     ['⌨️', 'The iPhone keyboard is back as the default', 'Piggy’s keypad is still there if you want it: Settings → This phone → Typing amounts.'],
     ['🧈', 'Steadier typing', 'Moving between boxes no longer makes the page scroll around: the popup glides to fit the keyboard and only scrolls when a box would be hidden.'],
