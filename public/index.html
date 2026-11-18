@@ -8190,7 +8190,11 @@ function sync(full) {
       return next();
     });
   }
-  return next().then(function () { perfMark('pullsent'); return api(pullAsk(full)); }).then(function (data) {
+  // 2.49: when only a settings update is waiting, ask for the sheet at the same time instead of after it (it can take
+  // seconds). Entries still go first: the sheet's answer must already have them, or they'd show twice.
+  var early = S.outbox.length && S.outbox.every(function (op) { return op.op === 'prefs'; }) ? api(pullAsk(full)) : null;
+  if (early) { perfMark('pullsent'); early.catch(function () {}); }       // its failure is handled below, once the update is sent
+  return next().then(function () { perfMark('pullsent'); return early || api(pullAsk(full)); }).then(function (data) {
     perfMark('pullgot');
     if (!data || !data.ok) throw new Error((data && data.error) || 'pull_failed');
     // 2.49: the sheet is exactly as it was last time, so what's on screen is already right
