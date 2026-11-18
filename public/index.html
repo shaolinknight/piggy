@@ -6995,7 +6995,7 @@ document.addEventListener('keydown', function (e) {
     y0 = null;
     var p = el(); p.className = ''; p.style.transform = '';
     var ap1 = $('app'); ap1.style.transition = 'transform .45s ' + EASE_IOS; ap1.style.transform = ''; setTimeout(function () { ap1.style.transition = ''; }, 460);
-    if (armed) { armed = false; if (S.demo || localMode()) toast(localMode() ? 'Your data is on this phone — connect a sheet in Settings to sync' : 'Connect your sheet in Settings to sync'); else { sync(); toast('Syncing…'); } }
+    if (armed) { armed = false; if (S.demo || localMode()) toast(localMode() ? 'Your data is on this phone — connect a sheet in Settings to sync' : 'Connect your sheet in Settings to sync'); else { sync(true); toast('Syncing…'); } }
   });
 })();
 
@@ -7502,7 +7502,7 @@ function starterHtml() {
   return h + '<div class="btns" style="margin-top:14px"><button class="btn pri" data-act="stsave" id="st_save">Save my budget</button></div>';
 }
 function startLocal() {
-  S.demo = false; S.welcomed = true;
+  S.demo = false; S.welcomed = true; forgetPull();
   S.tx = []; S.budget = []; S.grids = []; S.trips = []; S.recur = []; S.goals = []; S.outbox = []; S.plan = null; S.syncErr = '';
   save(); closeSheet(); render(); window.scrollTo(0, 0);
   setTimeout(function () { openSheet('starter'); }, 320);
@@ -8092,17 +8092,33 @@ function api(payload) {
   var timeout = new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, slow ? 120000 : 25000); });
   var req;
   if (payload.action === 'pull' || payload.action === 'ping') {
-    req = fetch(url + (url.indexOf('?') >= 0 ? '&' : '?') + 'action=' + payload.action + '&pass=' + encodeURIComponent(S.cfg.pass) + '&t=' + Date.now(), { redirect: 'follow' });
+    req = fetch(url + (url.indexOf('?') >= 0 ? '&' : '?') + 'action=' + payload.action + '&pass=' + encodeURIComponent(S.cfg.pass) +
+      (payload.since ? '&since=' + encodeURIComponent(payload.since) : '') + '&t=' + Date.now(), { redirect: 'follow' });
   } else {
     payload.pass = S.cfg.pass;
     req = fetch(url, { method: 'POST', body: JSON.stringify(payload), redirect: 'follow' });   // text/plain: no CORS preflight
   }
   return Promise.race([req, timeout]).then(function (res) {
     if (!res.ok) throw new Error('http_' + res.status);
-    if (PERF && payload.action === 'pull') return res.text().then(function (t) { PERF_INFO.pullKB = Math.round(t.length / 1024); return JSON.parse(t); });
-    return res.json();
+    if (payload.action !== 'pull') return res.json();
+    return res.text().then(function (t) {
+      if (PERF) PERF_INFO.pullKB = Math.round(t.length / 1024);
+      var d = JSON.parse(t);
+      if (d && d.ok && !d.same) d._sig = pullSig(t);
+      return d;
+    });
   });
 }
+
+// 2.49: a fingerprint of the sheet's whole answer, so an open where nothing changed in the sheet doesn't rebuild,
+// re-save and redraw everything. The answer's own "at" (when it was made) differs every time, so it's left out.
+function pullSig(txt) {
+  var s = txt.replace(/^(\{"ok":true,"v":\d+,)"at":\d+,/, '$1'), h1 = 0x811c9dc5, h2 = 5381;
+  for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619); h2 = (Math.imul(h2, 33) + c) | 0; }
+  return (h1 >>> 0).toString(36) + '.' + (h2 >>> 0).toString(36) + '.' + s.length.toString(36);
+}
+// After connecting, disconnecting, starting fresh or restoring a backup, the next answer must be used in full.
+function forgetPull() { delete S.pullSig; delete S.pullStamp; delete S.pullFull; }
 
 function errText(e) {
   var s = String((e && e.message) || e || '');
@@ -8116,9 +8132,12 @@ function errText(e) {
 function flushSoon() { clearTimeout(flushTimer); flushTimer = setTimeout(sync, 400); }
 
 // Sends queued changes one at a time, then pulls a fresh copy of the sheet.
-function sync() {
+// full: a refresh you asked for (pull down, the refresh button) always rebuilds from the sheet's answer.
+function sync(full) {
   if (S.demo || !S.cfg.url || SYNCING) return Promise.resolve(false);
   SYNCING = true; renderSync();
+  full = full === true;
+  var dropped = false;                    // a change the sheet refused: its answer must replace what's on screen
   perfMark('sync');
   queuePrefs();
   function next() {
@@ -8151,13 +8170,13 @@ function sync() {
       if (!res || !res.ok) {
         var e = (res && res.error) || 'unknown';
         if (e === 'unknown_action') {
-          S.outbox.shift();
+          S.outbox.shift(); dropped = true;
           toast('Your sheet\u2019s script is out of date — paste the new Code.gs and deploy a new version.');
           save();
           return next();
         }
         if (e === 'not_found' || e === 'bad_entry' || e === 'no_budget_tabs' || /validation/i.test(e)) {
-          S.outbox.shift();                               // can't ever succeed: drop it and say so
+          S.outbox.shift(); dropped = true;               // can't ever succeed: drop it and say so
           toast(e === 'not_found' ? 'A change couldn’t be matched to a sheet row (it was edited there). Skipped.' : 'The sheet rejected a change: ' + e);
           save();
           return next();
@@ -8171,15 +8190,21 @@ function sync() {
       return next();
     });
   }
-  return next().then(function () { perfMark('pullsent'); return api({ action: 'pull' }); }).then(function (data) {
+  return next().then(function () { perfMark('pullsent'); return api(pullAsk(full)); }).then(function (data) {
     perfMark('pullgot');
     if (!data || !data.ok) throw new Error((data && data.error) || 'pull_failed');
-    applyPull(data);
+    // 2.49: the sheet is exactly as it was last time, so what's on screen is already right
+    var same = !full && !dropped && (data.same === true || (!!data._sig && data._sig === S.pullSig && (data.v || 1) === S.scriptV));
+    if (same) sheetSame();
+    else {
+      applyPull(data);
+      S.pullSig = data._sig || ''; S.pullStamp = data.stamp || ''; S.pullFull = Date.now();
+    }
     S.syncErr = (data.v || 1) < 6 ? 'Your sheet has an older connector. Paste the new Code.gs and deploy a new version (see setup) for trips, trip budgets, budget updates and the timezone fix.' : '';
     S.lastSync = Date.now();
     save();
     SYNCING = false;
-    safeRender();
+    if (same) renderSync(); else safeRender();
     perfMark('fresh'); perfHero();
     if (S.outbox.length) flushSoon();
     return true;
@@ -8191,6 +8216,27 @@ function sync() {
     renderSync(); if (SHEET && SHEET.kind === 'settings') renderSheet();
     return false;
   });
+}
+
+// What to ask the sheet for. A script from 2.49 on (v20) can answer "same as before" without reading every tab, when
+// told what this phone last saw. Once a day, and on a refresh you ask for, it reads everything anyway.
+function pullAsk(full) {
+  var ask = { action: 'pull' };
+  if (!full && (S.scriptV || 0) >= 20 && S.pullStamp && Date.now() - (S.pullFull || 0) < 864e5) ask.since = S.pullStamp;
+  return ask;
+}
+// Nothing changed in the sheet: only what the passing of time changes here (the same things applyPull does at its end).
+function sheetSame() {
+  if (S.prefsPulled && (S.scriptV || 0) >= 10) {
+    S.devs = S.devs || {};
+    var me = S.devs[myDev()];
+    if (!me || me.v !== VERSION || Date.now() - (+me.at || 0) > 3 * 86400000) {
+      S.devs[myDev()] = { v: VERSION, at: Date.now(), n: devName() };
+      S.prefsSent = ''; setTimeout(function () { queuePrefs(); if (S.outbox.length) flushSoon(); }, 0);
+    }
+  }
+  setTimeout(function () { if (!SHEET && !UI.edit) autoPayBills(); }, 0);
+  if ((S.scriptV || 0) >= 10) setTimeout(function () { if (spreadTick()) { CACHE = {}; VER++; safeRender(); } }, 0);
 }
 
 // ---- your settings, copied to the sheet's "app settings" tab so a reinstall gets them back
@@ -8395,7 +8441,7 @@ function connect() {
   lock('connect', function () {
     btn.disabled = true; btn.textContent = 'Connecting…';
     var prev = { url: S.cfg.url, pass: S.cfg.pass };
-    S.cfg.url = url; S.cfg.pass = pass;
+    S.cfg.url = url; S.cfg.pass = pass; forgetPull();
     return api({ action: 'ping' }).then(function (res) {
       if (!res || !res.ok) throw new Error((res && res.error) || 'no_response');
       S.scriptV = res.v || 1;
@@ -8415,7 +8461,7 @@ function connect() {
 function disconnect() {
   if (UI.armed !== 'disc') { arm('disc', document.querySelector('[data-act=disconnect]'), 'Sure? Tap again'); return; }
   UI.armed = null;
-  S.cfg.url = ''; S.cfg.pass = ''; S.outbox = []; S.syncErr = ''; S.plan = null;
+  S.cfg.url = ''; S.cfg.pass = ''; S.outbox = []; S.syncErr = ''; S.plan = null; forgetPull();
   buildDemo();
   save(); render(); renderSheet();
   toast('Disconnected — showing sample data');
@@ -8503,7 +8549,7 @@ function importData(file) {
     try {
       var d = JSON.parse(rd.result);
       if (!d || !Array.isArray(d.tx) || !d.cfg) throw new Error('bad');
-      S = migrate(d);
+      S = migrate(d); forgetPull();
       save(); applyTheme(); render(); renderSheet();
       toast('Backup restored');
       flushSoon();
@@ -8975,7 +9021,7 @@ document.addEventListener('click', function (e) {
       checkUpdate();
       if (S.demo || localMode()) { render(); toast(S.demo ? 'These are sample numbers — nothing to refresh' : 'Everything’s on this device — nothing to refresh'); break; }
       el.classList.add('spin');
-      sync().then(function () { el.classList.remove('spin'); render(); toast(S.syncErr ? 'Couldn’t reach your sheet' : 'Up to date'); }, function () { el.classList.remove('spin'); toast('Couldn’t reach your sheet'); });
+      sync(true).then(function () { el.classList.remove('spin'); render(); toast(S.syncErr ? 'Couldn’t reach your sheet' : 'Up to date'); }, function () { el.classList.remove('spin'); toast('Couldn’t reach your sheet'); });
       break;
     case 'syncstat':
     case 'sync':
@@ -8984,7 +9030,7 @@ document.addEventListener('click', function (e) {
     // falls through: opening the status also syncs
     case 'syncnow':
       if (S.demo) break;
-      var stp = sync().then(function (ok) { if (SHEET && SHEET.kind === 'status') renderSheet(); if (ok && act === 'syncnow') toast('Up to date'); });
+      var stp = sync(act === 'syncnow').then(function (ok) { if (SHEET && SHEET.kind === 'status') renderSheet(); if (ok && act === 'syncnow') toast('Up to date'); });
       if (SHEET && SHEET.kind === 'status') renderSheet();
       break;
     case 'mprev': if (!el.disabled) { UI.ym--; render(); viewIn(); } break;
