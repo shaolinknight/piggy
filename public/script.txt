@@ -1,5 +1,5 @@
 /**
- * PIGGY — connector between the Piggy app and your Google Sheet.   (script version 19)
+ * PIGGY — connector between the Piggy app and your Google Sheet.   (script version 20)
  *
  * Paste this whole file into your sheet's  Extensions → Apps Script  editor (a new, empty sheet is fine),
  * change PASSCODE below, then Deploy → New deployment → Web app
@@ -44,7 +44,7 @@ var RECUR_TAB = 'recurring';             // the tab that lists your trips (creat
 var BUDGET_SOURCE = '';              // '' = find your budget tabs automatically.
                                      // Or name one tab to always read from, e.g. '2026 budget'.
 
-var VERSION = 19;
+var VERSION = 20;
 var VIEW_MARK = 'runway spending view';
 var GOALS_TAB = 'goals';
 var PREFS_TAB = 'app settings';
@@ -85,7 +85,7 @@ function route_(p) {
   try {
     switch (p.action) {
       case 'ping': return { ok: true, v: VERSION, name: SpreadsheetApp.getActive().getName() };
-      case 'pull': return pull_();
+      case 'pull': return pull_(p.since);
       case 'add': return locked_(function () { return add_(p.tx); });
       case 'update': return locked_(function () { return update_(p.ref, p.tx); });
       case 'delete': return locked_(function () { return delete_(p.ref); });
@@ -128,6 +128,7 @@ function locked_(fn) {
     // the app retries a change if it never heard back; if this one was already made, don't make it again
     if (CUR_OID && opDone_(CUR_OID)) return { ok: true, dup: true };
     var r = fn();
+    if (r && r.ok) bump_();
     if (CUR_OID && r && r.ok) opMark_(CUR_OID);
     return r;
   } finally { lock.releaseLock(); }
@@ -141,6 +142,29 @@ function opMark_(oid) {
   var l = opList_(); l.push(oid);
   if (l.length > 500) l = l.slice(l.length - 500);      // the last 500 changes is plenty: retries come within minutes
   PropertiesService.getScriptProperties().setProperty(OPS_KEY, JSON.stringify(l));
+}
+
+// ---------------------------------------------------------------- "has anything changed?" (v20)
+// The script keeps a stamp that moves whenever the sheet changes: when the app saves something, when you type in the
+// sheet (onEdit below), and when you add or delete rows or tabs by hand (the piggyChanged watcher). When the app asks
+// for the sheet and already has the latest stamp, the answer is just "same as before" — no tab is read, which is most
+// of the wait. Until the watcher is in place, every ask reads everything, as before.
+var STAMP_KEY = 'piggy.stamp';
+function stamp_() { return PropertiesService.getScriptProperties().getProperty(STAMP_KEY) || ''; }
+function bump_() {
+  var s = Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+  try { PropertiesService.getScriptProperties().setProperty(STAMP_KEY, s); } catch (e) {}
+  return s;
+}
+function piggyChanged() { bump_(); }      // runs when rows or tabs are added or removed by hand
+function watching_() {
+  try { return ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'piggyChanged'; }); } catch (e) { return false; }
+}
+function watch_() {
+  try {
+    if (!watching_()) ScriptApp.newTrigger('piggyChanged').forSpreadsheet(SpreadsheetApp.getActive()).onChange().create();
+    PropertiesService.getScriptProperties().setProperty('piggy.watch', '1');
+  } catch (e) { PropertiesService.getScriptProperties().deleteProperty('piggy.watch'); }   // not allowed yet: keep reading in full
 }
 
 // ---------------------------------------------------------------- dates
@@ -205,30 +229,43 @@ function logSheets_() {
 
 // ---------------------------------------------------------------- reading
 
-function pull_() {
+function pull_(since) {
+  var t0 = new Date().getTime(), stamp = stamp_();
+  // nothing changed since this phone's last full read (only trusted once the watcher is in place)
+  if (since && stamp && String(since) === stamp && PropertiesService.getScriptProperties().getProperty('piggy.watch') === '1') {
+    return { ok: true, v: VERSION, same: true, stamp: stamp, ms: new Date().getTime() - t0 };
+  }
+  if (!stamp) stamp = bump_();          // read before the tabs: a change made while reading moves it again
   var ss = SpreadsheetApp.getActive();
-  var out = { ok: true, v: VERSION, at: new Date().getTime(), tx: [], grids: [], budget: [], trips: [] };
-  var fixes = [];
+  var out = { ok: true, v: VERSION, at: t0, tx: [], grids: [], budget: [], trips: [] };
+  var fixes = [], t = { logs: 0, grids: 0 }, tick = new Date().getTime();
+  function lap(k) { var n = new Date().getTime(); t[k] = (t[k] || 0) + n - tick; tick = n; }
   ss.getSheets().forEach(function (sh) {
     var n = logName_(sh.getName()), gy;
-    if (n) readLog_(sh, n.k, n.y, out.tx, fixes);
+    if (n) { readLog_(sh, n.k, n.y, out.tx, fixes); lap('logs'); }
     else if ((gy = gridName_(sh.getName()))) {
       var g = readGrid_(sh, gy);
       if (g) out.grids.push(g);
+      lap('grids');
     }
   });
+  lap('tabs');
   var bs = ss.getSheetByName(BUDGET_TAB) || findSheetCI_(BUDGET_TAB);
   if (!bs) bs = locked_(function () { return budgetSheet_(true); });
   var rows = readBudgetRows_(bs, fixes);
   out.budget = rows.map(function (b) { return [b.s, b.g, b.c, b.a, b.row, b.note]; });
-  out.seed = seedStatus_(rows);
-  out.trips = readTrips_(fixes);
-  out.recur = readRecur_();
-  out.prefs = readPrefs_();
-  out.goals = readGoals_();
+  lap('budget');
+  out.seed = seedStatus_(rows); lap('seed');
+  out.trips = readTrips_(fixes); lap('trips');
+  out.recur = readRecur_(); lap('recur');
+  out.prefs = readPrefs_(); lap('prefs');
+  out.goals = readGoals_(); lap('goals');
   if (fixes.length) locked_(function () {        // correct dates an older version wrote a day early
     fixes.forEach(function (f) { f.sh.getRange(f.r, f.c).setValue(f.v).setNumberFormat(f.fmt); });
   });
+  if (PropertiesService.getScriptProperties().getProperty('piggy.watch') !== '1' || !watching_()) watch_();
+  lap('watch');
+  out.stamp = stamp; out.ms = new Date().getTime() - t0; out.t = t;
   return out;
 }
 
@@ -1988,7 +2025,9 @@ function ensureTripHeader_(sh) {
 }
 
 // Fills in today's date in the date column when you type a new current-month entry in the sheet.
+// (v20: also tells the app, next time it asks, that the sheet changed.)
 function onEdit(e) {
+  bump_();
   try {
     var sh = e.range.getSheet();
     var n = logName_(sh.getName());

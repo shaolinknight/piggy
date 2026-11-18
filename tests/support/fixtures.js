@@ -6,8 +6,9 @@ var MockSheet = require('./mock-sheet').MockSheet;
 var b = require('./boot');
 
 var test = base.test.extend({
-  mock: async function ({ context }, use) {
-    var m = new MockSheet();
+  mockOptions: [{}, { option: true }],         // e.g. test.use({ mockOptions: { v: 20 } })
+  mock: async function ({ context, mockOptions }, use) {
+    var m = new MockSheet(mockOptions);
     await m.attach(context);
     await use(m);
     m.heal();

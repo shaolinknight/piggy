@@ -6,6 +6,9 @@
 //   mock.latency = 1500                      every answer waits 1.5 s (or { pull: 4000, add: 0 } per action)
 //   mock.fail('offline' | 'timeout' | 'http500' | 'lost' | {error:'bad_entry'}, { action: 'add', times: 1 })
 //   ('lost': the sheet makes the change but the answer never gets back to the phone, so the app will retry it)
+//   new MockSheet({ v: 20 })                 script v20: a stamp that moves on every change, and "same as before" answers
+//   mock.touch()                             (v20) someone edited the sheet by hand
+//   mock.watch = false                       (v20) the hand-edit watcher isn't installed yet: every pull reads everything
 'use strict';
 var data = require('./sheet-data');
 
@@ -22,7 +25,10 @@ function MockSheet(opts) {
   this.applied = [];              // changes actually made to the sheet: { action, oid }
   this.done = {};                 // oids already made (the script's "piggy.ops" list)
   this.held = [];                 // requests left hanging by the 'timeout' failure
+  this.stamp = '';                // v20: moves whenever the sheet changes
+  this.watch = true;              // v20: the hand-edit watcher is installed
 }
+MockSheet.prototype.touch = function () { this.stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 6); return this; };
 
 MockSheet.prototype.fail = function (mode, o) {
   o = o || {};
@@ -53,13 +59,18 @@ MockSheet.prototype.handle = function (p) {
   function locked(fn) {                                  // locked_(): a retried change is never made twice
     if (p.oid && self.done[p.oid]) return { ok: true, dup: true };
     var r = fn();
+    if (r && r.ok) self.touch();
     if (p.oid && r && r.ok) { self.done[p.oid] = 1; self.applied.push({ action: p.action, oid: p.oid }); }
     return r;
   }
   try {
     switch (p.action) {
       case 'ping': return { ok: true, v: this.v, name: 'Piggy test sheet' };
-      case 'pull': return this.pullPayload();
+      case 'pull':
+        if (this.v < 20) return this.pullPayload();
+        if (p.since && this.stamp && p.since === this.stamp && this.watch) return { ok: true, v: this.v, same: true, stamp: this.stamp, ms: 3 };
+        if (!this.stamp) this.touch();
+        return Object.assign(this.pullPayload(), { stamp: this.stamp, ms: 40, t: { logs: 30, grids: 5 } });
       case 'add': return locked(function () { return self.add(p.tx); });
       case 'update': return locked(function () { return self.update(p.ref, p.tx); });
       case 'delete': return locked(function () { return self.remove(p.ref); });
@@ -173,7 +184,7 @@ MockSheet.prototype.attach = function (target) {
     } else {
       try { p = JSON.parse(req.postData() || ''); } catch (e) { p = {}; }
     }
-    var entry = { action: p.action, oid: p.oid || '', at: Date.now(), status: 'pending', bytes: 0 };
+    var entry = { action: p.action, oid: p.oid || '', since: p.since || '', at: Date.now(), status: 'pending', bytes: 0 };
     self.log.push(entry);
     var mode = self.failureFor(p.action);
     return wait(self.delayFor(p.action)).then(function () {
@@ -186,7 +197,7 @@ MockSheet.prototype.attach = function (target) {
       if (mode === 'lost') { entry.status = 'lost:' + JSON.stringify(self.handle(p)); return route.abort('connectionreset'); }
       var res = mode && typeof mode === 'object' ? { ok: false, error: mode.error } : self.handle(p);
       var body = JSON.stringify(res);
-      entry.status = res.ok ? 'ok' : res.error; entry.bytes = body.length;
+      entry.status = res.same ? 'same' : res.ok ? 'ok' : res.error; entry.bytes = body.length;
       return route.fulfill({ status: 200, headers: cors(), contentType: 'application/json', body: body });
     }).catch(function () {});                              // the page may have gone away mid-request
   });
@@ -205,7 +216,7 @@ MockSheet.prototype.listen = function () {
         if (req.method === 'GET') new URL(req.url, 'http://x').searchParams.forEach(function (v, k) { p[k] = v; });
         else { try { p = JSON.parse(Buffer.concat(chunks).toString() || ''); } catch (e) { p = {}; } }
         if (req.method === 'OPTIONS') { res.writeHead(204, cors()); return res.end(); }
-        var entry = { action: p.action, oid: p.oid || '', at: Date.now(), status: 'pending', bytes: 0 };
+        var entry = { action: p.action, oid: p.oid || '', since: p.since || '', at: Date.now(), status: 'pending', bytes: 0 };
         self.log.push(entry);
         var mode = self.failureFor(p.action);
         wait(self.delayFor(p.action)).then(function () {
@@ -214,7 +225,7 @@ MockSheet.prototype.listen = function () {
           if (mode === 'http500') { entry.status = 500; res.writeHead(500, cors()); return res.end('error'); }
           if (mode === 'lost') { entry.status = 'lost:' + JSON.stringify(self.handle(p)); return req.socket.destroy(); }
           var out = mode && typeof mode === 'object' ? { ok: false, error: mode.error } : self.handle(p), body = JSON.stringify(out);
-          entry.status = out.ok ? 'ok' : out.error; entry.bytes = body.length;
+          entry.status = out.same ? 'same' : out.ok ? 'ok' : out.error; entry.bytes = body.length;
           res.writeHead(200, Object.assign({ 'Content-Type': 'application/json' }, cors()));
           res.end(body);
         });

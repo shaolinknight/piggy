@@ -8199,7 +8199,7 @@ function sync(full) {
   // seconds). Entries still go first: the sheet's answer must already have them, or they'd show twice.
   var early = S.outbox.length && S.outbox.every(function (op) { return op.op === 'prefs'; }) ? api(pullAsk(full)) : null;
   if (early) { perfMark('pullsent'); early.catch(function () {}); }       // its failure is handled below, once the update is sent
-  return next().then(function () { perfMark('pullsent'); return early || api(pullAsk(full)); }).then(function (data) {
+  return next().then(function () { perfMark('pullsent'); return early && !dropped ? early : api(pullAsk(full || dropped)); }).then(function (data) {
     perfMark('pullgot');
     if (!data || !data.ok) throw new Error((data && data.error) || 'pull_failed');
     // 2.49: the sheet is exactly as it was last time, so what's on screen is already right
