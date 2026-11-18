@@ -8,17 +8,27 @@ Read this whole file before you start any task.
 
 Confirm these against the repo the first time you open it, and update this section if anything differs.
 
-- `site/` is what Cloudflare deploys (production from `main`, preview deploys from branches). Its contents:
-  - **`site/index.html`** is the whole app. It's one file (~772 KB, ~10,450 lines): CSS in one `<style>` (~104 KB), JS in inline `<script>` (~650 KB), and icons as base64 (~12 KB). Plain ES5 (`var`, `function`, no modules, no framework, no build step). `var VERSION = '2.48'` sits near line 1412.
-  - **`site/sw.js`** is the service worker. `var CACHE = 'piggy-shell-NN'` must go up by one every release. The app page is served cache-first and a fresh copy is fetched in the background. When the page text changes, the worker posts `{type:'updated'}` and the app reloads itself if it was opened in the last 15 seconds. Calls to `script.google(usercontent).com` and `script.txt` are never cached.
-  - **`site/manifest.webmanifest`**: `display: standalone`, theme colour, icons.
-  - **`site/script.txt`** is a copy of `Code.gs` that the app links to so people can paste it into their sheet. Keep it identical to `Code.gs`.
-- **`Code.gs`** is the Apps Script backend (script `VERSION = 19`). It must always ship with `var PASSCODE = 'CHANGE-ME';`. Never commit a real passcode, sheet URL or deployment ID.
-- **`SETUP.md`** holds the setup guide and a "What's new in X.YY" section for every release, newest first.
+(Checked in Phase 0. The original notes described a `site/` folder, a root `Code.gs` and a `SETUP.md`; none of those exist.)
+
+- **`public/`** is what Cloudflare deploys: `wrangler.jsonc` serves `./public` as static assets. Production deploys from `main`; previews deploy from branches. Files belong **in `public/`**: v2.48 was once uploaded to the repo root by mistake, so it never deployed. Its contents:
+  - **`public/index.html`** is the whole app. It's one file (~755 KB, ~10,460 lines):
+    - CSS in one `<style>` (~101 KB);
+    - JS in one inline `<script>` (~638 KB);
+    - icons as base64 (~12 KB): the apple-touch-icon and favicon are inline `data:` PNGs.
+
+    It's plain ES5 (`var`, `function`, no modules, no framework, no build step). `var VERSION = '2.48'` sits near line 1412. The whole script is wrapped in `(function () { 'use strict'; … boot(); })();`, so `VERSION`, `S`, `checkUpdate` and the rest are **not** globals. Reach them through `window.__runway`.
+  - **`public/sw.js`** is the service worker. `var CACHE = 'piggy-shell-NN'` must go up by one every release.
+    - The app page is served cache-first and a fresh copy is fetched in the background.
+    - When the page text changes, the worker posts `{type:'updated'}`. The app reloads itself if it was opened in the last 15 seconds; otherwise it shows a "Reload" toast. The app also asks for the page every 30 minutes while it's open, and when you come back to it.
+    - Calls to `script.google(usercontent).com` and `script.txt` are never cached.
+  - **`public/manifest.webmanifest`**: `display: standalone`, theme colour, icons (`icon-192.png`, `icon-512.png`).
+  - **`public/script.txt`** **is** the Apps Script backend (script `VERSION = 19`); there is no separate `Code.gs` file in the repo. The app links to it so people can paste it into their sheet. It must always ship with `var PASSCODE = 'CHANGE-ME';`. Never commit a real passcode, sheet URL or deployment ID.
+- **There's no `SETUP.md` yet.** The release checklist below asks for one. Create it at the root (not in `public/`) at the first release that needs it.
+- **`tests/`** holds the Playwright behaviour tests and the perf baseline. It's not deployed; see `tests/README.md`.
 
 ### Data flow (read this before touching loading or sync)
 
-1. **Opening the app:** `boot()` (near line 9654) reads `STORE.get('runway.v1')`. That's localStorage, or `window.storage` when present. It parses the whole state object `S`, runs `migrate()`, calls `render()` straight away from the saved copy, then calls `sync()`. So the first paint already comes from the cache; nothing waits on the network.
+1. **Opening the app:** `boot()` (near line 9655) reads `STORE.get('runway.v1')`. That's localStorage, or `window.storage` when present. It parses the whole state object `S`, runs `migrate()`, calls `render()` straight away from the saved copy, then calls `sync()`. So the first paint already comes from the cache; nothing waits on the network.
 2. **`sync()`** (near line 8118):
    - It sends `S.outbox` one operation at a time through `api()` (a POST with a JSON body, sent as text/plain to avoid a CORS preflight). Each operation carries an `oid` so the script can skip a change it already made.
    - Then it calls `api({action:'pull'})`, a GET with `?action=pull&pass=…`. The timeout is 25 s, or 120 s for heavy actions.
@@ -28,7 +38,9 @@ Confirm these against the repo the first time you open it, and update this secti
    - the "app budget" tab, trips, recurring bills, "app settings" (prefs JSON) and goals.
 
    That's one Apps Script cold start plus a full read. This is almost certainly the main "slow" step after the first paint. Measure it before assuming.
-4. **Changes show instantly already:** `addTx`/edit/delete change `S` and re-render at once, push an operation into `S.outbox`, then call `flushSoon()`. Failures that can never succeed (`not_found`, `bad_entry`, …) are dropped with a toast; anything else retries on the next sync. There is no rollback path today; a failed save stays queued.
+4. **Changes show instantly already:** `addTx`/edit/delete change `S` and re-render at once, push an operation into `S.outbox`, then call `flushSoon()`.
+   - Failures that can never succeed (`not_found`, `bad_entry`, `no_budget_tabs`, `validation`, `unknown_action`) are dropped with a toast. The pull that follows then puts the sheet's copy back on screen; that is the only "rollback".
+   - Anything else stays at the head of the outbox and retries on every sync. That includes `{ok:false}` errors the client doesn't list, such as `bad_prefs` or `bad_year`. Changes queued behind it wait too.
 5. **Prefs** sync field by field (`prefsObj`, `prefsChanged`, the `chg` list, `keepUnchanged_` on the server). Lists such as bills and categories are merged by union on the client. Spread purchases (pay over N months) post each payment with a fixed `oid` `sp-<id>-<i>`.
 6. **A first load with a sheet but no data yet** shows `skeletonHtml()` (see `firstLoad()`).
 
@@ -69,7 +81,7 @@ Confirm these against the repo the first time you open it, and update this secti
   - adds an entry at the top of `NEWS` in `index.html` (the "What's new" popup after an update);
   - bumps `VERSION`;
   - bumps `CACHE` in `sw.js`;
-  - adds "What's new in X.YY" to `SETUP.md`, listing which files changed.
+  - adds "What's new in X.YY" to `SETUP.md`, listing which files changed (create `SETUP.md` the first time).
 
 ## iPhone lessons already paid for
 
@@ -87,7 +99,11 @@ These all shipped as bugs before. Don't reintroduce them.
 
 ## Testing and verifying
 
-- **There's no test suite in the repo yet.** Phase 0 adds one under `tests/`: Playwright, with a mock of the Apps Script web app and a fetch shim, so no real sheet is needed.
+- **The test suite lives in `tests/`** (Phase 0). It uses Playwright with a mock of the Apps Script web app, so no real sheet is needed.
+  - Run it with `cd tests && npm install && npx playwright test`; run the perf baseline with `npm run perf` (it writes `tests/perf/baseline.json`).
+  - Every phase must keep `tests/specs/` passing.
+  - With the service worker on, WebKit sends page requests past Playwright's routing. Behaviour tests therefore block the worker; SW tests use `mock.listen()`.
+  - The mock sheet's prefs set `hu` to the current month so the "Welcome to <month>" heads-up doesn't cover the screen.
 - **Test in WebKit first** (`npx playwright install webkit`), at iPhone sizes (375×667, 390×844, 402×874), with `hasTouch` and `isMobile`, in light and dark, with reduced motion, and with the Extra-large text setting. Add Chromium only for Lighthouse and CPU-throttled timings.
 - **Hooks the app already has for tests:**
   - init flags that silence first-run popups: `window.__noWelcome`, `__noTour`, `__noBillPrompt`, `__noNews`, `__noPad` / `__forcePad`;
