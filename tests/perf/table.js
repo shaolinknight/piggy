@@ -36,7 +36,7 @@ module.exports = function (R) {
   var keys = [['htmlReceived', 'HTML received'], ['firstContentfulPaint', 'first (contentful) paint'], ['scriptParse', 'inline script: load + parse + compile'],
     ['scriptExec', 'inline script: top-level run'], ['bootToFirstRender', 'boot() → first render() (parse saved copy, migrate, draw)'],
     ['firstRender', 'first render() done'], ['heroInDom', 'Month hero card in the DOM'], ['pullSent', 'pull sent'], ['pullAnswered', 'pull answered'],
-    ['renderToFresh', 'first render → fresh data on screen'], ['pullToFreshJs', '  of which: apply pull + save + redraw'], ['freshRender', 'fresh data on screen'],
+    ['renderToFresh', 'first render → fresh data on screen'], ['pullToFreshJs', '  of which: apply pull + save + redraw'], ['freshRender', 'fresh data on screen (or confirmed unchanged)'], ['redrawn', 'redrawn after the pull (1 = yes)'],
     ['longTasks', 'long tasks > 50 ms (Chromium)'], ['longTaskMs', '  total long-task time'], ['longTaskMax', '  longest task']];
   ['webkit', 'chromium'].forEach(function (b) {
     var B = R[b]; if (!B || !B.cold) return;

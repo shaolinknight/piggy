@@ -56,10 +56,11 @@ function marks(p, buf) {
 }
 
 // ---- one page load, measured
+// done when the sheet's answer has been used: redrawn, or (2.49+, nothing changed) just saved
 function untilFresh(page) {
   return page.waitForFunction(function () {
     var T = window.__perf, p = T && T.fetch.filter(function (f) { return f.action === 'pull'; })[0];
-    return p && p.json && T.view.some(function (v) { return v.at > p.json; });
+    return p && p.json && (T.view.some(function (v) { return v.at > p.json; }) || T.setItems.some(function (s) { return s.at > p.json; }));
   }, null, { timeout: 90000 }).then(function () { return page.waitForTimeout(400); });
 }
 async function collect(page) {
@@ -72,6 +73,8 @@ async function collect(page) {
   });
   var T = d.T, first = T.view[0] || {}, p = T.fetch.filter(function (f) { return f.action === 'pull'; })[0] || {};
   var fresh = T.view.filter(function (v) { return p.json && v.at > p.json; })[0] || {};
+  var done = T.setItems.filter(function (s) { return p.json && s.at > p.json; })[0] || {};
+  if (fresh.at == null && done.at != null) fresh = { at: done.at, same: true };     // nothing changed: the screen was already right
   var lt = T.longtasks.filter(function (t) { return t.at < (fresh.at || Infinity) + 100; });
   return {
     controlled: d.controlled ? 1 : 0,
@@ -89,6 +92,7 @@ async function collect(page) {
     freshRender: fresh.at,
     renderToFresh: fresh.at != null && first.at != null ? fresh.at - first.at : null,
     pullToFreshJs: fresh.at != null && p.json != null ? fresh.at - p.json : null,       // apply the pull, save, render
+    redrawn: fresh.at != null && !fresh.same ? 1 : 0,
     saves: T.setItems.length, saveMsMax: T.setItems.length ? Math.max.apply(null, T.setItems.map(function (s) { return s.ms; })) : null,
     longTasks: lt.length, longTaskMs: lt.reduce(function (s, t) { return s + t.ms; }, 0), longTaskMax: lt.length ? Math.max.apply(null, lt.map(function (t) { return t.ms; })) : 0
   };
