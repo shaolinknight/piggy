@@ -1920,7 +1920,92 @@
     "render-blocking-insight (Est savings of 890 ms)"
    ],
    "renderBlocking": "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9"
-  }
+  },
+  "preview": {
+   "median": {
+    "performance": 82,
+    "accessibility": 98,
+    "bestPractices": 100,
+    "fcp": 3003.8,
+    "lcp": 4004.8,
+    "tbt": 0,
+    "cls": 0,
+    "speedIndex": 3003.8
+   },
+   "runs": [
+    {
+     "performance": 88,
+     "accessibility": 98,
+     "bestPractices": 100,
+     "fcp": 3078.7909,
+     "lcp": 3078.7909,
+     "tbt": 0,
+     "cls": 0,
+     "speedIndex": 3078.7909,
+     "renderBlocking": "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9"
+    },
+    {
+     "performance": 79,
+     "accessibility": 98,
+     "bestPractices": 100,
+     "fcp": 3003.8354999999997,
+     "lcp": 4378.0295,
+     "tbt": 0,
+     "cls": 0,
+     "speedIndex": 3003.8354999999997,
+     "renderBlocking": "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9"
+    },
+    {
+     "performance": 79,
+     "accessibility": 98,
+     "bestPractices": 100,
+     "fcp": 3192.9397000000004,
+     "lcp": 4277.9874,
+     "tbt": 0,
+     "cls": 0,
+     "speedIndex": 3227.8272540001612,
+     "renderBlocking": "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9"
+    },
+    {
+     "performance": 90,
+     "accessibility": 98,
+     "bestPractices": 100,
+     "fcp": 2917.209,
+     "lcp": 2917.209,
+     "tbt": 0,
+     "cls": 0,
+     "speedIndex": 2917.209,
+     "renderBlocking": "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9"
+    },
+    {
+     "performance": 82,
+     "accessibility": 98,
+     "bestPractices": 100,
+     "fcp": 2930.7218000000003,
+     "lcp": 4004.8236,
+     "tbt": 0,
+     "cls": 0,
+     "speedIndex": 2930.7218000000003,
+     "renderBlocking": "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9"
+    }
+   ],
+   "failingAudits": [
+    "first-contentful-paint (3.1 s)",
+    "largest-contentful-paint (3.1 s)",
+    "valid-source-maps",
+    "heading-order",
+    "unminified-css (Est savings of 2 KiB)",
+    "unminified-javascript (Est savings of 40 KiB)",
+    "unused-css-rules (Est savings of 25 KiB)",
+    "unused-javascript (Est savings of 145 KiB)",
+    "cache-insight (Est savings of 40 KiB)",
+    "forced-reflow-insight",
+    "network-dependency-tree-insight",
+    "render-blocking-insight (Est savings of 850 ms)"
+   ],
+   "renderBlocking": "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9"
+  },
+  "previewUrl": "https://audit-baseline-piggy.liet-brandon.workers.dev/"
  },
  "install": {
   "head": {
@@ -1949,5 +2034,19 @@
   },
   "chromiumInstallabilityErrors": [],
   "worksOffline": true
+ },
+ "previewHeaders": {
+  "checkedWith": "curl, Safari iPhone user agent, Accept-Encoding: br, gzip",
+  "url": "https://piggy.liet-brandon.workers.dev/ (production, same v2.48 page)",
+  "status": 200,
+  "content-encoding": "br",
+  "transferBytesBrotli": 216875,
+  "transferBytesGzip": 215070,
+  "cache-control": "public, max-age=0, must-revalidate",
+  "cf-cache-status": "HIT",
+  "etag": null,
+  "last-modified": null,
+  "conditionalRequestHonoured": false,
+  "note": "No ETag/Last-Modified and If-None-Match is ignored, so the service worker re-downloads the whole page (~217 KB) on every open."
  }
 }

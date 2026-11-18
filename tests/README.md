@@ -24,7 +24,7 @@ npm run perf                  # performance baseline -> perf/baseline.json (~15 
   - The saved state is injected.
   - Any console error fails the test.
 - `specs/`: behaviour that every phase must keep passing.
-- `perf/run.js`: the baseline measurements (see the report it prints).
+- `perf/run.js`: the baseline measurements (see the report it prints). Behind an HTTPS proxy, run it with `NODE_USE_ENV_PROXY=1` so the `--preview` header check can reach Cloudflare.
 
 ## Two things that will bite you
 
