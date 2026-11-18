@@ -1,0 +1,15 @@
+{
+  "name": "piggy-tests",
+  "private": true,
+  "description": "Behaviour tests and performance baseline for Piggy. Nothing here ships to the site.",
+  "scripts": {
+    "serve": "node support/server.js",
+    "test": "playwright test",
+    "perf": "node perf/run.js",
+    "perf:quick": "node perf/run.js --runs 1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "lighthouse": "13.6.0"
+  }
+}
