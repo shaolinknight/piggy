@@ -76,6 +76,7 @@ module.exports = function (R) {
 
   if (R.lighthouse) {
     Object.keys(R.lighthouse).forEach(function (k) {
+      if (!R.lighthouse[k] || !R.lighthouse[k].median) return;        // e.g. previewUrl
       var L = R.lighthouse[k].median;
       table('Lighthouse (' + k + ', mobile)', ['Perf', 'A11y', 'Best pr.', 'FCP', 'LCP', 'TBT', 'CLS', 'Speed Index'],
         [[L.performance, L.accessibility, L.bestPractices, ms(L.fcp), ms(L.lcp), ms(L.tbt), L.cls, ms(L.speedIndex)]]);
