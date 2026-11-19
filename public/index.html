@@ -787,7 +787,7 @@ canvas.confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:n
 @keyframes dchipR{0%{opacity:0}12%{opacity:1}75%{opacity:1}100%{opacity:0}}
 @keyframes pulseR{0%,100%{opacity:1}50%{opacity:.4}}
 @keyframes skR{0%,100%{opacity:1}50%{opacity:.55}}
-.meter i,.bar i{transition:width .55s cubic-bezier(.2,.8,.2,1)}
+.meter i,.bar i{transform-origin:0 50%}      /* 2.50: bars grow with scaleX (see animateNumbers), not by animating width */
 button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 .tx:active,.scrow:active,.crow:active,.mghead:active{transform:none;background:var(--p2)}
 @media (prefers-reduced-motion: reduce){
@@ -2639,9 +2639,15 @@ function animateNumbers(fromClose) {
     BARS[k] = want;
     if (REDUCED) { if (was !== undefined && was !== want) fadeIn(b, 300, 0.3); return; }
     if (was === want) return;
-    b.style.transition = 'none'; b.style.width = was || '0%';
-    void b.offsetWidth;
-    b.style.transition = ''; requestAnimationFrame(function () { b.style.width = want; });
+    // 2.50: the bar takes its new length at once and grows (or shrinks) into it with scaleX, which the GPU draws;
+    // animating width redid the layout of every bar on every frame
+    var from = parseFloat(was || '0') || 0, to = parseFloat(want) || 0;
+    b.style.transition = 'none'; b.style.width = want;
+    if (!b.animate) return;
+    if (to > 0) { b.animate([{ transform: 'scaleX(' + from / to + ')' }, { transform: 'none' }], { duration: 550, easing: EASE_OUT }); return; }
+    b.style.width = was;                     // shrinking to nothing: shrink from the old length, then settle at 0
+    var gone = b.animate([{ transform: 'none' }, { transform: 'scaleX(0)' }], { duration: 550, easing: EASE_OUT, fill: 'forwards' });
+    gone.onfinish = function () { b.style.width = want; gone.cancel(); };
   })(bars[j]);
   if (hold || REDUCED) return;
   // what moved: pulse its row, and float the change beside the big number
