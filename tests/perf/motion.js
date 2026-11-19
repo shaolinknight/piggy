@@ -30,12 +30,13 @@ function probe() {
   document.addEventListener('animationstart', function (e) {
     var props = [];
     try {
-      e.target.getAnimations().forEach(function (a) {
-        if (a.animationName !== e.animationName) return;
+      // document-wide, so an animation on a ::before / ::after layer is found too
+      document.getAnimations().forEach(function (a) {
+        if (a.animationName !== e.animationName || !a.effect || a.effect.target !== e.target) return;
         a.effect.getKeyframes().forEach(function (k) { Object.keys(k).forEach(function (p) { if (props.indexOf(p) < 0 && !/^(offset|easing|composite|computedOffset)$/.test(p)) props.push(p); }); });
       });
     } catch (x) {}
-    add('css-animation ' + e.animationName, e.target, props.length ? props : ['?']);
+    add('css-animation ' + e.animationName + (e.pseudoElement ? ' ' + e.pseudoElement : ''), e.target, props.length ? props : ['?']);
   }, true);
   var anim = Element.prototype.animate;
   Element.prototype.animate = function (kf) {
