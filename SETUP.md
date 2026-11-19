@@ -16,6 +16,21 @@ The web app URL doesn't change, so there's nothing to change in Piggy.
 
 Don't use Settings → "Copy the script" for this: that button is for setting up a new sheet and puts a new passcode in the script.
 
+## What's new in 2.50
+
+Phase 2 (motion). Everyday animations now move only things the phone's graphics chip can draw by itself (position and fade); none of them resize or repaint the page on every frame any more.
+
+- **Opening an entry, adding one, swiping one away, dismissing a reminder, and opening a Month group or a Settings section** used to animate height. Now the section opens at once, what's below glides from where it was, and the new content fades in.
+- **Tab switches use a View Transition** (iOS 18+). The old screen holds still while the new tab is drawn, then the two cross-fade. With reduced motion, or on an older phone, the old slide-in is kept.
+- **Progress bars** grow by scaling instead of animating their width.
+- **Highlights and the loading shimmer** fade or slide a layer instead of animating background colours.
+- **Popups** (the entry sheet and the category picker) rise on the iOS curve.
+- A new test (`tests/specs/motion.spec.js`) fails if any of these animate anything other than transform or opacity.
+
+Files changed:
+- `public/index.html`
+- `public/sw.js` (cache `piggy-shell-24`)
+
 ## What's new in 2.49
 
 Phase 1 (speed).

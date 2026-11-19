@@ -1429,7 +1429,7 @@ body.padon main{padding-bottom:340px}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.49';
+var VERSION = '2.50';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -9923,6 +9923,11 @@ document.addEventListener('click', function (e) {
 
 // ---- 2.44: after an update, a popup with what's new (once per update; also in Settings → What's new)
 var NEWS = [
+  { v: '2.50', items: [
+    ['🧈', 'Smoother everywhere', 'Opening an entry, adding one, swiping one away, and opening a group or a section in Settings now glide into place instead of stretching, which keeps them smooth on the phone.'],
+    ['✨', 'Gentler tab changes', 'Switching tabs cross-fades: the screen you’re leaving holds still until the next one is ready.'],
+    ['📊', 'Bars and highlights', 'Progress bars grow, and saved entries glow, in a way the phone can draw without effort. Popups rise on the same curve as iPhone sheets.']
+  ] },
   { v: '2.49', items: [
     ['⚡', 'Calmer opening', 'When nothing has changed in your sheet, Piggy keeps the screen just as it is after checking in, so numbers don’t jump under your finger.'],
     ['🚀', 'Much faster checking in, with the new sheet script', 'Update the script in your sheet (keep your passcode; the setup guide shows how) and Piggy only reads your whole sheet when something changed. Pulling down to refresh still reads everything.'],
