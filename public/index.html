@@ -1187,6 +1187,9 @@ button,[data-act],summary,.chip{touch-action:manipulation}
 .rcfreq input{width:64px;min-height:44px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--p1);padding:0 10px;font-size:16px;text-align:center}
 .rcfreq .selw{flex:1}
 .rcpre{margin:0 0 10px}
+.cbpay{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--b1)}
+.cbpay span{font-size:14px;color:var(--t2);min-width:0}
+.cbpay .btn{flex:none;min-height:44px;padding:0 16px}
 .rrow.none{opacity:.7}
 /* 2.38: tablets use the four-section Plan too, so its header and columns apply from 700px */
 @media (min-width:700px) and (max-width:959px){
@@ -4248,7 +4251,7 @@ function afterBillMark() {
       setTimeout(function () { if (SHEET && SHEET.kind === 'bills') closeSheet(); toast('All bills checked off ✓'); }, 1000);
     }
   }
-  else if (SHEET && SHEET.kind === 'recurmonth') renderSheet();
+  else if (SHEET && (SHEET.kind === 'recurmonth' || SHEET.kind === 'cat')) renderSheet();
   flushSoon();
 }
 function headsUpItems() {
@@ -7238,6 +7241,26 @@ function newTxDraft(kind) {
   return { id: '', k: kind || 'e', y: y, m: m, v: '', c: '', a: 0, n: '', d: d, tr: tp ? tp.name : '' };
 }
 
+// 2.54: mark a bill paid from its own popup, without waiting for Piggy to ask: early, while its due date is still
+// coming up this month, or any time for a bill with no due date (its budgeted amount is logged as the payment)
+function catBillPayHtml(c, key, bills) {
+  if (key > nowYM()) return '';
+  var today = todayStr(), from = ymY(key) + '-' + pad(ymM(key) + 1) + '-01', to = ymY(key) + '-' + pad(ymM(key) + 1) + '-' + pad(daysIn(ymY(key), ymM(key))), h = '';
+  if (bills.length) {
+    bills.forEach(function (b) {
+      billDates(b, from, to).forEach(function (d) {
+        var st = billState(b, d);
+        if (st.s === 'paid' || st.s === 'skip') return;
+        h += '<div class="cbpay"><span>' + (bills.length > 1 ? '<b>' + esc(b.name) + '</b> · ' : '') + esc(st.txt) + '</span>' +
+          '<button class="btn pri" data-act="billpay" data-v="' + esc(b.name) + '" data-d="' + d + '">' + (d > today ? 'Mark paid early' : 'Mark paid') + '</button></div>';
+      });
+    });
+    return h;
+  }
+  var bud = budgetOf(c, key);
+  if ((monthStats(key).cat[c] || 0) > 0 || !(bud > 0)) return '';
+  return '<div class="cbpay"><span>' + money(bud) + ' budgeted for ' + MONTHS[ymM(key)] + '</span><button class="btn pri" data-act="catpaid" data-v="' + esc(c) + '">Mark paid</button></div>';
+}
 function catSheetHtml(c, k) {
   var cur = nowYM(), r = dataRange(), key = UI.ym === null ? cur : UI.ym;
   var bud = k === 'i' ? 0 : budgetOf(c, key), cols = [], sum = 0, n = 0, anyBud = false;
@@ -7258,7 +7281,7 @@ function catSheetHtml(c, k) {
     var cbl = S.recur.filter(function (b) { return low(b.c) === low(c); });
     h += '<section class="card catbill"><div class="ghead"><h3>Bill</h3>' + (cbl.length ? '' : '<button class="chip on" data-act="recurfromcat" data-v="' + esc(c) + '">Set due date</button>') + '</div>' +
       (cbl.length ? cbl.map(function (b) { return '<button class="crow" data-act="recuredit" data-v="' + esc(b.name) + '"><div class="l1"><b>' + esc(b.name) + '</b><em>' + money(b.a, true) + ' ›</em></div><div class="l2">' + billHow(b) + '</div></button>'; }).join('')
-        : '<div class="l2">No due date yet, so Piggy won’t ask you to check it off.</div>') + '</section>';
+        : '<div class="l2">No due date yet, so Piggy won’t remind you. You can still mark it paid here.</div>') + catBillPayHtml(c, key, cbl) + '</section>';
   }
   h += '<button class="btn" style="width:100%;margin-bottom:12px" data-act="pcatfrom" data-v="' + esc(c) + '">' + (key < cur ? 'Correct ' + MONTHS[ymM(key)] + '’s budget' : 'Change this budget') + '</button>';
   if (k !== 'i') h += catOptionsHtml(c, key);
@@ -8860,6 +8883,18 @@ document.addEventListener('click', function (e) {
         toast(pb.name + ' paid · ' + money(pt.a, true), function () { var ft = resolveTx(pt.id, ptAfter); if (ft) deleteTx(ft.id); S.bmark[billKey(pb, pd0)] = 'x'; save(); queuePrefs(); keepScroll(render); if (SHEET) renderSheet(); flushSoon(); toast('Undone'); });
       });
       break;
+    case 'catpaid':
+      // a bill with no due date: log its budgeted amount as the payment, today (or the last day of a past month)
+      lock('billpay', function () {
+        var ck = UI.ym === null ? nowYM() : UI.ym, cy = ymY(ck), cm = ymM(ck), ca = budgetOf(v, ck);
+        if (!(ca > 0)) return;
+        var ct = addTx({ k: 'e', y: cy, m: cm, v: v, c: v, a: ca, n: '', d: ck === nowYM() ? todayStr() : cy + '-' + pad(cm + 1) + '-' + pad(daysIn(cy, cm)), tr: '' });
+        markFresh(ct);
+        var ctAfter = pick(ct);
+        afterBillMark();
+        toast(v + ' paid · ' + money(ca, true), function () { var ft = resolveTx(ct.id, ctAfter); if (ft) deleteTx(ft.id); save(); keepScroll(render); if (SHEET) renderSheet(); flushSoon(); toast('Undone'); });
+      });
+      break;
     case 'billlink':
       var lb = recurByName(v); if (!lb) break;
       var lk = billKey(lb, el.getAttribute('data-d'));
@@ -10002,6 +10037,7 @@ var NEWS = [
   { v: '2.54', items: [
     ['💻', 'Fits any computer window', 'On your Mac, an entry you open in Activity now always shows Delete, Cancel and Save, however small the window. In a narrow window it floats over the list, and the list tidies its columns to fit.'],
     ['🪟', 'Steady behind side panels', 'On your Mac, opening a category, Review & save or Settings no longer nudges the page, or the Review & save bar, sideways.'],
+    ['✅', 'Mark a bill paid any time', 'Tap a bill in Month’s Bills to mark it paid early, before its due date, or any time if it has no due date.'],
     ['↩️', 'A way back', 'Popups opened from another one, like Bills from Settings, now have a Back button that takes you back to it.'],
     ['🖱️', 'Quick clicks count', 'Clicking right after switching tabs on your Mac now always does what you clicked.']
   ] },
