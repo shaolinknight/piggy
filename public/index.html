@@ -8160,7 +8160,7 @@ function api(payload) {
   var req;
   if (payload.action === 'pull' || payload.action === 'ping') {
     req = fetch(url + (url.indexOf('?') >= 0 ? '&' : '?') + 'action=' + payload.action + '&pass=' + encodeURIComponent(S.cfg.pass) +
-      (payload.since ? '&since=' + encodeURIComponent(payload.since) : '') + '&t=' + Date.now(), { redirect: 'follow' });
+      (payload.since ? '&since=' + encodeURIComponent(payload.since) : '') + (payload.fresh ? '&fresh=1' : '') + '&t=' + Date.now(), { redirect: 'follow' });
   } else {
     payload.pass = S.cfg.pass;
     req = fetch(url, { method: 'POST', body: JSON.stringify(payload), redirect: 'follow' });   // text/plain: no CORS preflight
@@ -8290,9 +8290,12 @@ function sync(full) {
 
 // What to ask the sheet for. A script from 2.49 on (v20) can answer "same as before" without reading every tab, when
 // told what this phone last saw. Once a day, and on a refresh you ask for, it reads everything anyway.
+// 2.53: a script from v22 on also remembers tabs that haven't changed; a refresh you ask for and the daily full read
+// tell it to read every tab anyway (fresh).
 function pullAsk(full) {
-  var ask = { action: 'pull' };
-  if (!full && (S.scriptV || 0) >= 20 && S.pullStamp && Date.now() - (S.pullFull || 0) < 864e5) ask.since = S.pullStamp;
+  var ask = { action: 'pull' }, daily = Date.now() - (S.pullFull || 0) >= 864e5;
+  if (!full && !daily && (S.scriptV || 0) >= 20 && S.pullStamp) ask.since = S.pullStamp;
+  if ((full || daily) && (S.scriptV || 0) >= 22) ask.fresh = 1;
   return ask;
 }
 // Nothing changed in the sheet: only what the passing of time changes here (the same things applyPull does at its end).

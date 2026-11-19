@@ -184,7 +184,7 @@ MockSheet.prototype.attach = function (target) {
     } else {
       try { p = JSON.parse(req.postData() || ''); } catch (e) { p = {}; }
     }
-    var entry = { action: p.action, oid: p.oid || '', since: p.since || '', at: Date.now(), status: 'pending', bytes: 0 };
+    var entry = { action: p.action, oid: p.oid || '', since: p.since || '', fresh: p.fresh === '1', at: Date.now(), status: 'pending', bytes: 0 };
     self.log.push(entry);
     var mode = self.failureFor(p.action);
     return wait(self.delayFor(p.action)).then(function () {
@@ -216,7 +216,7 @@ MockSheet.prototype.listen = function () {
         if (req.method === 'GET') new URL(req.url, 'http://x').searchParams.forEach(function (v, k) { p[k] = v; });
         else { try { p = JSON.parse(Buffer.concat(chunks).toString() || ''); } catch (e) { p = {}; } }
         if (req.method === 'OPTIONS') { res.writeHead(204, cors()); return res.end(); }
-        var entry = { action: p.action, oid: p.oid || '', since: p.since || '', at: Date.now(), status: 'pending', bytes: 0 };
+        var entry = { action: p.action, oid: p.oid || '', since: p.since || '', fresh: p.fresh === '1', at: Date.now(), status: 'pending', bytes: 0 };
         self.log.push(entry);
         var mode = self.failureFor(p.action);
         wait(self.delayFor(p.action)).then(function () {
