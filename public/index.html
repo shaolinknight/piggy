@@ -195,7 +195,7 @@ main{padding:0 16px 72px}
 #sheet.hasbar{padding-bottom:0}
 #sheet input,#sheet select,#sheet textarea{scroll-margin-bottom:96px}
 #sheet.kb{border-radius:22px;padding-bottom:0}
-#sheet.kb.on{transition:transform .25s ease,top .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1)}
+#sheet.kb.on{transition:transform .32s cubic-bezier(.32,.72,0,1),top .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1)}
 @media (prefers-reduced-motion: reduce){#sheet.kb.on{transition:transform .25s ease}}
 .field{margin-bottom:12px}
 .field label,.flabel{display:block;font-size:12px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
@@ -249,8 +249,9 @@ main{padding:0 16px 72px}
 #scrim.on{opacity:1;pointer-events:auto}
 #sheet{position:fixed;z-index:41;left:0;right:0;bottom:0;margin:0 auto;max-width:520px;max-height:92vh;overflow:auto;
   background:var(--bg);border-radius:22px 22px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom));
-  transform:translateY(105%);visibility:hidden;transition:transform .25s ease,visibility 0s .25s;-webkit-overflow-scrolling:touch}
-#sheet.on{transform:none;visibility:visible;transition:transform .25s ease}
+  transform:translateY(105%);visibility:hidden;transition:transform .26s cubic-bezier(.32,.72,0,1),visibility 0s .26s;-webkit-overflow-scrolling:touch}
+/* 2.50: popups rise and settle on the iOS curve (they used plain ease) */
+#sheet.on{transform:none;visibility:visible;transition:transform .32s cubic-bezier(.32,.72,0,1)}
 #sheet,#picker{overscroll-behavior:contain}
 body.locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 .grab{cursor:grab;touch-action:none;padding:6px 0;margin:-2px auto 8px;width:60px;background-clip:content-box}
@@ -388,8 +389,8 @@ table.tb td:first-child{white-space:normal;overflow-wrap:anywhere;padding-right:
 .quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .quick .chip{height:36px;font-size:14px}
 #picker{position:fixed;inset:0;z-index:45;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch;
-  padding:0 16px calc(24px + env(safe-area-inset-bottom));transform:translateY(102%);visibility:hidden;transition:transform .22s ease,visibility 0s .22s}
-#picker.on{transform:none;visibility:visible;transition:transform .22s ease}
+  padding:0 16px calc(24px + env(safe-area-inset-bottom));transform:translateY(102%);visibility:hidden;transition:transform .24s cubic-bezier(.32,.72,0,1),visibility 0s .24s}
+#picker.on{transform:none;visibility:visible;transition:transform .3s cubic-bezier(.32,.72,0,1)}
 #picker{display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
 .pktop{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;width:100%;max-width:520px;margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 0 4px}
 .pktop b{font-family:var(--fdisp);font-size:1.15rem}.pktop button{display:none}
