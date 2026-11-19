@@ -6930,8 +6930,14 @@ var SHEET = null;
 var LOCKY = 0;
 function lockPage(on) {
   var b = document.body;
-  if (on && !b.classList.contains('locked')) { LOCKY = window.scrollY; b.style.top = -LOCKY + 'px'; b.classList.add('locked'); }
-  if (!on && b.classList.contains('locked')) { b.classList.remove('locked'); b.style.top = ''; window.scrollTo(0, LOCKY); }
+  if (on && !b.classList.contains('locked')) {
+    // a computer showing scrollbars loses the page's scrollbar while it's pinned: keep the page as wide as it was, or
+    // everything behind the sheet jumps sideways by the scrollbar's width (the sheet itself still reaches the edge)
+    var sb = window.innerWidth - document.documentElement.clientWidth;
+    LOCKY = window.scrollY; b.style.top = -LOCKY + 'px'; if (sb > 0) b.style.width = 'calc(100% - ' + sb + 'px)';
+    b.classList.add('locked');
+  }
+  if (!on && b.classList.contains('locked')) { b.classList.remove('locked'); b.style.top = ''; b.style.width = ''; window.scrollTo(0, LOCKY); }
 }
 
 var SHEET_STACK = [];
@@ -9979,7 +9985,8 @@ document.addEventListener('click', function (e) {
 // ---- 2.44: after an update, a popup with what's new (once per update; also in Settings → What's new)
 var NEWS = [
   { v: '2.54', items: [
-    ['💻', 'Fits any computer window', 'On your Mac, an entry you open in Activity now always shows Delete, Cancel and Save, however small the window. In a narrow window it floats over the list, and the list tidies its columns to fit.']
+    ['💻', 'Fits any computer window', 'On your Mac, an entry you open in Activity now always shows Delete, Cancel and Save, however small the window. In a narrow window it floats over the list, and the list tidies its columns to fit.'],
+    ['🪟', 'Steady behind side panels', 'On your Mac, opening a category, Review & save or Settings no longer nudges the page behind it sideways.']
   ] },
   { v: '2.53', items: [
     ['🚀', 'Faster after you save', 'With the updated sheet script (v22), Piggy only re-reads the parts of your sheet that changed, so checking in after you add an entry is much quicker.'],

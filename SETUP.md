@@ -25,6 +25,7 @@ Don't use Settings → "Copy the script" for this: that button is for setting up
   - The panel now starts at the top of the page and is never taller than the window. The search bar moved into the list's column to make room.
   - Between 960 and 1099 px wide (about half a laptop screen) the panel used to sit under the whole list. It now floats over the list's right side while an entry is open.
   - The table follows its own width: when it's narrow, Details steps aside so store and category stay readable.
+- **Opening a side panel no longer nudges the page behind it.** On a Mac that shows scrollbars, the page used to jump sideways by the scrollbar's width whenever a panel opened (a category, Review & save, Settings…). The page now keeps its width, and the panel still reaches the window's edge.
   - Phones and the iPad-size layout are unchanged.
 - No sheet script change (still v22).
 

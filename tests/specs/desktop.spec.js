@@ -88,3 +88,32 @@ test.describe('preview data, 1280×620', function () {
     });
   });
 });
+
+// a computer that shows scrollbars: opening a side panel pins the page and its scrollbar goes, but nothing behind the
+// panel may move sideways, and the panel and its dimmed backdrop still reach the window's edge
+test.describe('side panel, 1280×720 with a scrollbar', function () {
+  test.use({ viewport: { width: 1280, height: 720 }, screen: { width: 1280, height: 720 }, hasTouch: false, isMobile: false });
+  test('the page behind doesn’t shift when a panel opens or closes @scrollbar', async function ({ page, app }) {
+    await app.boot({ state: boot.connectedState() });
+    await app.synced();
+    function pos() {
+      return page.evaluate(function () {
+        var c = document.querySelector('#view .card').getBoundingClientRect();
+        return { left: Math.round(c.left), right: Math.round(c.right), bar: innerWidth - document.documentElement.clientWidth };
+      });
+    }
+    var before = await pos();
+    expect(before.bar, 'the page shows a scrollbar').toBeGreaterThan(0);
+    await page.click('.top [data-act="settings"]');
+    await expect(page.locator('#sheet.on')).toBeVisible();
+    await page.waitForTimeout(500);
+    var open = await pos();
+    expect({ left: open.left, right: open.right }).toEqual({ left: before.left, right: before.right });
+    var edge = await page.evaluate(function () { return [document.getElementById('sheet').getBoundingClientRect().right, document.getElementById('scrim').getBoundingClientRect().right, innerWidth]; });
+    expect(edge[0]).toBe(edge[2]);
+    expect(edge[1]).toBe(edge[2]);
+    await page.evaluate(function () { window.__runway.closeSheet(); });
+    await page.waitForTimeout(500);
+    expect(await pos()).toEqual(before);
+  });
+});

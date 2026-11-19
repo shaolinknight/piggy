@@ -15,8 +15,11 @@ module.exports = defineConfig({
   use: Object.assign({ baseURL: 'http://127.0.0.1:' + PORT + '/', trace: 'off', browserName: 'webkit' }, boot.contextOptions()),
   webServer: { command: 'node support/server.js ' + PORT, url: 'http://127.0.0.1:' + PORT + '/', reuseExistingServer: true },
   projects: [
-    { name: 'webkit-390', use: boot.contextOptions({ phone: 'pro' }) },
+    { name: 'webkit-390', use: boot.contextOptions({ phone: 'pro' }), grepInvert: /@scrollbar/ },
     { name: 'webkit-375-dark', use: boot.contextOptions({ phone: 'se', colorScheme: 'dark', reducedMotion: 'reduce' }), grep: /@screens/ },
-    { name: 'webkit-402', use: boot.contextOptions({ phone: 'pro17' }), grep: /@screens/ }
+    { name: 'webkit-402', use: boot.contextOptions({ phone: 'pro17' }), grep: /@screens/ },
+    // a Mac set to show scrollbars: headless WebKit can't draw one that takes up room, so these few run in Chromium
+    // with its scrollbars left on
+    { name: 'chromium-scrollbar', use: Object.assign(boot.contextOptions(), { browserName: 'chromium', launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } }), grep: /@scrollbar/ }
   ]
 });
