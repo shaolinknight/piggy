@@ -1,0 +1,383 @@
+{
+ "at": "2026-11-19T00:15:51.280Z",
+ "webkit": [
+  {
+   "step": "Open the app (warm)",
+   "animations": 20,
+   "layoutOrPaint": 18,
+   "heavy": [
+    "width on i.over (css-transition)",
+    "width on i.good (css-transition)",
+    "width on i (css-transition)"
+   ],
+   "props": {
+    "opacity": 1,
+    "transform": 1,
+    "width ⚠": 18
+   },
+   "frames": 93,
+   "p95": 26,
+   "worst": 89,
+   "over25": 5,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Open a Month group",
+   "animations": 4,
+   "layoutOrPaint": 1,
+   "heavy": [
+    "grid-template-rows on div.mgbody (css-transition)"
+   ],
+   "props": {
+    "transform": 3,
+    "grid-template-rows ⚠": 1
+   },
+   "frames": 96,
+   "p95": 29,
+   "worst": 31,
+   "over25": 9,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Tab: Month → Activity",
+   "animations": 4,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "opacity": 1,
+    "transform": 3
+   },
+   "frames": 96,
+   "p95": 23,
+   "worst": 46,
+   "over25": 3,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Tap an entry (edit form opens)",
+   "animations": 16,
+   "layoutOrPaint": 3,
+   "heavy": [
+    "height on form#txform.form (animate())",
+    "border-bottom-color on div#minibar.on (css-transition)",
+    "box-shadow on div.mhead.stuck (css-transition)"
+   ],
+   "props": {
+    "transform": 11,
+    "height ⚠": 1,
+    "opacity": 2,
+    "border-bottom-color ⚠": 1,
+    "box-shadow ⚠": 1
+   },
+   "frames": 82,
+   "p95": 37,
+   "worst": 115,
+   "over25": 7,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Close the edit form",
+   "animations": 15,
+   "layoutOrPaint": 10,
+   "heavy": [
+    "backgroundAttachment on button.tx.flash (css-animation txflash)",
+    "backgroundPositionX on button.tx.flash (css-animation txflash)",
+    "backgroundColor on button.tx.flash (css-animation txflash)",
+    "backgroundImage on button.tx.flash (css-animation txflash)",
+    "backgroundOrigin on button.tx.flash (css-animation txflash)",
+    "backgroundClip on button.tx.flash (css-animation txflash)",
+    "backgroundSize on button.tx.flash (css-animation txflash)",
+    "backgroundRepeat on button.tx.flash (css-animation txflash)",
+    "backgroundPositionY on button.tx.flash (css-animation txflash)",
+    "border-bottom-color on div#minibar (css-transition)"
+   ],
+   "props": {
+    "transform": 4,
+    "backgroundAttachment ⚠": 1,
+    "backgroundPositionX ⚠": 1,
+    "backgroundColor ⚠": 1,
+    "backgroundImage ⚠": 1,
+    "backgroundOrigin ⚠": 1,
+    "backgroundClip ⚠": 1,
+    "backgroundSize ⚠": 1,
+    "backgroundRepeat ⚠": 1,
+    "backgroundPositionY ⚠": 1,
+    "opacity": 1,
+    "border-bottom-color ⚠": 1
+   },
+   "frames": 97,
+   "p95": 20,
+   "worst": 34,
+   "over25": 2,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Tap + (New entry sheet)",
+   "animations": 4,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 3,
+    "opacity": 1
+   },
+   "frames": 97,
+   "p95": 19,
+   "worst": 35,
+   "over25": 2,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Save a new entry (row appears)",
+   "animations": 15,
+   "layoutOrPaint": 5,
+   "heavy": [
+    "height on div.swipe (animate())",
+    "background-color on div.swipe.freshhi (css-transition)",
+    "background-color on button.tx (css-transition)",
+    "backgroundColor on div.mhead.bump (css-animation bump)"
+   ],
+   "props": {
+    "opacity": 4,
+    "transform": 5,
+    "visibility": 1,
+    "height ⚠": 1,
+    "background-color ⚠": 2,
+    "backgroundColor ⚠": 2
+   },
+   "frames": 86,
+   "p95": 35,
+   "worst": 47,
+   "over25": 14,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Tab: Activity → Plan",
+   "animations": 4,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "opacity": 1,
+    "transform": 3
+   },
+   "frames": 97,
+   "p95": 19,
+   "worst": 37,
+   "over25": 2,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Tab: Plan → Trends",
+   "animations": 6,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "opacity": 2,
+    "transform": 4
+   },
+   "frames": 94,
+   "p95": 27,
+   "worst": 46,
+   "over25": 5,
+   "longFrames": 0,
+   "longFrameMs": 0
+  }
+ ],
+ "chromium4x": [
+  {
+   "step": "Open the app (warm)",
+   "animations": 20,
+   "layoutOrPaint": 18,
+   "heavy": [
+    "width on i.over (css-transition)",
+    "width on i.good (css-transition)",
+    "width on i (css-transition)"
+   ],
+   "props": {
+    "width ⚠": 18,
+    "transform": 1,
+    "opacity": 1
+   },
+   "frames": 76,
+   "p95": 66.6,
+   "worst": 333.3,
+   "over25": 9,
+   "longFrames": 5,
+   "longFrameMs": 706
+  },
+  {
+   "step": "Open a Month group",
+   "animations": 5,
+   "layoutOrPaint": 1,
+   "heavy": [
+    "grid-template-rows on div.mgbody (css-transition)"
+   ],
+   "props": {
+    "transform": 4,
+    "grid-template-rows ⚠": 1
+   },
+   "frames": 103,
+   "p95": 16.8,
+   "worst": 83.3,
+   "over25": 2,
+   "longFrames": 1,
+   "longFrameMs": 109
+  },
+  {
+   "step": "Tab: Month → Activity",
+   "animations": 5,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "opacity": 1,
+    "transform": 4
+   },
+   "frames": 95,
+   "p95": 16.8,
+   "worst": 66.6,
+   "over25": 1,
+   "longFrames": 1,
+   "longFrameMs": 79
+  },
+  {
+   "step": "Tap an entry (edit form opens)",
+   "animations": 16,
+   "layoutOrPaint": 3,
+   "heavy": [
+    "height on form#txform.form (animate())",
+    "border-bottom-color on div#minibar.on (css-transition)",
+    "box-shadow on div.mhead.stuck (css-transition)"
+   ],
+   "props": {
+    "transform": 11,
+    "height ⚠": 1,
+    "opacity": 2,
+    "border-bottom-color ⚠": 1,
+    "box-shadow ⚠": 1
+   },
+   "frames": 95,
+   "p95": 16.8,
+   "worst": 166.8,
+   "over25": 2,
+   "longFrames": 1,
+   "longFrameMs": 173
+  },
+  {
+   "step": "Close the edit form",
+   "animations": 15,
+   "layoutOrPaint": 10,
+   "heavy": [
+    "border-bottom-color on div#minibar (css-transition)",
+    "backgroundClip on button.tx.flash (css-animation txflash)",
+    "backgroundColor on button.tx.flash (css-animation txflash)",
+    "backgroundImage on button.tx.flash (css-animation txflash)",
+    "backgroundOrigin on button.tx.flash (css-animation txflash)",
+    "backgroundPositionX on button.tx.flash (css-animation txflash)",
+    "backgroundPositionY on button.tx.flash (css-animation txflash)",
+    "backgroundRepeat on button.tx.flash (css-animation txflash)",
+    "backgroundSize on button.tx.flash (css-animation txflash)",
+    "backgroundAttachment on button.tx.flash (css-animation txflash)"
+   ],
+   "props": {
+    "transform": 4,
+    "opacity": 1,
+    "border-bottom-color ⚠": 1,
+    "backgroundClip ⚠": 1,
+    "backgroundColor ⚠": 1,
+    "backgroundImage ⚠": 1,
+    "backgroundOrigin ⚠": 1,
+    "backgroundPositionX ⚠": 1,
+    "backgroundPositionY ⚠": 1,
+    "backgroundRepeat ⚠": 1,
+    "backgroundSize ⚠": 1,
+    "backgroundAttachment ⚠": 1
+   },
+   "frames": 96,
+   "p95": 16.8,
+   "worst": 66.7,
+   "over25": 1,
+   "longFrames": 1,
+   "longFrameMs": 74
+  },
+  {
+   "step": "Tap + (New entry sheet)",
+   "animations": 4,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 3,
+    "opacity": 1
+   },
+   "frames": 97,
+   "p95": 16.7,
+   "worst": 16.8,
+   "over25": 0,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Save a new entry (row appears)",
+   "animations": 15,
+   "layoutOrPaint": 5,
+   "heavy": [
+    "height on div.swipe (animate())",
+    "background-color on div.swipe.freshhi (css-transition)",
+    "background-color on button.tx (css-transition)",
+    "backgroundColor on div.mhead.bump (css-animation bump)"
+   ],
+   "props": {
+    "transform": 5,
+    "visibility": 1,
+    "opacity": 4,
+    "height ⚠": 1,
+    "background-color ⚠": 2,
+    "backgroundColor ⚠": 2
+   },
+   "frames": 80,
+   "p95": 83.4,
+   "worst": 166.7,
+   "over25": 5,
+   "longFrames": 4,
+   "longFrameMs": 509
+  },
+  {
+   "step": "Tab: Activity → Plan",
+   "animations": 5,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "opacity": 1,
+    "transform": 4
+   },
+   "frames": 97,
+   "p95": 16.7,
+   "worst": 50,
+   "over25": 1,
+   "longFrames": 1,
+   "longFrameMs": 71
+  },
+  {
+   "step": "Tab: Plan → Trends",
+   "animations": 7,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "opacity": 2,
+    "transform": 5
+   },
+   "frames": 96,
+   "p95": 16.8,
+   "worst": 83.3,
+   "over25": 1,
+   "longFrames": 1,
+   "longFrameMs": 108
+  }
+ ]
+}
