@@ -1137,6 +1137,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 /* 2.50: switching tabs is a View Transition: the old screen holds still while the new one is drawn, then the two
    cross-fade (opacity only). The tab bar and + button look the same in both pictures, so they stay put. (Giving them
    pictures of their own to keep them still while the screen slid didn't draw reliably in WebKit.) */
+::view-transition-group(root){animation:none}      /* the screen doesn't change size: no width/height animation */
 html[data-vt]::view-transition-old(root){animation:vtOut .22s cubic-bezier(.32,.72,0,1) both}
 html[data-vt]::view-transition-new(root){animation:vtIn .22s cubic-bezier(.32,.72,0,1) both}
 @keyframes vtOut{to{opacity:0}}
