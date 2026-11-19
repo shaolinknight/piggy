@@ -32,9 +32,38 @@ SIZES.forEach(function (s) {
       });
       expect(r).toEqual({ buttons: true, overlap: false, sideways: false, scrolled: 0 });
 
+      // the bar sits exactly on the panel's foot wherever the fields are scrolled: nothing peeks out beneath it, and
+      // its own last line (the keyboard hint) isn't clipped
+      for (var at of [0, 0.5, 1]) {
+        var g = await page.evaluate(function (at) {
+          var i = document.getElementById('insp'); i.scrollTop = at * (i.scrollHeight - i.clientHeight);
+          var bar = i.querySelector('.form>.btns').getBoundingClientRect(), r = i.getBoundingClientRect(), edge = r.bottom - parseFloat(getComputedStyle(i).borderBottomWidth);
+          var last = bar.bottom; [].forEach.call(i.querySelectorAll('.form>.btns > *'), function (e) { last = Math.max(last, e.getBoundingClientRect().bottom); });
+          return { gap: Math.round(edge - bar.bottom), clipped: last > edge + 0.5 };
+        }, at);
+        expect(g, 'scrolled ' + at * 100 + '%').toEqual({ gap: 0, clipped: false });
+      }
+
       await page.click('#insp [data-act="fcancel"]');                      // closing it: nothing is left floating
       if (s[0] < 1100) await expect(page.locator('#insp')).toBeHidden();
       else await expect(page.locator('#insp .iempty')).toBeVisible();
     });
+  });
+});
+
+test.describe('preview data, 1280×620', function () {
+  test.use({ viewport: { width: 1280, height: 620 }, screen: { width: 1280, height: 620 }, hasTouch: false, isMobile: false });
+  test('nothing sits below the pinned buttons', async function ({ page, app }) {
+    await app.boot({ state: { v: 1, demo: true, tx: [], outbox: [], welcomed: true, toured: true, hu: 2026 * 12 + 10, cfg: {} } });
+    await page.click('.tab[data-v="activity"]');
+    await page.waitForFunction(function () { return !document.documentElement.hasAttribute('data-vt'); });
+    await page.locator('#view button.tx[data-act="edit"]').first().click();
+    await expect(page.locator('#insp #txform')).toBeVisible();
+    var g = await page.evaluate(function () {
+      var i = document.getElementById('insp'); i.scrollTop = 1e6;
+      var bar = i.querySelector('.form>.btns'), r = i.getBoundingClientRect();
+      return { last: !bar.nextElementSibling, gap: Math.round(r.bottom - parseFloat(getComputedStyle(i).borderBottomWidth) - bar.getBoundingClientRect().bottom) };
+    });
+    expect(g).toEqual({ last: true, gap: 0 });
   });
 });

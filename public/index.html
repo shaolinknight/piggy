@@ -1271,8 +1271,13 @@ button,[data-act],summary,.chip{touch-action:manipulation}
   .amain{min-width:0}
   .insp{margin:0;padding:18px 20px;position:sticky;top:14px;max-height:calc(100vh - 28px);max-height:calc(100dvh / var(--z,1) - 28px);overflow:auto;overscroll-behavior:contain;box-sizing:border-box}
   .insp .form{margin:0 -20px -18px;border-top:1px solid var(--b1)}
-  /* in a short window the panel scrolls, and a Mac hides its scrollbar: keep Delete / Cancel / Save pinned to its foot */
-  .insp .form>.btns{position:sticky;bottom:0;z-index:3;margin:10px -14px -14px;padding:10px 14px 14px;background:var(--p2);box-shadow:0 -10px 18px -14px rgba(0,0,0,.45);border-top:1px solid var(--b1)}
+  /* in a short window the panel scrolls, and a Mac hides its scrollbar: keep Delete / Cancel / Save pinned to its foot.
+     The panel and form have no bottom padding while a form shows, and the bar no negative margin, so where the bar rests
+     and where it pins are both the panel's very edge (Safari pins above a scroller's padding, and counts margins).
+     No rubber-band bounce in here either: it would drag the bar off the edge. */
+  .insp:has(#txform){padding-bottom:0;overscroll-behavior:none}
+  .insp .form:has(>.btns){margin-bottom:0;padding-bottom:0}
+  .insp .form>.btns{position:sticky;bottom:0;z-index:3;margin:10px -14px 0;padding:10px 14px 14px;background:var(--p2);box-shadow:0 -10px 18px -14px rgba(0,0,0,.45);border-top:1px solid var(--b1)}
   .ihead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:12px}
   .ihead h2{margin:0;font-family:var(--fdisp);font-size:22px;font-weight:600;overflow-wrap:anywhere}
   .ihead span{font-size:13px;color:var(--t3);white-space:nowrap}
@@ -3551,11 +3556,12 @@ function txForm(t, isNew) {
   h += '</div>';
   h += '<div class="hint" id="f_err" role="alert"></div>';
   if (!isNew && !t.demo && !spreadInfo(t) && !/split of \$/.test(t.n || '') && t.a > 0) h += '<button type="button" class="linkbtn logagain" data-act="logagain" id="f_again">Log this again for today</button>';
+  // the preview note goes above the buttons: nothing may sit below a bar that pins to the bottom
+  if (t.demo && !isNew) h += '<div class="hint">Preview data — changes here are just for trying things out and are cleared when you connect.</div>';
   h += '<div class="btns' + (isNew ? ' stickybar' : '') + '">' + (isNew ? '<button type="button" class="btn" data-act="fsaveadd" id="f_saveadd">Save & add another</button>' : '<button type="button" class="btn danger" data-act="fdel" id="f_del">Delete</button>') +
     (isNew ? '' : '<button type="button" class="btn" data-act="fcancel">Cancel</button>') +
     '<button type="submit" class="btn pri" id="f_save">' + (isNew ? 'Add' : 'Save') + '</button>' +
     (isMouse() ? '<div class="khint"><kbd>Enter</kbd> ' + (isNew ? 'add' : 'save') + (isNew ? ' · <kbd>Shift</kbd>+<kbd>Enter</kbd> add &amp; start the next one' : '') + ' · <kbd>Esc</kbd> ' + (isNew ? 'close' : 'cancel') + '</div>' : '') + '</div>';
-  if (t.demo && !isNew) h += '<div class="hint">Preview data — changes here are just for trying things out and are cleared when you connect.</div>';
   return h + '</form>';
 }
 
