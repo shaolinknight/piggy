@@ -76,3 +76,16 @@ test('fold-out sections in Settings open and close, and only fade and glide', as
   await page.waitForTimeout(400);
   expect(await heavy(page)).toEqual([]);
 });
+
+test('a tap during the tab cross-fade isn’t lost', async function ({ page, app }) {
+  await app.boot({ state: boot.connectedState() });
+  await app.synced();
+  // slow the cross-fade right down so the tap surely lands inside it
+  await page.addStyleTag({ content: 'html[data-vt]::view-transition-old(root),html[data-vt]::view-transition-new(root){animation-duration:3s !important}' });
+  await page.tap('.tab[data-v="activity"]');
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(function () { return document.documentElement.getAttribute('data-vt'); })).not.toBeNull();
+  var box = await page.locator('#view button.tx[data-act="edit"]').first().boundingBox();
+  await page.touchscreen.tap(box.x + 40, box.y + box.height / 2);
+  await expect(page.locator('#view #txform')).toBeVisible();
+});

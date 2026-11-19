@@ -2435,8 +2435,23 @@ function playFresh(delay) {
 }
 // 3. a new tab slides in from the side you're heading to
 var TAB_ORDER = ['month', 'activity', 'plan', 'trends'];
-var VT_ON = false, VT_TOK = 0;          // 2.50: a tab switch's View Transition is running (and which one)
-
+var VT_ON = false, VT_TOK = 0, VT_NOW = null;          // 2.50: a tab switch's View Transition is running (which one, and it)
+// 2.53: while the tabs cross-fade, the browser's transition layer takes every touch (WebKit ignores pointer-events on
+// it), so a quick tap on the new screen was lost. A finger lifting on that layer ends the cross-fade at once; the browser
+// then sends the tap's click to whatever is under the finger. A mouse click lands on the layer itself, so it's passed on.
+document.addEventListener('touchend', function (e) {
+  if (VT_NOW && e.target === document.documentElement) try { VT_NOW.skipTransition(); } catch (er) {}
+}, true);
+document.addEventListener('click', function (e) {
+  var vt = VT_NOW;
+  if (!vt || e.target !== document.documentElement) return;
+  var x = e.clientX, y = e.clientY;
+  try { vt.skipTransition(); } catch (er) {}
+  vt.finished.then(function () {
+    var el = document.elementFromPoint(x, y);
+    if (el && el !== document.documentElement && el !== document.body && el.click) el.click();
+  }, function () {});
+}, true);
 function slideView(dir) {
   var v = $('view'); if (!v || !v.animate) return;
   if (REDUCED) { fadeIn(v, 240); return; }
@@ -8683,8 +8698,8 @@ document.addEventListener('click', function (e) {
         document.documentElement.setAttribute('data-vt', '1');
         VT_ON = true;
         var vtTok = ++VT_TOK;                             // a tab tapped mid-transition: only the latest one cleans up
-        var vtDone = function () { if (vtTok !== VT_TOK) return; VT_ON = false; document.documentElement.removeAttribute('data-vt'); };
-        try { document.startViewTransition(goTab).finished.then(vtDone, vtDone); } catch (er) { vtDone(); goTab(); }
+        var vtDone = function () { if (vtTok !== VT_TOK) return; VT_ON = false; VT_NOW = null; document.documentElement.removeAttribute('data-vt'); };
+        try { VT_NOW = document.startViewTransition(goTab); VT_NOW.finished.then(vtDone, vtDone); } catch (er) { vtDone(); goTab(); }
       } else goTab();
       break;
     case 'gotop': glideTop(); break;
