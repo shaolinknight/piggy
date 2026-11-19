@@ -33,6 +33,9 @@ for (var fsize of ['m', 'xl']) {
       await expect(page.locator('#sheet #txform')).toBeVisible();
       await page.waitForTimeout(500);
       await noSideScroll(page);
+      // 2.51: the popup's top (handle, title, Close) is on screen, also with larger text (which zooms the page)
+      var top = await page.evaluate(function () { return document.getElementById('sheet').getBoundingClientRect().top; });
+      expect(top, 'the popup starts above the top of the screen').toBeGreaterThanOrEqual(0);
       await page.screenshot({ path: info.outputPath('add-' + fsize + '.png') });
     });
   })(fsize);

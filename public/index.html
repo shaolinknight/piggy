@@ -35,7 +35,9 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--ac);outline-offs
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html,body{margin:0;background:var(--bg);color:var(--t1);font-family:var(--fbody);font-size:15px;line-height:1.4;
   max-width:100%;overflow-x:hidden;overscroll-behavior-y:none}
-body{min-height:100vh;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+/* 2.51: screen-based sizes use dvh (the height you can actually see on iPhone, between Safari's bars) with vh as the
+   fallback, and divide by --z: larger text zooms the page, which would otherwise make them taller than the screen */
+body{min-height:100vh;min-height:calc(100dvh / var(--z,1));padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 button,input,select,textarea{font:inherit;color:inherit;max-width:100%}
 input,select,textarea{font-size:16px;min-width:0;box-sizing:border-box}
 html[data-density=compact] input,html[data-density=compact] select,html[data-density=compact] textarea{font-size:16px}
@@ -238,7 +240,7 @@ main{padding:0 16px 72px}
 .tlist{padding-top:4px}.tlrow{display:flex;width:100%;align-items:center;gap:10px;text-align:left;padding:11px 2px;border-top:1px solid var(--b1)}.tlrow:first-child{border-top:0}.tlrow span{flex:1;min-width:0}.tlrow b{display:block}.tlrow small{color:var(--t2);font-size:.82rem}.tlrow i{font-style:normal;color:var(--ac);font-weight:700}
 #tour{position:fixed;inset:0;z-index:60}
 #tour .tspot{position:fixed;box-shadow:0 0 0 9999px rgba(10,12,16,.62);transition:left .3s ease,top .3s ease,width .3s ease,height .3s ease;pointer-events:none;outline:2px solid rgba(255,255,255,.85);outline-offset:2px}
-#tour .tbub{position:fixed;background:var(--p1);color:var(--t1);border-radius:18px;padding:16px 16px 12px;box-shadow:0 12px 40px rgba(0,0,0,.35);max-width:calc(100vw - 32px)}
+#tour .tbub{position:fixed;background:var(--p1);color:var(--t1);border-radius:18px;padding:16px 16px 12px;box-shadow:0 12px 40px rgba(0,0,0,.35);max-width:calc(100vw / var(--z,1) - 32px)}
 #tour .tstep{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ac)}
 #tour h3{font-family:var(--fdisp);font-size:1.25rem;margin:4px 0 6px;line-height:1.2}
 #tour p{margin:0 0 12px;color:var(--t2);line-height:1.45}
@@ -247,7 +249,7 @@ main{padding:0 16px 72px}
 @media (prefers-reduced-motion: reduce){#tour .tspot{transition:none !important}}
 #scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .2s}
 #scrim.on{opacity:1;pointer-events:auto}
-#sheet{position:fixed;z-index:41;left:0;right:0;bottom:0;margin:0 auto;max-width:520px;max-height:92vh;overflow:auto;
+#sheet{position:fixed;z-index:41;left:0;right:0;bottom:0;margin:0 auto;max-width:520px;max-height:92vh;max-height:calc(92dvh / var(--z,1));overflow:auto;
   background:var(--bg);border-radius:22px 22px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom));
   transform:translateY(105%);visibility:hidden;transition:transform .26s cubic-bezier(.32,.72,0,1),visibility 0s .26s;-webkit-overflow-scrolling:touch}
 /* 2.50: popups rise and settle on the iOS curve (they used plain ease) */
@@ -731,7 +733,7 @@ body.on-plan main{padding-bottom:190px}
 .strow:first-child{border-top:0}
 .strow span{color:var(--t2);min-width:0;overflow-wrap:anywhere}
 .strow.ok b{color:var(--ok)}.strow.warn b{color:var(--warn)}.strow.bad b{color:var(--bad)}
-canvas.confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:60}
+canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
 .bigrow{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .dchip{font-size:15px;font-weight:700;padding:3px 9px;border-radius:999px;animation:dchip 2.1s ease-out forwards;white-space:nowrap}
 .dchip.good{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
@@ -992,12 +994,12 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
   /* Month: summary on the left, categories on the right */
   /* Plan: this month beside what's ahead */
   /* panels slide in from the right instead of up from the bottom */
-  #sheet{left:auto;right:0;top:0;bottom:0;width:480px;max-width:calc(100vw - 240px);max-height:none;margin:0;border-radius:22px 0 0 22px;
+  #sheet{left:auto;right:0;top:0;bottom:0;width:480px;max-width:calc(100vw / var(--z,1) - 240px);max-height:none;margin:0;border-radius:22px 0 0 22px;
     padding:18px 24px 24px;transform:translateX(105%)}
   #sheet.on{transform:none}
   #sheet.hasbar{padding-bottom:0}
   /* the category picker is a centered window */
-  #picker{inset:auto;left:50%;top:50%;width:560px;max-width:calc(100vw - 48px);height:min(720px,86vh);border-radius:22px;padding:0 20px 20px;
+  #picker{inset:auto;left:50%;top:50%;width:560px;max-width:calc(100vw / var(--z,1) - 48px);height:min(720px,86vh);height:min(720px,calc(86dvh / var(--z,1)));border-radius:22px;padding:0 20px 20px;
     transform:translate(-50%,-47%) scale(.98);opacity:0;border:1px solid var(--b1);box-shadow:0 24px 64px rgba(0,0,0,.28);transition:transform .2s ease,opacity .2s ease,visibility 0s .2s}
   #picker.on{transform:translate(-50%,-50%);opacity:1;transition:transform .2s ease,opacity .2s ease}
   .pkhead{order:-1;padding:16px 0 10px;border-top:0}.pktop{display:none}
@@ -1049,7 +1051,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 }
 @media (min-width:1100px){
   .mcols{display:grid;grid-template-columns:minmax(330px,400px) minmax(0,1fr);gap:24px;align-items:start}
-  .mcol1{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow-y:auto;scrollbar-width:thin;padding:2px;margin:-2px}
+  .mcol1{position:sticky;top:14px;max-height:calc(100vh - 28px);max-height:calc(100dvh / var(--z,1) - 28px);overflow-y:auto;scrollbar-width:thin;padding:2px;margin:-2px}
   .pcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
   .pcols .psect:first-child{margin-top:4px}
 }
@@ -1264,7 +1266,7 @@ button,[data-act],summary,.chip{touch-action:manipulation}
   .wsearch .qk{position:absolute;right:96px;top:50%;transform:translateY(-50%);font:600 11px var(--fbody);padding:1px 6px;border:1px solid var(--b2);border-radius:5px;color:var(--t3);pointer-events:none}
   .acols{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
   .amain{min-width:0}
-  .insp{margin:0;padding:18px 20px;position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto;box-sizing:border-box}
+  .insp{margin:0;padding:18px 20px;position:sticky;top:14px;max-height:calc(100vh - 28px);max-height:calc(100dvh / var(--z,1) - 28px);overflow:auto;box-sizing:border-box}
   .insp .form{margin:0 -20px -18px;border-top:1px solid var(--b1)}
   .ihead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:12px}
   .ihead h2{margin:0;font-family:var(--fdisp);font-size:22px;font-weight:600;overflow-wrap:anywhere}
@@ -1366,7 +1368,7 @@ body.locked #qdock{visibility:hidden}
 #np_hint.sum{font-size:14px;color:var(--t1);font-weight:600}
 #np_paste{font-size:14px;font-weight:600;color:var(--ac);padding:6px 8px;margin:-6px -4px -6px 0;background:none;border:0}
 .npkeys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
-.npk{height:clamp(42px,7vh,56px);border-radius:12px;background:var(--p1);border:1px solid var(--b1);color:var(--t1);font-size:24px;font-weight:500;
+.npk{height:clamp(42px,7vh,56px);height:clamp(42px,calc(7dvh / var(--z,1)),56px);border-radius:12px;background:var(--p1);border:1px solid var(--b1);color:var(--t1);font-size:24px;font-weight:500;
   font-variant-numeric:tabular-nums;box-shadow:0 1px 0 var(--b1);transition:transform .08s ease,background-color .12s ease;padding:0}
 .npk.op{background:color-mix(in srgb,var(--ac) 13%,var(--p1));color:var(--ac);font-weight:700}
 .npk.del{font-size:21px}
@@ -1931,6 +1933,7 @@ function applyTheme() {
   document.documentElement.setAttribute('data-fs', S.cfg.fsize || 'm');
   var z = (FSIZE[S.cfg.fsize] || FSIZE.m)[1];
   document.body.style.zoom = z === 1 ? '' : String(z);
+  st.setProperty('--z', z);                 // 2.51: sizes based on the screen divide by it, or larger text would push them past the screen
   if (S.cfg.icon && (S.cfg.icon !== 'piggy' || S.cfg.iconc !== 'gold')) applyIcon();
   if (S.cfg.appname) applyAppName();
   document.documentElement.setAttribute('data-cards', S.cfg.cards);
