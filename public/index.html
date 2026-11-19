@@ -178,7 +178,6 @@ main{padding:0 16px 72px}
 .swipe.l .swr,.swipe.r .swl{opacity:1;left:0;right:0}
 .swipe.r .swl{justify-content:flex-start}
 .swipe.go .swa{filter:brightness(1.1)}
-.swipe.gone{transition:max-height .22s ease;max-height:0 !important}
 .swtip{font-size:12px;color:var(--t3);text-align:center;margin:-2px 0 10px}
 .tx .tl{flex:1;min-width:0}
 .tx .tl b{display:block;font-weight:500;overflow-wrap:anywhere}
@@ -2335,25 +2334,42 @@ document.addEventListener('pointerdown', function (e) {
   var el = e.target.closest && e.target.closest('#view button, #view [data-act]');
   LAST_TAP = { el: el, at: Date.now() };
 }, true);
-// 5. rows that move: everything with data-fk glides from where it was to where it is now
+// 5. rows that move: everything with data-fk (entries) or data-flip (month headers, "Show more") glides from where it
+// was to where it is now
+function flipKey(el) { return el.getAttribute('data-fk') || 'f:' + el.getAttribute('data-flip'); }
 function flipRows(fn) {
   if (REDUCED) return fn();
   var vh = window.innerHeight, before = {};
-  var els = document.querySelectorAll('[data-fk]');
+  var els = document.querySelectorAll('[data-fk],[data-flip]');
   for (var i = 0; i < els.length; i++) {
-    var r = els[i].getBoundingClientRect(), k = els[i].getAttribute('data-fk');
+    var r = els[i].getBoundingClientRect(), k = flipKey(els[i]);
     if (!r.height || r.bottom < -80 || r.top > vh + 80 || before[k]) continue;
     before[k] = r.top;
   }
   var res = fn();
-  var now = document.querySelectorAll('[data-fk]'), seen = {};
+  var now = document.querySelectorAll('[data-fk],[data-flip]'), seen = {};
   for (var j = 0; j < now.length; j++) {
-    var el = now[j], key = el.getAttribute('data-fk');
+    var el = now[j], key = flipKey(el);
     if (seen[key] || before[key] === undefined) continue; seen[key] = 1;
     var dy = before[key] - el.getBoundingClientRect().top;
     if (Math.abs(dy) > 1 && Math.abs(dy) < vh * 1.5 && el.animate) el.animate([{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], { duration: 340, easing: EASE_OUT });
   }
   return res;
+}
+// 2.50: after a redraw that opened or closed a gap at height y (dy > 0: something dy tall went away; dy < 0: something
+// arrived), everything at or below y starts where it was and glides into place. Only transforms move; a card that
+// straddles the line is looked inside, so nothing moves twice.
+function glideFrom(y, dy) {
+  if (REDUCED || Math.abs(dy) < 2) return;
+  var vh = window.innerHeight, opts = { duration: 320, easing: EASE_OUT };
+  (function walk(parent) {
+    for (var c = parent.firstElementChild; c; c = c.nextElementSibling) {
+      var r = c.getBoundingClientRect();
+      if (!r.height || r.top > vh + Math.abs(dy) || r.bottom < 0) continue;
+      if (r.top >= y - 1) { if (c.animate) c.animate([{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], opts); }
+      else if (r.bottom > y + 1) walk(c);
+    }
+  })($('view'));
 }
 // a row leaves (slides out and fades), then the rest close the gap smoothly
 function leaveThen(el, fn, dir) {
@@ -2377,10 +2393,10 @@ function freshEl(f) {
 }
 function growIn(el) {
   if (REDUCED) { fadeIn(el, 450); return; }
-  var h = el.offsetHeight; if (!h || !el.animate) return;
-  el.style.overflow = 'hidden';
-  var a = el.animate([{ height: '0px', opacity: 0 }, { height: h + 'px', opacity: 1 }], { duration: 380, easing: EASE_OUT });
-  a.onfinish = function () { el.style.overflow = ''; };
+  var r = el.getBoundingClientRect(); if (!r.height || !el.animate) return;
+  // 2.50: everything below starts where it was before the row arrived and glides down, uncovering the row as it fades in
+  glideFrom(r.bottom, -r.height);
+  el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 380, easing: EASE_OUT });
   el.classList.add('freshhi'); setTimeout(function () { el.classList.remove('freshhi'); }, 1300);
 }
 function playFresh(delay) {
@@ -3378,14 +3394,14 @@ function txListHtml() {
       if (open) h += '</div>' + (grp ? '</section>' : '');
       var s = monthStats(k), filt = UI.q || UI.fk !== 'all';
       if (filt) { var fs0 = 0, fi0 = 0; list.forEach(function (x) { if (ymKey(x.y, x.m) === k) { if (x.k === 'e') fs0 += share(x); else fi0 += x.a; } }); s = { spentAll: fs0, inc: fi0 }; }
-      h += '<section class="mgrp" data-k="' + k + '"><div class="mhead"' + (wide ? '' : ' data-act="ajump" data-v="' + k + '" role="button" tabindex="0" aria-label="' + MONTHS[t.m] + ' ' + t.y + ', jump to another month"') + '><span>' + MONTHS[t.m] + ' ' + t.y + ' <small>· ' + cnt[k] + (filt ? ' found' : ' entries') + '</small></span><span class="num">' + (filt && !s.spentAll && s.inc ? '' : 'spent <span data-count="' + s.spentAll + '" data-ck="am' + k + (filt ? 'f' : '') + '">' + money(s.spentAll) + '</span>') + (s.inc ? (filt && !s.spentAll ? 'in ' + money(s.inc) : '<span class="mhin"> · in ' + money(s.inc) + '</span>') : '') + '</span></div><div class="list' + (UI.edit && !wide ? '' : ' cv') + '" style="contain-intrinsic-size:auto ' + (cnt[k] * 62) + 'px">'; grp = true;
+      h += '<section class="mgrp" data-k="' + k + '"><div class="mhead" data-flip="m' + k + '"' + (wide ? '' : ' data-act="ajump" data-v="' + k + '" role="button" tabindex="0" aria-label="' + MONTHS[t.m] + ' ' + t.y + ', jump to another month"') + '><span>' + MONTHS[t.m] + ' ' + t.y + ' <small>· ' + cnt[k] + (filt ? ' found' : ' entries') + '</small></span><span class="num">' + (filt && !s.spentAll && s.inc ? '' : 'spent <span data-count="' + s.spentAll + '" data-ck="am' + k + (filt ? 'f' : '') + '">' + money(s.spentAll) + '</span>') + (s.inc ? (filt && !s.spentAll ? 'in ' + money(s.inc) : '<span class="mhin"> · in ' + money(s.inc) + '</span>') : '') + '</span></div><div class="list' + (UI.edit && !wide ? '' : ' cv') + '" style="contain-intrinsic-size:auto ' + (cnt[k] * 62) + 'px">'; grp = true;
       curKey = k; open = true;
     }
     h += txItem(t);
     if (UI.edit === t.id && !wide) h += txForm(t, false);
   }
   if (open) h += '</div>' + (grp ? '</section>' : '');
-  if (shown < list.length) h += '<button class="more" data-act="more" id="a_more">Show more (' + (list.length - shown) + ' older)</button>';
+  if (shown < list.length) h += '<button class="more" data-act="more" data-flip="more" id="a_more">Show more (' + (list.length - shown) + ' older)</button>';
   return h;
 }
 
@@ -8853,7 +8869,7 @@ document.addEventListener('click', function (e) {
       save(); queuePrefs(); flushSoon();
       var aiEl = el.closest('.ai');
       if (aiEl && REDUCED && aiEl.animate) { var aiF = aiEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-in', fill: 'forwards' }); aiF.onfinish = function () { keepScroll(render); }; }
-      else if (aiEl && !REDUCED && aiEl.animate) { var aiH = aiEl.offsetHeight; aiEl.style.overflow = 'hidden'; var aiA = aiEl.animate([{ opacity: 1, height: aiH + 'px' }, { opacity: 0, height: '0px' }], { duration: 200, easing: 'ease' }); aiA.onfinish = function () { keepScroll(render); }; }
+      else if (aiEl && !REDUCED && aiEl.animate) { var aiR = aiEl.getBoundingClientRect(); var aiA = aiEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-in', fill: 'forwards' }); aiA.onfinish = function () { keepScroll(render); glideFrom(aiR.top, aiR.height); }; }
       else keepScroll(render);
       break;
     case 'bconfirm':
@@ -9288,7 +9304,7 @@ document.addEventListener('click', function (e) {
       flipRows(function () { $('txlist').innerHTML = txListHtml(); });
       var nf = UI.edit && $('txform');
       if (nf && REDUCED) fadeIn(nf, 200);
-      else if (nf && !REDUCED && nf.animate) { var fh = nf.offsetHeight; nf.style.overflow = 'hidden'; nf.animate([{ height: '0px', opacity: 0 }, { height: fh + 'px', opacity: 1 }], { duration: 300, easing: EASE_OUT }).onfinish = function () { nf.style.overflow = ''; }; }
+      else if (nf && !REDUCED && nf.animate) nf.animate([{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: EASE_OUT });   // 2.50: what's below glides away (flipRows), no height animation
       anchorTx(v, etop, false);           // the tapped entry stays put even if another open form above closes
       if (UI.edit) glideTo(v, 'open');    // …then slides up so the form is in view
       break;
@@ -10495,16 +10511,15 @@ document.addEventListener('touchend', function () {
   if (!S.tips.swipe) { S.tips.swipe = 1; save(); }
   if (sw.dx < -90 && t) {
     sw.btn.style.transform = 'translateX(-100%)';
-    sw.row.style.maxHeight = sw.row.offsetHeight + 'px';
-    setTimeout(function () { sw.row.classList.add('gone'); }, 160);
+    // 2.50: once the row has slid out, the rows below glide up into its place (it used to collapse its height)
     setTimeout(function () {
       lock('save', function () {
-        var copy = deleteTx(id);
-        keepScroll(render);
+        var copy;
+        flipRows(function () { copy = deleteTx(id); keepScroll(render); });
         if (copy) toast('Deleted ' + money(copy.a, true) + ' · ' + copy.c, { type: 'delete', tx: copy });
         flushSoon();
       });
-    }, 380);
+    }, 230);
     return;
   }
   sw.btn.style.transform = '';
