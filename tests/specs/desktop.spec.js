@@ -67,3 +67,24 @@ test.describe('preview data, 1280×620', function () {
     expect(g).toEqual({ last: true, gap: 0 });
   });
 });
+
+// the New entry panel's pinned bar stays put as you scroll its fields (it used to rest 14px higher at the end)
+[[1280, 620, false], [375, 667, true]].forEach(function (v) {
+  test.describe('New entry, ' + v[0] + '×' + v[1], function () {
+    test.use({ viewport: { width: v[0], height: v[1] }, screen: { width: v[0], height: v[1] }, hasTouch: v[2], isMobile: v[2] });
+    test('the Add bar doesn’t move while scrolling', async function ({ page, app }) {
+      await app.boot({ state: boot.connectedState() });
+      await app.synced();
+      if (v[2]) await page.tap('#fab'); else await page.click('#fab');
+      await expect(page.locator('#sheet #txform')).toBeVisible();
+      await page.waitForTimeout(500);                                       // the sheet has slid in
+      for (var at of [0, 0.5, 1]) {
+        var gap = await page.evaluate(function (at) {
+          var sh = document.getElementById('sheet'); sh.scrollTop = at * (sh.scrollHeight - sh.clientHeight);
+          return sh.getBoundingClientRect().bottom - parseFloat(getComputedStyle(sh).borderBottomWidth) - sh.querySelector('.btns.stickybar').getBoundingClientRect().bottom;
+        }, at);
+        expect(Math.abs(gap), 'scrolled ' + at * 100 + '%').toBeLessThan(1);
+      }
+    });
+  });
+});

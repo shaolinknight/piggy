@@ -194,6 +194,9 @@ main{padding:0 16px 72px}
 #sheet:has(.stickybar){padding-bottom:0}
 #sheet .btns.stickybar{position:sticky;bottom:0;z-index:3;margin:10px -14px 0;padding:10px 14px calc(12px + env(safe-area-inset-bottom));background:var(--p2);box-shadow:0 -10px 18px -14px rgba(0,0,0,.45);border-top:1px solid var(--b1)}
 #sheet.kb .btns.stickybar{padding-bottom:10px}
+/* the box holding a pinned bar has no bottom padding: otherwise, scrolled to the end, the bar rests that much above
+   the edge it's pinned to, and it visibly shifts as you scroll */
+#sheet :has(>.btns.stickybar){padding-bottom:0}
 #sheet.hasbar{padding-bottom:0}
 #sheet input,#sheet select,#sheet textarea{scroll-margin-bottom:96px}
 #sheet.kb{border-radius:22px;padding-bottom:0}
