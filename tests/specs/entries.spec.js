@@ -157,3 +157,29 @@ test('only one entry form is ever on the page (adding, then editing)', async fun
   await expect(page.locator('#view #txform')).toBeVisible();
   expect(await page.evaluate(function () { return [document.querySelectorAll('#txform').length, document.querySelectorAll('#f_a').length]; })).toEqual([1, 1]);
 });
+
+test('a change the sheet can never accept is dropped, and doesn’t block what’s queued behind it', async function ({ page, app, mock }) {
+  await ready(app);
+  mock.fail({ error: 'bad_prefs' }, { action: 'prefs' });                  // every settings update is refused for good
+  var t0 = await app.now();
+  await page.reload();                                                     // reopening queues one (this phone's version)
+  await app.synced(t0);
+  await expect.poll(function () { return mock.log.some(function (l) { return l.action === 'prefs' && l.status === 'bad_prefs'; }); }).toBe(true);
+  await addEntry(page, { a: '6.66', v: 'Behind Prefs' });
+  await expect.poll(function () { return inSheet(mock, 'Behind Prefs'); }, { timeout: 15000 }).toBe(1);
+  await app.synced();
+  expect(await page.evaluate(function () { return window.__runway.S.outbox.length; })).toBe(0);
+});
+
+test('a passing Google error keeps the change queued, and it’s sent later exactly once', async function ({ page, context, app, mock }) {
+  await ready(app);
+  mock.fail({ error: 'Exception: Service Spreadsheets timed out while accessing document' }, { action: 'add', times: 1 });
+  await addEntry(page, { a: '7.07', v: 'Retry Me' });
+  await expect(page.locator('#syncTxt')).toHaveText(/waiting|Sync issue/);
+  expect(await page.evaluate(function () { return window.__runway.S.outbox.some(function (o) { return o.op === 'add'; }); })).toBe(true);
+  expect(inSheet(mock, 'Retry Me')).toBe(0);
+  await context.setOffline(true); await context.setOffline(false);          // back online: the app tries again
+  await expect.poll(function () { return inSheet(mock, 'Retry Me'); }, { timeout: 15000 }).toBe(1);
+  await app.synced();
+  expect(inSheet(mock, 'Retry Me')).toBe(1);
+});

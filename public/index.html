@@ -2436,6 +2436,7 @@ function playFresh(delay) {
 // 3. a new tab slides in from the side you're heading to
 var TAB_ORDER = ['month', 'activity', 'plan', 'trends'];
 var VT_ON = false, VT_TOK = 0;          // 2.50: a tab switch's View Transition is running (and which one)
+
 function slideView(dir) {
   var v = $('view'); if (!v || !v.animate) return;
   if (REDUCED) { fadeIn(v, 240); return; }
@@ -8180,6 +8181,8 @@ function errText(e) {
 }
 
 function flushSoon() { clearTimeout(flushTimer); flushTimer = setTimeout(sync, 400); }
+// 2.53: every answer from the script that means "this change can never be made" (the rest are worth retrying)
+var NEVER_OK = /^(not_found|bad_entry|bad_prefs|bad_year|bad_request|no_budget_tabs|no_budget_found|no_tab|no_room_for_column|no_room_for_trip_column)$/;
 
 // Sends queued changes one at a time, then pulls a fresh copy of the sheet.
 // full: a refresh you asked for (pull down, the refresh button) always rebuilds from the sheet's answer.
@@ -8224,7 +8227,9 @@ function sync(full) {
           save();
           return next();
         }
-        if (e === 'not_found' || e === 'bad_entry' || e === 'no_budget_tabs' || /validation/i.test(e)) {
+        // can never succeed: the script gives these for the change itself, so retrying would block everything queued
+        // behind it. (Google's own hiccups, such as timeouts, keep retrying; a wrong passcode blocks on purpose.)
+        if (NEVER_OK.test(e) || /validation/i.test(e)) {
           S.outbox.shift(); dropped = true;               // can't ever succeed: drop it and say so
           toast(e === 'not_found' ? 'A change couldn’t be matched to a sheet row (it was edited there). Skipped.' : 'The sheet rejected a change: ' + e);
           save();
