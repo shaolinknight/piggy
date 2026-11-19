@@ -1446,7 +1446,7 @@ body.padon main{padding-bottom:340px}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.53';
+var VERSION = '2.54';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -9969,6 +9969,9 @@ document.addEventListener('click', function (e) {
 
 // ---- 2.44: after an update, a popup with what's new (once per update; also in Settings → What's new)
 var NEWS = [
+  { v: '2.54', items: [
+    ['💻', 'Fits any computer window', 'On your Mac, an entry you open in Activity now always shows Delete, Cancel and Save, however small the window. In a narrow window it floats over the list, and the list tidies its columns to fit.']
+  ] },
   { v: '2.53', items: [
     ['🚀', 'Faster after you save', 'With the updated sheet script (v22), Piggy only re-reads the parts of your sheet that changed, so checking in after you add an entry is much quicker.'],
     ['🧯', 'One stuck change can’t block the rest', 'If your sheet ever refuses a change for good, Piggy tells you and moves on, instead of holding everything you add after it.'],

@@ -16,6 +16,20 @@ The web app URL doesn't change, so there's nothing to change in Piggy.
 
 Don't use Settings → "Copy the script" for this: that button is for setting up a new sheet and puts a new passcode in the script.
 
+## What's new in 2.54
+
+- **The computer layout fits any window.** In Activity, an entry you open keeps Delete / Cancel / Save in view:
+  - In a short window the fields scroll and the buttons stay pinned at the panel's foot (a Mac hides scrollbars, so they used to look cut off).
+  - The panel now starts at the top of the page and is never taller than the window. The search bar moved into the list's column to make room.
+  - Between 960 and 1099 px wide (about half a laptop screen) the panel used to sit under the whole list. It now floats over the list's right side while an entry is open.
+  - The table follows its own width: when it's narrow, Details steps aside so store and category stay readable.
+  - Phones and the iPad-size layout are unchanged.
+- No sheet script change (still v22).
+
+Files changed:
+- `public/index.html`
+- `public/sw.js` (cache `piggy-shell-28`)
+
 ## What's new in 2.53
 
 - **Sheet script v22: full reads only re-read what changed.**
