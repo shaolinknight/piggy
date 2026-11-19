@@ -4,9 +4,10 @@
   "description": "Behaviour tests and performance baseline for Piggy. Nothing here ships to the site.",
   "scripts": {
     "serve": "node support/server.js",
-    "test": "playwright test",
+    "test": "node script/pull-cache.test.js && playwright test",
     "perf": "node perf/run.js",
-    "perf:quick": "node perf/run.js --runs 1"
+    "perf:quick": "node perf/run.js --runs 1",
+    "test:script": "node script/pull-cache.test.js"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

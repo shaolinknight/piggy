@@ -24,6 +24,7 @@ npm run perf                  # performance baseline -> perf/baseline.json (~15 
   - The saved state is injected.
   - Any console error fails the test.
 - `specs/`: behaviour that every phase must keep passing.
+- `script/`: the sheet script (`public/script.txt`) run against a small fake of Google's services (`fake-gas.js`). It checks that tabs remembered between reads (v22) give exactly what a full read gives, and are read again whenever they may have changed. `npm run test:script`; `npm test` runs it before the browser tests.
 - `perf/motion.js`: what each everyday interaction animates (anything other than transform/opacity is flagged), with frame times in Chromium at 4× slower CPU. `perf/motion-before.json` is 2.49, before Phase 2.
 - `perf/run.js`: the baseline measurements (see the report it prints). Behind an HTTPS proxy, run it with `NODE_USE_ENV_PROXY=1` so the `--preview` header check can reach Cloudflare.
 

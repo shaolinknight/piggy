@@ -1,5 +1,5 @@
 /**
- * PIGGY — connector between the Piggy app and your Google Sheet.   (script version 21)
+ * PIGGY — connector between the Piggy app and your Google Sheet.   (script version 22)
  *
  * Paste this whole file into your sheet's  Extensions → Apps Script  editor (a new, empty sheet is fine),
  * change PASSCODE below, then Deploy → New deployment → Web app
@@ -46,7 +46,7 @@ var RECUR_TAB = 'recurring';             // the tab that lists your trips (creat
 var BUDGET_SOURCE = '';              // '' = find your budget tabs automatically.
                                      // Or name one tab to always read from, e.g. '2026 budget'.
 
-var VERSION = 21;
+var VERSION = 22;
 var VIEW_MARK = 'runway spending view';
 var GOALS_TAB = 'goals';
 var PREFS_TAB = 'app settings';
@@ -80,14 +80,16 @@ function respond_(obj) {
 }
 
 var CUR_OID = '';      // id of the change being made, so a retried change is never done twice
+var CUR_ACTION = '', TOUCHED = [];   // v22: what's being done, and which log tabs it wrote to
 function route_(p) {
   CUR_OID = p && p.oid ? String(p.oid).slice(0, 60) : '';
+  CUR_ACTION = p && p.action ? String(p.action) : ''; TOUCHED = [];
   if (PASSCODE === 'CHANGE-ME') return { ok: false, error: 'set_passcode' };
   if (String(p.pass || '') !== PASSCODE) return { ok: false, error: 'bad_passcode' };
   try {
     switch (p.action) {
       case 'ping': return { ok: true, v: VERSION, name: SpreadsheetApp.getActive().getName() };
-      case 'pull': return pull_(p.since);
+      case 'pull': return pull_(p.since, p.fresh === '1');
       case 'add': return locked_(function () { return add_(p.tx); });
       case 'update': return locked_(function () { return update_(p.ref, p.tx); });
       case 'delete': return locked_(function () { return delete_(p.ref); });
@@ -130,7 +132,7 @@ function locked_(fn) {
     // the app retries a change if it never heard back; if this one was already made, don't make it again
     if (CUR_OID && opDone_(CUR_OID)) return { ok: true, dup: true };
     var r = fn();
-    if (r && r.ok) bump_();
+    if (r && r.ok) changed_();
     if (CUR_OID && r && r.ok) opMark_(CUR_OID);
     return r;
   } finally { lock.releaseLock(); }
@@ -158,7 +160,27 @@ function bump_() {
   try { PropertiesService.getScriptProperties().setProperty(STAMP_KEY, s); } catch (e) {}
   return s;
 }
-function piggyChanged() { bump_(); }      // runs when rows or tabs are added or removed by hand
+// runs on every change made by hand: typing (also seen by onEdit), and adding or removing rows or tabs
+function piggyChanged(e) { if (e && e.changeType === 'FORMAT') bump_(); else bumpStruct_(); }
+
+// ---------------------------------------------------------------- v22: remembering tabs that haven't changed
+// A full read used to read every expense and income tab of every year, and every yearly grid, each time. Each tab now
+// has a stamp that moves when the app saves an entry into it. Anything else (any change made by hand in the sheet,
+// budgets, trips) moves one stamp for everything: a hand edit can't always say which tab it was in, and a stale tab
+// would be worse than a slower read. A tab whose stamps haven't moved since it was last read comes from Google's script cache
+// (kept up to 6 hours) instead of being read again. A refresh you ask for, the app's daily full read, and any read
+// before the hand-edit watcher is in place read every tab as before.
+var TAB_KEY = 'piggy.t.', STRUCT_KEY = 'piggy.struct', CACHE_KEY = 'piggy.c.';
+function newStamp_() { return Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36); }
+function bumpTab_(sh) { try { PropertiesService.getScriptProperties().setProperty(TAB_KEY + sh.getSheetId(), newStamp_()); } catch (e) {} bump_(); }
+function bumpStruct_() { try { PropertiesService.getScriptProperties().setProperty(STRUCT_KEY, newStamp_()); } catch (e) {} bump_(); }
+// after a change the app made: saving entries moves only the tabs written to; settings, goals and bills touch no tab
+// that's remembered; anything else moves everything
+function changed_() {
+  if (/^(add|update|delete)$/.test(CUR_ACTION) && TOUCHED.length) TOUCHED.forEach(bumpTab_);
+  else if (/^(prefs|goal|goaldel|recur|recurdel)$/.test(CUR_ACTION)) bump_();
+  else bumpStruct_();
+}
 function watching_() {
   try { return ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'piggyChanged'; }); } catch (e) { return false; }
 }
@@ -243,7 +265,7 @@ function logSheets_() {
 
 // ---------------------------------------------------------------- reading
 
-function pull_(since) {
+function pull_(since, fresh) {
   var t0 = new Date().getTime(), stamp = stamp_();
   // nothing changed since this phone's last full read (only trusted once the watcher is in place)
   if (since && stamp && String(since) === stamp && PropertiesService.getScriptProperties().getProperty('piggy.watch') === '1') {
@@ -254,22 +276,54 @@ function pull_(since) {
   var out = { ok: true, v: VERSION, at: t0, tx: [], grids: [], budget: [], trips: [] };
   var fixes = [], t = { logs: 0, grids: 0 }, tick = new Date().getTime();
   function lap(k) { var n = new Date().getTime(); t[k] = (t[k] || 0) + n - tick; tick = n; }
-  ss.getSheets().forEach(function (sh) {
-    var n = logName_(sh.getName()), gy;
-    if (n) { readLog_(sh, n.k, n.y, out.tx, fixes); lap('logs'); }
-    else if ((gy = gridName_(sh.getName()))) {
-      var g = readGrid_(sh, gy);
-      if (g) out.grids.push(g);
+  // v22: which tabs can come from the cache (see "remembering tabs" above); each is checked against its stamps
+  var props = PropertiesService.getScriptProperties().getProperties();
+  var useCache = !fresh && props['piggy.watch'] === '1', cache = null, put = {}, hits = 0;
+  try { cache = CacheService.getScriptCache(); } catch (e) { cache = null; }
+  var tabs = ss.getSheets().map(function (sh) {
+    var name = sh.getName(), n = logName_(name), gy = n ? 0 : gridName_(name);
+    return { sh: sh, n: n, gy: gy, key: CACHE_KEY + sh.getSheetId(), mark: (props[STRUCT_KEY] || '') + '|' + (props[TAB_KEY + sh.getSheetId()] || '') + '|' + name };
+  });
+  tabs.forEach(function (x) {                       // a yearly grid adds up that year's logs: it changes with them
+    if (x.gy) x.mark += '|' + tabs.filter(function (l) { return l.n && l.n.y === x.gy; }).map(function (l) { return l.mark; }).join(',');
+  });
+  var have = {};
+  if (useCache && cache) try { have = cache.getAll(tabs.filter(function (x) { return x.n || x.gy; }).map(function (x) { return x.key; })); } catch (e) { have = {}; }
+  function remembered(x) { try { var c = have[x.key] && JSON.parse(have[x.key]); return c && c.m === x.mark ? c.d : null; } catch (e) { return null; } }
+  tabs.forEach(function (x) {
+    var d;
+    if (x.n) {
+      d = remembered(x);
+      if (d) hits++;
+      else { d = []; readLog_(x.sh, x.n.k, x.n.y, d, fixes); put[x.key] = JSON.stringify({ m: x.mark, d: d }); }
+      for (var i = 0; i < d.length; i++) out.tx.push(d[i]);
+      lap('logs');
+    } else if (x.gy) {
+      d = remembered(x);
+      if (d) hits++;
+      else { d = readGrid_(x.sh, x.gy) || 0; put[x.key] = JSON.stringify({ m: x.mark, d: d }); }
+      if (d) out.grids.push(d);
       lap('grids');
     }
   });
+  if (cache) try {                                  // a tab too big for the cache (100 KB) is simply read each time
+    Object.keys(put).forEach(function (k) { if (put[k].length > 95000) delete put[k]; });
+    cache.putAll(put, 21600);
+  } catch (e) {}
   lap('tabs');
-  var bs = ss.getSheetByName(BUDGET_TAB) || findSheetCI_(BUDGET_TAB);
-  if (!bs) bs = locked_(function () { return budgetSheet_(true); });
-  var rows = readBudgetRows_(bs, fixes);
-  out.budget = rows.map(function (b) { return [b.s, b.g, b.c, b.a, b.row, b.note]; });
-  lap('budget');
-  out.seed = seedStatus_(rows); lap('seed');
+  var bmark = (props[STRUCT_KEY] || '') + '|budget', bc = null;   // budgets only change with "everything" (see above)
+  if (useCache && cache) try { bc = JSON.parse(cache.get(CACHE_KEY + 'budget') || 'null'); if (!bc || bc.m !== bmark) bc = null; } catch (e) { bc = null; }
+  if (bc) { out.budget = bc.d.budget; out.seed = bc.d.seed; hits++; lap('budget'); }
+  else {
+    var bs = ss.getSheetByName(BUDGET_TAB) || findSheetCI_(BUDGET_TAB);
+    if (!bs) bs = locked_(function () { return budgetSheet_(true); });
+    var rows = readBudgetRows_(bs, fixes);
+    out.budget = rows.map(function (b) { return [b.s, b.g, b.c, b.a, b.row, b.note]; });
+    lap('budget');
+    out.seed = seedStatus_(rows); lap('seed');
+    if (cache) try { cache.put(CACHE_KEY + 'budget', JSON.stringify({ m: bmark, d: { budget: out.budget, seed: out.seed } }), 21600); } catch (e) {}
+  }
+  out.cached = hits;
   out.trips = readTrips_(fixes); lap('trips');
   out.recur = readRecur_(); lap('recur');
   out.prefs = readPrefs_(); lap('prefs');
@@ -1827,6 +1881,7 @@ function retireTripExpenses_(apply) {
 function add_(t) {
   check_(t);
   var sh = findLog_(t.k, t.y, true);
+  TOUCHED.push(sh);
   ensureDateHeader_(sh);
   var row = placeRow_(sh, t.m);
   writeRow_(sh, row, t);
@@ -1837,6 +1892,7 @@ function update_(ref, t) {
   check_(t);
   var sh = findLog_(ref.k, ref.y, false);
   if (!sh) throw new Error('not_found');
+  TOUCHED.push(sh);
   var row = locate_(sh, ref);
   if (t.k !== ref.k || +t.y !== +ref.y || +t.m !== +ref.m) {
     // Moved to another month, year or between income/expense: re-file it properly.
@@ -1851,6 +1907,7 @@ function update_(ref, t) {
 function delete_(ref) {
   var sh = findLog_(ref.k, ref.y, false);
   if (!sh) throw new Error('not_found');
+  TOUCHED.push(sh);
   sh.deleteRow(locate_(sh, ref));
   return { ok: true };
 }
@@ -2042,7 +2099,7 @@ function ensureTripHeader_(sh) {
 // Fills in today's date in the date column when you type a new current-month entry in the sheet.
 // (v20: also tells the app, next time it asks, that the sheet changed.)
 function onEdit(e) {
-  bump_();
+  bumpStruct_();
   try {
     var sh = e.range.getSheet();
     var n = logName_(sh.getName());
