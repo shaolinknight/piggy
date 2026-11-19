@@ -1,5 +1,6 @@
 {
- "at": "2026-11-19T00:15:51.280Z",
+ "at": "2026-11-19T01:15:51.542Z",
+ "runs": 5,
  "webkit": [
   {
    "step": "Open the app (warm)",
@@ -15,10 +16,10 @@
     "transform": 1,
     "width ⚠": 18
    },
-   "frames": 93,
-   "p95": 26,
-   "worst": 89,
-   "over25": 5,
+   "frames": 92,
+   "p95": 19,
+   "worst": 86,
+   "over25": 2,
    "longFrames": 0,
    "longFrameMs": 0
   },
@@ -33,10 +34,10 @@
     "transform": 3,
     "grid-template-rows ⚠": 1
    },
-   "frames": 96,
-   "p95": 29,
-   "worst": 31,
-   "over25": 9,
+   "frames": 94,
+   "p95": 27,
+   "worst": 35,
+   "over25": 7,
    "longFrames": 0,
    "longFrameMs": 0
   },
@@ -49,10 +50,10 @@
     "opacity": 1,
     "transform": 3
    },
-   "frames": 96,
-   "p95": 23,
-   "worst": 46,
-   "over25": 3,
+   "frames": 97,
+   "p95": 20,
+   "worst": 37,
+   "over25": 2,
    "longFrames": 0,
    "longFrameMs": 0
   },
@@ -72,10 +73,10 @@
     "border-bottom-color ⚠": 1,
     "box-shadow ⚠": 1
    },
-   "frames": 82,
-   "p95": 37,
-   "worst": 115,
-   "over25": 7,
+   "frames": 88,
+   "p95": 40,
+   "worst": 56,
+   "over25": 9,
    "longFrames": 0,
    "longFrameMs": 0
   },
@@ -109,9 +110,9 @@
     "opacity": 1,
     "border-bottom-color ⚠": 1
    },
-   "frames": 97,
-   "p95": 20,
-   "worst": 34,
+   "frames": 98,
+   "p95": 18,
+   "worst": 38,
    "over25": 2,
    "longFrames": 0,
    "longFrameMs": 0
@@ -125,10 +126,10 @@
     "transform": 3,
     "opacity": 1
    },
-   "frames": 97,
-   "p95": 19,
-   "worst": 35,
-   "over25": 2,
+   "frames": 98,
+   "p95": 17,
+   "worst": 28,
+   "over25": 1,
    "longFrames": 0,
    "longFrameMs": 0
   },
@@ -150,10 +151,10 @@
     "background-color ⚠": 2,
     "backgroundColor ⚠": 2
    },
-   "frames": 86,
-   "p95": 35,
-   "worst": 47,
-   "over25": 14,
+   "frames": 95,
+   "p95": 31,
+   "worst": 41,
+   "over25": 8,
    "longFrames": 0,
    "longFrameMs": 0
   },
@@ -166,9 +167,9 @@
     "opacity": 1,
     "transform": 3
    },
-   "frames": 97,
-   "p95": 19,
-   "worst": 37,
+   "frames": 98,
+   "p95": 17,
+   "worst": 32,
    "over25": 2,
    "longFrames": 0,
    "longFrameMs": 0
@@ -182,10 +183,10 @@
     "opacity": 2,
     "transform": 4
    },
-   "frames": 94,
-   "p95": 27,
-   "worst": 46,
-   "over25": 5,
+   "frames": 97,
+   "p95": 21,
+   "worst": 41,
+   "over25": 4,
    "longFrames": 0,
    "longFrameMs": 0
   }
@@ -205,12 +206,12 @@
     "transform": 1,
     "opacity": 1
    },
-   "frames": 76,
-   "p95": 66.6,
+   "frames": 79,
+   "p95": 50.1,
    "worst": 333.3,
    "over25": 9,
    "longFrames": 5,
-   "longFrameMs": 706
+   "longFrameMs": 678
   },
   {
    "step": "Open a Month group",
@@ -223,12 +224,12 @@
     "transform": 4,
     "grid-template-rows ⚠": 1
    },
-   "frames": 103,
-   "p95": 16.8,
-   "worst": 83.3,
+   "frames": 102,
+   "p95": 16.7,
+   "worst": 116.7,
    "over25": 2,
    "longFrames": 1,
-   "longFrameMs": 109
+   "longFrameMs": 127
   },
   {
    "step": "Tab: Month → Activity",
@@ -241,10 +242,10 @@
    },
    "frames": 95,
    "p95": 16.8,
-   "worst": 66.6,
+   "worst": 83.3,
    "over25": 1,
    "longFrames": 1,
-   "longFrameMs": 79
+   "longFrameMs": 88
   },
   {
    "step": "Tap an entry (edit form opens)",
@@ -262,12 +263,12 @@
     "border-bottom-color ⚠": 1,
     "box-shadow ⚠": 1
    },
-   "frames": 95,
+   "frames": 94,
    "p95": 16.8,
-   "worst": 166.8,
-   "over25": 2,
+   "worst": 200,
+   "over25": 3,
    "longFrames": 1,
-   "longFrameMs": 173
+   "longFrameMs": 205
   },
   {
    "step": "Close the edit form",
@@ -301,10 +302,10 @@
    },
    "frames": 96,
    "p95": 16.8,
-   "worst": 66.7,
+   "worst": 83.3,
    "over25": 1,
    "longFrames": 1,
-   "longFrameMs": 74
+   "longFrameMs": 88
   },
   {
    "step": "Tap + (New entry sheet)",
@@ -317,8 +318,8 @@
    },
    "frames": 97,
    "p95": 16.7,
-   "worst": 16.8,
-   "over25": 0,
+   "worst": 33.3,
+   "over25": 1,
    "longFrames": 0,
    "longFrameMs": 0
   },
@@ -340,12 +341,12 @@
     "background-color ⚠": 2,
     "backgroundColor ⚠": 2
    },
-   "frames": 80,
-   "p95": 83.4,
-   "worst": 166.7,
-   "over25": 5,
+   "frames": 82,
+   "p95": 33.4,
+   "worst": 150,
+   "over25": 7,
    "longFrames": 4,
-   "longFrameMs": 509
+   "longFrameMs": 434
   },
   {
    "step": "Tab: Activity → Plan",
@@ -357,11 +358,11 @@
     "transform": 4
    },
    "frames": 97,
-   "p95": 16.7,
-   "worst": 50,
+   "p95": 16.8,
+   "worst": 66.7,
    "over25": 1,
    "longFrames": 1,
-   "longFrameMs": 71
+   "longFrameMs": 79
   },
   {
    "step": "Tab: Plan → Trends",
@@ -372,12 +373,12 @@
     "opacity": 2,
     "transform": 5
    },
-   "frames": 96,
+   "frames": 95,
    "p95": 16.8,
-   "worst": 83.3,
+   "worst": 100,
    "over25": 1,
    "longFrames": 1,
-   "longFrameMs": 108
+   "longFrameMs": 110
   }
  ]
 }

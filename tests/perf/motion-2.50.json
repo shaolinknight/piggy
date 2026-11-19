@@ -1,0 +1,298 @@
+{
+ "at": "2026-11-19T01:48:40.764Z",
+ "runs": 5,
+ "webkit": [
+  {
+   "step": "Open the app (warm)",
+   "animations": 21,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 20,
+    "opacity": 1
+   },
+   "frames": 93,
+   "p95": 22,
+   "worst": 96,
+   "over25": 2,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Open a Month group",
+   "animations": 7,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 6,
+    "opacity": 1
+   },
+   "frames": 99,
+   "p95": 18,
+   "worst": 26,
+   "over25": 1,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Tab: Month → Activity",
+   "animations": 4,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 2,
+    "opacity": 2
+   },
+   "frames": 86,
+   "p95": 23,
+   "worst": 131,
+   "over25": 4,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Tap an entry (edit form opens)",
+   "animations": 14,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 12,
+    "opacity": 2
+   },
+   "frames": 90,
+   "p95": 32,
+   "worst": 54,
+   "over25": 7,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Close the edit form",
+   "animations": 7,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 5,
+    "opacity": 2
+   },
+   "frames": 98,
+   "p95": 19,
+   "worst": 33,
+   "over25": 2,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Tap + (New entry sheet)",
+   "animations": 4,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 3,
+    "opacity": 1
+   },
+   "frames": 96,
+   "p95": 19,
+   "worst": 36,
+   "over25": 1,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Save a new entry (row appears)",
+   "animations": 23,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "opacity": 7,
+    "transform": 15,
+    "visibility": 1
+   },
+   "frames": 92,
+   "p95": 28,
+   "worst": 39,
+   "over25": 5,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Tab: Activity → Plan",
+   "animations": 4,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 2,
+    "opacity": 2
+   },
+   "frames": 90,
+   "p95": 25,
+   "worst": 40,
+   "over25": 4,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Tab: Plan → Trends",
+   "animations": 6,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 3,
+    "opacity": 3
+   },
+   "frames": 89,
+   "p95": 26,
+   "worst": 54,
+   "over25": 5,
+   "longFrames": 0,
+   "longFrameMs": 0
+  }
+ ],
+ "chromium4x": [
+  {
+   "step": "Open the app (warm)",
+   "animations": 21,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 20,
+    "opacity": 1
+   },
+   "frames": 76,
+   "p95": 50,
+   "worst": 266.7,
+   "over25": 9,
+   "longFrames": 4,
+   "longFrameMs": 597
+  },
+  {
+   "step": "Open a Month group",
+   "animations": 8,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 7,
+    "opacity": 1
+   },
+   "frames": 100,
+   "p95": 16.8,
+   "worst": 100.1,
+   "over25": 2,
+   "longFrames": 2,
+   "longFrameMs": 172
+  },
+  {
+   "step": "Tab: Month → Activity",
+   "animations": 5,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 3,
+    "opacity": 2
+   },
+   "frames": 91,
+   "p95": 16.8,
+   "worst": 83.3,
+   "over25": 2,
+   "longFrames": 1,
+   "longFrameMs": 90
+  },
+  {
+   "step": "Tap an entry (edit form opens)",
+   "animations": 14,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 12,
+    "opacity": 2
+   },
+   "frames": 97,
+   "p95": 16.8,
+   "worst": 166.7,
+   "over25": 1,
+   "longFrames": 1,
+   "longFrameMs": 183
+  },
+  {
+   "step": "Close the edit form",
+   "animations": 7,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 5,
+    "opacity": 2
+   },
+   "frames": 96,
+   "p95": 16.8,
+   "worst": 66.7,
+   "over25": 1,
+   "longFrames": 1,
+   "longFrameMs": 79
+  },
+  {
+   "step": "Tap + (New entry sheet)",
+   "animations": 4,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 3,
+    "opacity": 1
+   },
+   "frames": 96,
+   "p95": 16.7,
+   "worst": 33.3,
+   "over25": 1,
+   "longFrames": 0,
+   "longFrameMs": 0
+  },
+  {
+   "step": "Save a new entry (row appears)",
+   "animations": 23,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 15,
+    "opacity": 7,
+    "visibility": 1
+   },
+   "frames": 84,
+   "p95": 33.4,
+   "worst": 133.3,
+   "over25": 6,
+   "longFrames": 4,
+   "longFrameMs": 438
+  },
+  {
+   "step": "Tab: Activity → Plan",
+   "animations": 5,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 3,
+    "opacity": 2
+   },
+   "frames": 92,
+   "p95": 16.8,
+   "worst": 83.4,
+   "over25": 1,
+   "longFrames": 1,
+   "longFrameMs": 75
+  },
+  {
+   "step": "Tab: Plan → Trends",
+   "animations": 7,
+   "layoutOrPaint": 0,
+   "heavy": [],
+   "props": {
+    "transform": 4,
+    "opacity": 3
+   },
+   "frames": 88,
+   "p95": 16.8,
+   "worst": 133.3,
+   "over25": 1,
+   "longFrames": 1,
+   "longFrameMs": 127
+  }
+ ]
+}
