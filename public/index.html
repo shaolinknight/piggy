@@ -1041,10 +1041,13 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
   .tx.trow.editing{background:var(--acd);box-shadow:inset 3px 0 0 var(--ac)}
   #txlist .mhead{margin-top:18px}
 }
-@media (min-width:960px) and (max-width:1279px){
-  .wsearch{flex-wrap:wrap}
-  .wsearch input{flex:1 1 100%}
-  .wafilt{flex:1 1 0;width:auto}
+/* the table answers to its own width, not the window's: beside the entry panel, or in a narrow window, Details steps
+   aside so store and category stay readable */
+@media (min-width:960px){ #txlist{container-type:inline-size} }
+@container (max-width:620px){
+  #txlist .th-n,#txlist .td-n{display:none}
+  #txlist .thead,#txlist .trow{grid-template-columns:minmax(56px,84px) minmax(0,1.3fr) minmax(0,1fr) minmax(80px,auto);column-gap:12px}
+  #txlist .thead.tsel,#txlist .trow.sel{grid-template-columns:24px minmax(56px,84px) minmax(0,1.3fr) minmax(0,1fr) minmax(80px,auto)}
 }
 @media (min-width:960px) and (max-width:1099px){
   main#view .mcols,main#view .pcols{max-width:640px;margin:0 auto}
@@ -1268,6 +1271,8 @@ button,[data-act],summary,.chip{touch-action:manipulation}
   .amain{min-width:0}
   .insp{margin:0;padding:18px 20px;position:sticky;top:14px;max-height:calc(100vh - 28px);max-height:calc(100dvh / var(--z,1) - 28px);overflow:auto;overscroll-behavior:contain;box-sizing:border-box}
   .insp .form{margin:0 -20px -18px;border-top:1px solid var(--b1)}
+  /* in a short window the panel scrolls, and a Mac hides its scrollbar: keep Delete / Cancel / Save pinned to its foot */
+  .insp .form>.btns{position:sticky;bottom:0;z-index:3;margin:10px -14px -14px;padding:10px 14px 14px;background:var(--p2);box-shadow:0 -10px 18px -14px rgba(0,0,0,.45);border-top:1px solid var(--b1)}
   .ihead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:12px}
   .ihead h2{margin:0;font-family:var(--fdisp);font-size:22px;font-weight:600;overflow-wrap:anywhere}
   .ihead span{font-size:13px;color:var(--t3);white-space:nowrap}
@@ -1302,9 +1307,19 @@ button,[data-act],summary,.chip{touch-action:manipulation}
   .tmain,.tside{min-width:0}
   .tside .ovhead{margin-top:0}
 }
+/* a half-width window: no room beside the table, so the picked entry floats over the list's right side instead of
+   sitting below the whole list where nobody would see it. Nothing picked: no panel. */
+@media (min-width:960px) and (max-width:1099px){
+  .insp{position:fixed;top:14px;right:14px;z-index:35;width:400px;max-width:calc(100vw / var(--z,1) - 268px);box-shadow:0 18px 48px rgba(0,0,0,.24);
+    animation:viewin .22s cubic-bezier(.2,.8,.2,1)}
+  .insp:not(:has(#txform)){display:none}
+}
+@media (min-width:960px) and (max-width:1099px) and (prefers-reduced-motion: reduce){ .insp{animation-name:vin} }
 @media (min-width:1100px){
   .dcols{grid-template-columns:minmax(0,2fr) minmax(280px,1fr)}
   .acols{grid-template-columns:minmax(0,1fr) minmax(320px,380px)}
+  /* pinned where it starts (the page's top padding), and never taller than what's left of the window */
+  .insp{top:22px;max-height:calc(100vh - 36px);max-height:calc(100dvh / var(--z,1) - 36px)}
   .pcols2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .tcols{grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr)}
 }
@@ -3352,10 +3367,12 @@ function viewActivity() {
   var nf = activeFilters();
   var wide = isWide();
   if (wide) {
-    h += '<div class="search wsearch"><input id="q" type="search" placeholder="Search stores, notes, months" value="' + esc(UI.q) + '" autocomplete="off"><kbd class="qk">/</kbd>' +
-      '<button class="fbtn' + (UI.bulk ? ' on' : '') + '" data-act="bulk" id="a_select">' + (UI.bulk ? 'Done' : 'Select') + '</button></div>';
     var ed = UI.edit && findTx(UI.edit) ? UI.edit : '';
-    h += '<div class="acols"><div class="amain">' + (!UI.bulk && !UI.q ? owedLineHtml() : '') + '<div id="txlist">' + txListHtml() + '</div><div id="bulk_bar">' + bulkBarHtml() + '</div></div>' +
+    // search sits in the list's column, so the entry panel beside it starts at the top of the page and fits the window
+    h += '<div class="acols"><div class="amain">' +
+      '<div class="search wsearch"><input id="q" type="search" placeholder="Search stores, notes, months" value="' + esc(UI.q) + '" autocomplete="off"><kbd class="qk">/</kbd>' +
+      '<button class="fbtn' + (UI.bulk ? ' on' : '') + '" data-act="bulk" id="a_select">' + (UI.bulk ? 'Done' : 'Select') + '</button></div>' +
+      (!UI.bulk && !UI.q ? owedLineHtml() : '') + '<div id="txlist">' + txListHtml() + '</div><div id="bulk_bar">' + bulkBarHtml() + '</div></div>' +
       '<aside class="card insp" id="insp" data-id="' + esc(ed) + '" aria-label="Selected entry">' + inspHtml() + '</aside></div>';
     return h;
   }
