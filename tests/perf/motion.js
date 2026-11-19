@@ -3,7 +3,7 @@
 // browser redo layout or repaint on every frame, which is what stutters on a phone. In Chromium (4× slower CPU) it
 // also records frame times and long animation frames.
 //
-//   node perf/motion.js [--out perf/out/motion.json]
+//   node perf/motion.js [--out perf/out/motion.json] [--site ../some/copy/of/public] [--runs 5]
 'use strict';
 var fs = require('fs');
 var path = require('path');
@@ -12,7 +12,10 @@ var server = require('../support/server');
 var MockSheet = require('../support/mock-sheet').MockSheet;
 var boot = require('../support/boot');
 
-var OUT = path.resolve(__dirname, (process.argv.indexOf('--out') > 0 ? process.argv[process.argv.indexOf('--out') + 1] : 'out/motion.json'));
+function arg(k, d) { var i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; }
+var OUT = path.resolve(__dirname, arg('out', 'out/motion.json'));
+var SITE = arg('site') ? path.resolve(arg('site')) : undefined;
+var RUNS = +arg('runs', 1);
 var CHEAP = { transform: 1, opacity: 1, translate: 1, scale: 1, rotate: 1, visibility: 1, offset: 1, easing: 1, composite: 1 };
 
 // in the page: note every property that starts animating, and every frame's length
@@ -68,7 +71,7 @@ var STEPS = [
 ];
 
 async function run(browserName) {
-  var browser = await pw[browserName].launch(), site = await server.start();
+  var browser = await pw[browserName].launch(), site = await server.start({ dir: SITE });
   var ctx = await browser.newContext(boot.contextOptions({ phone: 'pro' }));
   var mock = new MockSheet(); await mock.attach(ctx);
   var page = await ctx.newPage();
@@ -100,8 +103,21 @@ async function run(browserName) {
   return out;
 }
 
+// several runs: what animates is the same every time; frame times take the median across runs
+async function runs(name) {
+  var all = [];
+  for (var i = 0; i < RUNS; i++) all.push(await run(name));
+  if (RUNS === 1) return all[0];
+  function med(xs) { xs = xs.slice().sort(function (a, b) { return a - b; }); return xs[xs.length >> 1]; }
+  return all[0].map(function (step, k) {
+    var o = Object.assign({}, step);
+    ['p95', 'worst', 'over25', 'longFrames', 'longFrameMs'].forEach(function (f) { o[f] = med(all.map(function (r) { return r[k][f]; })); });
+    return o;
+  });
+}
+
 (async function () {
-  var res = { at: new Date().toISOString(), webkit: await run('webkit'), chromium4x: await run('chromium') };
+  var res = { at: new Date().toISOString(), runs: RUNS, webkit: await runs('webkit'), chromium4x: await runs('chromium') };
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(res, null, 1));
   console.log('step'.padEnd(34) + 'anims  layout/paint  | Chromium 4×: p95  worst  >25ms  long frames');
