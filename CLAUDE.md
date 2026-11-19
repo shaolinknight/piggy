@@ -8,39 +8,39 @@ Read this whole file before you start any task.
 
 Confirm these against the repo the first time you open it, and update this section if anything differs.
 
-(Checked in Phase 0. The original notes described a `site/` folder, a root `Code.gs` and a `SETUP.md`; none of those exist.)
+(Checked in Phase 0 and refreshed at 2.54. The original notes described a `site/` folder and a root `Code.gs`; neither exists.)
 
 - **`public/`** is what Cloudflare deploys: `wrangler.jsonc` serves `./public` as static assets. Production deploys from `main`; previews deploy from branches. Files belong **in `public/`**: v2.48 was once uploaded to the repo root by mistake, so it never deployed. Its contents:
-  - **`public/index.html`** is the whole app. It's one file (~755 KB, ~10,460 lines):
+  - **`public/index.html`** is the whole app. It's one file (~790 KB, ~10,640 lines):
     - CSS in one `<style>` (~101 KB);
     - JS in one inline `<script>` (~638 KB);
     - icons as base64 (~12 KB): the apple-touch-icon and favicon are inline `data:` PNGs.
 
-    It's plain ES5 (`var`, `function`, no modules, no framework, no build step). `var VERSION = '2.48'` sits near line 1412. The whole script is wrapped in `(function () { 'use strict'; … boot(); })();`, so `VERSION`, `S`, `checkUpdate` and the rest are **not** globals. Reach them through `window.__runway`.
+    It's plain ES5 (`var`, `function`, no modules, no framework, no build step). `var VERSION = '2.53'` sits near line 1449. The whole script is wrapped in `(function () { 'use strict'; … boot(); })();`, so `VERSION`, `S`, `checkUpdate` and the rest are **not** globals. Reach them through `window.__runway`.
   - **`public/sw.js`** is the service worker. `var CACHE = 'piggy-shell-NN'` must go up by one every release.
     - The app page is served cache-first and a fresh copy is fetched in the background.
     - When the page text changes, the worker posts `{type:'updated'}`. The app reloads itself if it was opened in the last 15 seconds; otherwise it shows a "Reload" toast. The app also asks for the page every 30 minutes while it's open, and when you come back to it.
     - Calls to `script.google(usercontent).com` and `script.txt` are never cached.
+    - The two default fonts in `public/fonts/` are precached and never refreshed (`public/_headers` marks them immutable). A font change needs a new file name.
   - **`public/manifest.webmanifest`**: `display: standalone`, theme colour, icons (`icon-192.png`, `icon-512.png`).
-  - **`public/script.txt`** **is** the Apps Script backend (script `VERSION = 19`); there is no separate `Code.gs` file in the repo. The app links to it so people can paste it into their sheet. It must always ship with `var PASSCODE = 'CHANGE-ME';`. Never commit a real passcode, sheet URL or deployment ID.
-- **There's no `SETUP.md` yet.** The release checklist below asks for one. Create it at the root (not in `public/`) at the first release that needs it.
+  - **`public/script.txt`** **is** the Apps Script backend (script `VERSION = 22`); there is no separate `Code.gs` file in the repo. The app links to it so people can paste it into their sheet. It must always ship with `var PASSCODE = 'CHANGE-ME';`. Never commit a real passcode, sheet URL or deployment ID.
+- **`SETUP.md`** (at the root, not in `public/`) tells the owner how to update the sheet script safely and lists "What's new" for each release.
 - **`tests/`** holds the Playwright behaviour tests and the perf baseline. It's not deployed; see `tests/README.md`.
 
 ### Data flow (read this before touching loading or sync)
 
-1. **Opening the app:** `boot()` (near line 9655) reads `STORE.get('runway.v1')`. That's localStorage, or `window.storage` when present. It parses the whole state object `S`, runs `migrate()`, calls `render()` straight away from the saved copy, then calls `sync()`. So the first paint already comes from the cache; nothing waits on the network.
-2. **`sync()`** (near line 8118):
+1. **Opening the app:** `boot()` (near line 9813) reads `STORE.get('runway.v1')`. That's localStorage, or `window.storage` when present. It parses the whole state object `S`, runs `migrate()`, calls `render()` straight away from the saved copy, then calls `sync()`. So the first paint already comes from the cache; nothing waits on the network.
+2. **`sync()`** (near line 8221):
    - It sends `S.outbox` one operation at a time through `api()` (a POST with a JSON body, sent as text/plain to avoid a CORS preflight). Each operation carries an `oid` so the script can skip a change it already made.
-   - Then it calls `api({action:'pull'})`, a GET with `?action=pull&pass=…`. The timeout is 25 s, or 120 s for heavy actions.
-3. **`pull_()` in `Code.gs` reads every tab on every open:**
-   - all yearly expense and income logs, every year (2022 to now), with each row as a compact array;
-   - the yearly grids;
-   - the "app budget" tab, trips, recurring bills, "app settings" (prefs JSON) and goals.
-
-   That's one Apps Script cold start plus a full read. This is almost certainly the main "slow" step after the first paint. Measure it before assuming.
+   - Then it calls `api({action:'pull'})`, a GET with `?action=pull&pass=…` plus what `pullAsk()` adds. The pull's timeout is 45 s; other requests 25 s, or 120 s for heavy actions.
+   - If the pull text matches the last one (`pullSig`), nothing is re-applied or redrawn.
+3. **`pull_()` in `script.txt`** returns all yearly logs (2022 to now), the yearly grids, the "app budget" tab, trips, recurring bills, "app settings" (prefs JSON) and goals. A full read takes ~5–9 s in the script and 9–16 s round trip on the owner's iPhone. Since v20–v22 it avoids most of that:
+   - **v20/v21 `since`:** the client sends the last `stamp`; if nothing changed (and the watcher trigger is installed, via the one-time `piggySetup`), the answer is just `{same:true}` (1.3–3.3 s round trip).
+   - **v22 cache:** unchanged tabs come from `CacheService` (6 h), keyed by per-tab stamps; app saves bump only the tabs they touch, hand edits in the sheet bump everything. `fresh=1` (a refresh you ask for, and once a day) bypasses the cache.
+   - The client sends `since` only when `S.scriptV >= 20` and `fresh` only when `>= 22`. `forgetPull()` clears the stamps on connect, disconnect, `startLocal` and import.
 4. **Changes show instantly already:** `addTx`/edit/delete change `S` and re-render at once, push an operation into `S.outbox`, then call `flushSoon()`.
-   - Failures that can never succeed (`not_found`, `bad_entry`, `no_budget_tabs`, `validation`, `unknown_action`) are dropped with a toast. The pull that follows then puts the sheet's copy back on screen; that is the only "rollback".
-   - Anything else stays at the head of the outbox and retries on every sync. That includes `{ok:false}` errors the client doesn't list, such as `bad_prefs` or `bad_year`. Changes queued behind it wait too.
+   - Failures that can never succeed (`NEVER_OK`, near line 8217: `not_found`, `bad_entry`, `bad_prefs`, `bad_year`, `bad_request`, `no_budget_tabs`, … plus `validation` and `unknown_action`) are dropped with a toast, so they never block what's queued behind them. The pull that follows then puts the sheet's copy back on screen; that is the only "rollback".
+   - Anything else (offline, timeouts, passing Google errors, and a wrong passcode on purpose) stays at the head of the outbox and retries on every sync.
 5. **Prefs** sync field by field (`prefsObj`, `prefsChanged`, the `chg` list, `keepUnchanged_` on the server). Lists such as bills and categories are merged by union on the client. Spread purchases (pay over N months) post each payment with a fixed `oid` `sp-<id>-<i>`.
 6. **A first load with a sheet but no data yet** shows `skeletonHtml()` (see `firstLoad()`).
 
@@ -60,6 +60,16 @@ Confirm these against the repo the first time you open it, and update this secti
 - **No secrets.** Never commit the sheet URL, passcode or Apps Script deployment ID; never print them in logs or screenshots either. For real-sheet measurements, read them from environment variables that aren't committed.
 - **Never suggest connecting a bank.** The owner doesn't want it.
 - **One branch per phase. Small commits,** one logical change each, with clear messages. Don't merge until the owner says it feels right on his iPhone.
+
+## Owner decisions (standing; don't re-ask)
+
+- **iPhone:** iOS 26, used from the Home Screen. Mac for the computer layout.
+- **Sheet script changes are OK** when a feature needs them. Still ask first, keep the client working with older scripts (gate on `S.scriptV`), and give the owner the steps to paste and deploy. He updates it by hand (see `SETUP.md`).
+- **Self-hosted fonts: yes** (done in 2.49).
+- **On hold, don't do or re-propose:** a build or minify step, and moving storage to IndexedDB.
+- **Haptics stay switchable off** (Settings → This phone → Haptics, per device). Any new haptic goes through `haptic()` so the switch covers it.
+- **Computer layout must fit any laptop window**, short or narrow included: nothing cut off, buttons in view without hunting for a hidden scrollbar (`tests/specs/desktop.spec.js`).
+- **Merging:** the owner says "merge" after trying the Cloudflare preview; only then fast-forward `main` and push.
 
 ## Code style (match what's there)
 
