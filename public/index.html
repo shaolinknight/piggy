@@ -7000,6 +7000,9 @@ function closeSheet() {
   lockPage(false);
   var ret = SHEET_RET; SHEET_RET = null;          // focus goes back to what opened the sheet, if it's still there
   if (ret && ret.isConnected && ret.focus && !$('sheet').contains(ret)) try { ret.focus({ preventScroll: true }); } catch (e) {}
+  // 2.52: once it has slid away, empty it: a closed New entry sheet kept its form, so opening an entry in Activity put a
+  // second #txform / #f_a on the page (two forms with the same ids once made saves go nowhere)
+  setTimeout(function () { var sh = $('sheet'); if (!SHEET && sh && !sh.classList.contains('on')) sh.innerHTML = ''; }, 400);
 }
 var SHEET_RET = null;
 // keyboard: Tab stays inside an open sheet

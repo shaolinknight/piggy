@@ -147,3 +147,13 @@ test('a retried change is not applied twice (oid)', async function ({ page, app,
   expect(inSheet(mock, 'Lost Answer')).toBe(1);             // …so the sheet still has it once
   expect(await local(page, 'Lost Answer')).toBe(1);
 });
+
+test('only one entry form is ever on the page (adding, then editing)', async function ({ page, app }) {
+  await ready(app);
+  await addEntry(page, { a: '1.11', v: 'One Form' });
+  await page.waitForTimeout(600);                                          // the New entry sheet has slid away
+  await page.tap('.tab[data-v="activity"]');
+  await page.locator('#view button.tx[data-act="edit"]').first().tap();
+  await expect(page.locator('#view #txform')).toBeVisible();
+  expect(await page.evaluate(function () { return [document.querySelectorAll('#txform').length, document.querySelectorAll('#f_a').length]; })).toEqual([1, 1]);
+});
