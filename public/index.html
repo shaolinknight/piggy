@@ -7034,7 +7034,7 @@ document.addEventListener('keydown', function (e) {
     p.style.transform = 'translate(-50%,' + rub.toFixed(1) + 'px)';
     if (!REDUCED) { var ap0 = $('app'); ap0.style.transition = 'none'; ap0.style.transform = 'translateY(' + (rub * 0.7).toFixed(1) + 'px)'; }
     p.firstChild.textContent = d > 80 ? 'Release to sync' : 'Pull to sync';
-    if (d > 80 && !armed) haptic('tick');
+    if (d > 80 && !armed) haptic();
     armed = d > 80;
   }, { passive: true });
   document.addEventListener('touchend', function () {
@@ -7068,7 +7068,7 @@ document.addEventListener('keydown', function (e) {
       if (d <= 0 || dx > Math.abs(d)) { active = false; return; }   // scrolling up or sideways: let it scroll
     }
     var now = Date.now(); vel = (d - lastY) / Math.max(1, now - lastT); lastY = d; lastT = now;
-    if (d > 110 && dy <= 110) haptic('tick');
+    if (d > 110 && dy <= 110) haptic();
     dy = Math.max(0, d);
     e.preventDefault();
     s.style.transition = 'none';
@@ -8095,7 +8095,7 @@ function sentRef(op, t) {
 var UNDO = null, toastTimer = null;
 function toast(msg, undo, label) {
   UNDO = undo || null;
-  if (undo && !label) haptic('ok');                 // something was done (and can be undone): a tap you can feel
+  if (undo && !label) haptic();                 // something was done (and can be undone): a tap you can feel
   $('toastTxt').textContent = msg;
   $('toastBtn').textContent = label || 'Undo';
   $('toastBtn').style.display = undo ? '' : 'none';
@@ -8521,7 +8521,7 @@ function disconnect() {
 // Two-step confirm: first tap arms, second confirms, disarms after 3 s.
 var armTimer = null;
 function arm(key, btn, label, ms) {
-  UI.armed = key; haptic('tick');
+  UI.armed = key; haptic();
   if (btn) { btn.dataset.label = btn.textContent; btn.textContent = label; btn.classList.add('armed'); }
   clearTimeout(armTimer);
   armTimer = setTimeout(function () {
@@ -8683,7 +8683,7 @@ document.addEventListener('click', function (e) {
     case 'news': openSheet('news', null); break;
     case 'sback': sheetBack(); break;
     case 'qpos': S.cfg.qpos = v === 'bottom' ? 'bottom' : 'top'; save(); renderSheet(); render(); break;
-    case 'haptic': S.cfg.haptic = v !== 'off'; save(); renderSheet(); haptic('ok'); break;
+    case 'haptic': S.cfg.haptic = v !== 'off'; save(); renderSheet(); haptic(); break;
     case 'npad': S.cfg.npad = v === 'on'; save(); renderSheet(); break;
     case 'ajump': if (!UI.bulk) openSheet('ajump', +v); break;
     case 'ajumpgo': closeSheet(); setTimeout(function () { ajumpGo(+v); }, 30); break;
@@ -10264,15 +10264,16 @@ document.addEventListener('keydown', function (e) {
 window.addEventListener('resize', function () { if (PAD) setTimeout(function () { if (PAD) padFit(true); }, 50); });
 
 // ---- 2.43: haptics. Android has navigator.vibrate; on iPhone (iOS 18+) flicking a hidden switch gives a light tap you can feel.
+// 2.52: one kind of tap everywhere (there used to be two, which only differed on Android). Off in Settings → This phone.
 var HAPT = null, HAPT_AT = 0, HAPT_BUSY = false;
 // the haptic switch's own click/focus events are not taps: nothing else in the app sees them
 ['click', 'focusin', 'focusout', 'change', 'input'].forEach(function (ev) {
   window.addEventListener(ev, function (e) { if (HAPT_BUSY || (e.target && e.target.id === 'hapt') || (e.target && e.target.closest && e.target.closest('#hapt'))) e.stopImmediatePropagation(); }, true);
 });
-function haptic(kind) {
+function haptic() {
   if (!S || S.cfg.haptic === false || isMouse() || PAD) return;          // never while Piggy's keypad is up
   var now = performance.now(); if (now - HAPT_AT < 45) return; HAPT_AT = now;
-  if (navigator.vibrate) { try { navigator.vibrate(kind === 'ok' ? 14 : 8); } catch (e) {} return; }
+  if (navigator.vibrate) { try { navigator.vibrate(10); } catch (e) {} return; }
   if (!/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent)) return;          // an iPad says "Macintosh"; a Mac has no touch so never gets here
   try {
     if (!HAPT) {
@@ -10349,7 +10350,7 @@ document.addEventListener('touchmove', function (e) {
     el.style.transform = 'translateX(' + ESW.dx + 'px)';
     if (ESW.b.sheet) $('scrim').style.opacity = String(Math.max(0, 1 - ESW.dx / window.innerWidth));
     var past = ESW.dx > Math.min(110, window.innerWidth * 0.3);
-    if (past && !ESW.past) haptic('tick');
+    if (past && !ESW.past) haptic();
     ESW.past = past;
   }
 }, { passive: false });
@@ -10424,7 +10425,7 @@ document.addEventListener('touchmove', function (e) {
   var ok = dx > 0 ? MSW.prev : MSW.next;
   MSW.dx = ok ? dx : dx * 0.22;                                       // nothing that way: just a little give
   var v = MSW.v, past = ok && Math.abs(dx) > window.innerWidth * 0.22;
-  if (past && !MSW.past) haptic('tick');
+  if (past && !MSW.past) haptic();
   MSW.past = past;
   v.style.transition = 'none';
   if (REDUCED) v.style.opacity = String(1 - Math.min(0.4, Math.abs(MSW.dx) / 500));
@@ -10436,7 +10437,7 @@ function monthSwipeEnd(e) {
   var v = m.v, W = window.innerWidth, dx = m.dx, fast = Math.abs(dx) > 40 && e.timeStamp - m.t < 260;
   var dir = dx < 0 ? 1 : -1, ok = dir > 0 ? m.next : m.prev;
   if (ok && (Math.abs(dx) > W * 0.22 || fast)) {
-    if (!m.past) haptic('tick');
+    if (!m.past) haptic();
     var go = function () {
       v.style.transition = 'none'; v.style.transform = ''; v.style.opacity = '';
       UI.ym = m.key + dir; render();
@@ -10466,7 +10467,7 @@ document.addEventListener('pointerdown', function (e) {
     var v = b.getAttribute('data-v'), f = $('txform'); if (!f) return;
     var kind = f.querySelector('.seg .on').getAttribute('data-v');
     HELD = true; HOLD = null;
-    haptic('ok');
+    haptic();
     hideVendor(kind, v, true); suggest();
     toast('“' + v + '” won’t be suggested', function () { hideVendor(kind, v, false); suggest(); });
   }, 550) };
@@ -10507,7 +10508,7 @@ document.addEventListener('touchend', function (e) {
   if (go && ni >= 0 && ni < PSEC_ORDER.length) {
     var b = document.querySelector('.psegs [data-act=psec][data-v="' + PSEC_ORDER[ni] + '"]');
     if (pane) { pane.style.transform = ''; pane.style.opacity = ''; pane.style.transition = ''; }
-    haptic('tick');
+    haptic();
     if (b) b.click();                                                 // same as tapping the section: slides the new one in
     return;
   }
@@ -10536,7 +10537,7 @@ document.addEventListener('touchmove', function (e) {
   if (Math.abs(show) > lim) show = (show > 0 ? 1 : -1) * (lim + (Math.abs(show) - lim) * 0.35);   // a little resistance at the end
   SW.row.classList.add('moving'); SW.row.classList.toggle('l', dx < 0); SW.row.classList.toggle('r', dx > 0);
   var goNow = Math.abs(dx) > 90;
-  if (goNow && !SW.row.classList.contains('go')) haptic('tick');
+  if (goNow && !SW.row.classList.contains('go')) haptic();
   SW.row.classList.toggle('go', goNow);
   SW.btn.style.transform = 'translateX(' + show + 'px)';
 }, { passive: false });
