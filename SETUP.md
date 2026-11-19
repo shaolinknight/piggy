@@ -16,6 +16,30 @@ The web app URL doesn't change, so there's nothing to change in Piggy.
 
 Don't use Settings → "Copy the script" for this: that button is for setting up a new sheet and puts a new passcode in the script.
 
+## What's new in 2.53
+
+- **Sheet script v22: full reads only re-read what changed.**
+  - Each expense or income tab has a stamp that moves when the app saves into it. A tab whose stamp hasn't moved comes from Google's script cache (kept up to 6 hours) instead of being read again. A yearly grid also follows its year's tabs, and the budget follows the "everything" stamp.
+  - Any change made by hand in the sheet, rows or tabs added or removed, and budget or trip changes move one stamp for everything. A hand edit can't always say which tab it was in, so it's treated as everything.
+  - Settings, goals and bills don't disturb the cache.
+  - Pull-to-refresh, the daily full read, a refused save, and any read before the hand-edit watcher is on read every tab.
+  - Updating: paste as described above. No new permission, and no need to run `piggySetup` again if the watcher is already on (Apps Script → Triggers lists `piggyChanged`).
+- **A change the sheet can never accept no longer blocks the queue.** Errors the script returns for the change itself are dropped with a message:
+  - `bad_prefs`, `bad_year`, `bad_request`;
+  - `no_tab`, `no_budget_found`;
+  - `no_room_for_column`, `no_room_for_trip_column`.
+
+  Google's own hiccups keep retrying. A wrong passcode still holds everything, on purpose.
+- **A tap during the tab cross-fade is no longer lost.** It ends the cross-fade and goes to what's under your finger.
+- **Tests:**
+  - `tests/script/` runs the real sheet script against a fake of Google's services (`npm run test:script`, 12 checks).
+  - New browser tests for the queue, the cross-fade tap, and when Piggy asks for a fresh read.
+
+Files changed:
+- `public/index.html`
+- `public/sw.js` (cache `piggy-shell-27`)
+- `public/script.txt` (script v22)
+
 ## What's new in 2.52
 
 Phase 4 (haptics).
