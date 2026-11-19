@@ -2432,7 +2432,7 @@ function playFresh(delay) {
 }
 // 3. a new tab slides in from the side you're heading to
 var TAB_ORDER = ['month', 'activity', 'plan', 'trends'];
-var VT_ON = false;          // 2.50: a tab switch's View Transition is running
+var VT_ON = false, VT_TOK = 0;          // 2.50: a tab switch's View Transition is running (and which one)
 function slideView(dir) {
   var v = $('view'); if (!v || !v.animate) return;
   if (REDUCED) { fadeIn(v, 240); return; }
@@ -2672,7 +2672,7 @@ function animateNumbers(fromClose) {
     // 2.50: the bar takes its new length at once and grows (or shrinks) into it with scaleX, which the GPU draws;
     // animating width redid the layout of every bar on every frame
     var from = parseFloat(was || '0') || 0, to = parseFloat(want) || 0;
-    b.style.transition = 'none'; b.style.width = want;
+    b.style.width = want;
     if (!b.animate) return;
     if (to > 0) { b.animate([{ transform: 'scaleX(' + from / to + ')' }, { transform: 'none' }], { duration: 550, easing: EASE_OUT }); return; }
     b.style.width = was;                     // shrinking to nothing: shrink from the old length, then settle at 0
@@ -8671,7 +8671,8 @@ document.addEventListener('click', function (e) {
       if (document.startViewTransition && !REDUCED && !SHEET) {
         document.documentElement.setAttribute('data-vt', '1');
         VT_ON = true;
-        var vtDone = function () { VT_ON = false; document.documentElement.removeAttribute('data-vt'); };
+        var vtTok = ++VT_TOK;                             // a tab tapped mid-transition: only the latest one cleans up
+        var vtDone = function () { if (vtTok !== VT_TOK) return; VT_ON = false; document.documentElement.removeAttribute('data-vt'); };
         try { document.startViewTransition(goTab).finished.then(vtDone, vtDone); } catch (er) { vtDone(); goTab(); }
       } else goTab();
       break;
