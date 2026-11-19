@@ -16,6 +16,24 @@ The web app URL doesn't change, so there's nothing to change in Piggy.
 
 Don't use Settings → "Copy the script" for this: that button is for setting up a new sheet and puts a new passcode in the script.
 
+## What's new in 2.52
+
+Phase 4 (haptics).
+
+- **One kind of tap everywhere.** On iPhone it was already one pulse; the two names only differed on Android. Piggy taps:
+  - when something is saved (with Undo) and when a delete asks "Sure? Tap again";
+  - when a swipe has gone far enough to act: delete or change a row, close a popup, go back from the edge, change month or Plan step, pull to refresh;
+  - on press-and-hold of a name suggestion, and when you turn haptics on.
+- **Turning them off:** Settings → This phone → Haptics → Off. This is per device, so it doesn't change your other devices.
+- **A closed entry sheet no longer keeps its form in the page.** Opening an entry afterwards put a second entry form (same ids) on the page; harmless today, but the kind of thing that once made saves go nowhere.
+- **New tests:**
+  - `tests/specs/haptics.spec.js` checks one tap per save or confirm, no phantom clicks, focus kept, and Off silences everything.
+  - `tests/specs/entries.spec.js` checks only one entry form is on the page at a time.
+
+Files changed:
+- `public/index.html`
+- `public/sw.js` (cache `piggy-shell-26`)
+
 ## What's new in 2.51
 
 Phase 3 (polish).

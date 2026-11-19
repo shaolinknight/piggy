@@ -1431,7 +1431,7 @@ body.padon main{padding-bottom:340px}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.51';
+var VERSION = '2.52';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -9929,6 +9929,9 @@ document.addEventListener('click', function (e) {
 
 // ---- 2.44: after an update, a popup with what's new (once per update; also in Settings → What's new)
 var NEWS = [
+  { v: '2.52', items: [
+    ['📳', 'One kind of tap', 'Every haptic in Piggy is now the same light tap: when you save, when a delete asks “Sure?”, and when a swipe has gone far enough. Don’t want them? Settings → This phone → Haptics → Off.']
+  ] },
   { v: '2.51', items: [
     ['🔠', 'Larger text fits again', 'With Larger or Large text, popups like New entry no longer start above the top of the screen: the title and Close are always in reach.'],
     ['📐', 'Sized to what you can see', 'Popups and the keypad size themselves to the part of the screen that’s actually visible on iPhone.']
