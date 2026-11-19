@@ -776,8 +776,9 @@ canvas.confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:n
 .inout.ok b{color:var(--ok)}.inout.warn b{color:var(--warn)}.inout.bad b{color:var(--bad)}
 .inout.bad{box-shadow:inset 3px 0 0 var(--bad)}.inout.warn{box-shadow:inset 3px 0 0 var(--warn)}.inout.ok{box-shadow:inset 3px 0 0 var(--ok)}
 .iohint{font-size:13px;color:var(--t3);margin-top:8px}
-.mgbody{display:grid;grid-template-rows:0fr;visibility:hidden;transition:grid-template-rows .28s ease,visibility 0s .28s}
-.mgroup.open .mgbody{grid-template-rows:1fr;visibility:visible;transition:grid-template-rows .28s ease}
+/* 2.50: a group opens or closes at once; what's below glides into place (see 'mgrp'), nothing animates its size */
+.mgbody{display:grid;grid-template-rows:0fr;visibility:hidden}
+.mgroup.open .mgbody{grid-template-rows:1fr;visibility:visible}
 .mgin{min-height:0;overflow:hidden}
 .chev{transition:transform .25s ease}
 #view.fade{animation:viewin .22s ease-out}
@@ -798,6 +799,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
   .ck.big{animation:vin .3s ease-out !important}
   .ck path{animation:vinS .25s ease-out !important;stroke-dashoffset:0 !important}
   .sk{animation:skR 1.6s ease-in-out infinite !important;background:var(--p2) !important}
+  .sk::after{content:none !important}
   #refreshBtn.spin svg{animation:pulseR 1s ease-in-out infinite !important}
   .sync.quiet.busy .dot{animation:pulseR 1.2s ease-in-out infinite !important}
   button:active:not(:disabled){transform:none !important}
@@ -1128,8 +1130,10 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 }
 /* 9. placeholder shapes while the first sync runs */
 .skel .card{display:flex;flex-direction:column;gap:10px}
-.sk{display:block;border-radius:6px;background:linear-gradient(90deg,var(--p2) 25%,color-mix(in srgb,var(--p2) 50%,var(--p1)) 50%,var(--p2) 75%);background-size:200% 100%;animation:skm 1.3s ease-in-out infinite}
-@keyframes skm{from{background-position:100% 0}to{background-position:-100% 0}}
+/* 2.50: the shimmer is a highlight that slides across (transform), instead of moving a background (a repaint every frame) */
+.sk{display:block;position:relative;overflow:hidden;border-radius:6px;background:var(--p2)}
+.sk::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--p2) 50%,var(--p1)),transparent);transform:translateX(-100%);animation:skm 1.3s ease-in-out infinite}
+@keyframes skm{to{transform:translateX(100%)}}
 
 /* bills to check off */
 .card.bills{padding:4px 14px}
@@ -2359,7 +2363,7 @@ function flipRows(fn) {
 // 2.50: after a redraw that opened or closed a gap at height y (dy > 0: something dy tall went away; dy < 0: something
 // arrived), everything at or below y starts where it was and glides into place. Only transforms move; a card that
 // straddles the line is looked inside, so nothing moves twice.
-function glideFrom(y, dy) {
+function glideFrom(y, dy, root) {
   if (REDUCED || Math.abs(dy) < 2) return;
   var vh = window.innerHeight, opts = { duration: 320, easing: EASE_OUT };
   (function walk(parent) {
@@ -2369,7 +2373,7 @@ function glideFrom(y, dy) {
       if (r.top >= y - 1) { if (c.animate) c.animate([{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], opts); }
       else if (r.bottom > y + 1) walk(c);
     }
-  })($('view'));
+  })(root || $('view'));
 }
 // a row leaves (slides out and fades), then the rest close the gap smoothly
 function leaveThen(el, fn, dir) {
@@ -8719,8 +8723,12 @@ document.addEventListener('click', function (e) {
       S.mopen = S.mopen || {};
       var gopen = el.getAttribute('aria-expanded') !== 'true';
       S.mopen[v] = gopen; save();
-      var gsec = el.parentNode;                         // open/close in place so it can animate
+      var gsec = el.parentNode, gb0 = gsec.getBoundingClientRect().bottom;   // open/close in place so it can animate
       gsec.classList.toggle('open', gopen); el.setAttribute('aria-expanded', gopen);
+      var gb1 = gsec.getBoundingClientRect().bottom;
+      glideFrom(gb1, gb0 - gb1);                        // 2.50: what's below glides from where it was
+      var gbody = gopen && !REDUCED && gsec.querySelector('.mgbody');
+      if (gbody && gbody.animate) gbody.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: EASE_OUT });
       var gchev = el.querySelector('.chev'); if (gchev) gchev.classList.toggle('up', gopen);
       break;
     case 'recuredit': openSheet('recuredit', { name: v || '' }); break;
@@ -9645,17 +9653,17 @@ document.addEventListener('click', function (e) {
   var sm = e.target.closest ? e.target.closest('summary') : null;
   if (!sm || e.defaultPrevented) return;
   var d = sm.parentNode;
-  if (d && d.tagName === 'DETAILS' && !d.open && !d.getAttribute('data-anim')) accordion(d);
+  if (d && d.tagName === 'DETAILS' && !d.open) accordion(d);
   if (REDUCED) { if (d && d.tagName === 'DETAILS' && !d.open) setTimeout(function () { var kids = d.children; for (var ki = 0; ki < kids.length; ki++) if (kids[ki] !== sm) fadeIn(kids[ki], 200); }, 0); return; }
-  if (!d || d.tagName !== 'DETAILS' || d.getAttribute('data-anim') || !d.animate) return;
+  if (!d || d.tagName !== 'DETAILS' || !d.animate) return;
   e.preventDefault();
-  var cs = getComputedStyle(d), shut = sm.offsetHeight + (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
-  var from = d.offsetHeight, opening = !d.open;
-  if (opening) d.open = true;
-  var to = opening ? d.offsetHeight : shut;
-  d.setAttribute('data-anim', '1'); d.style.overflow = 'hidden';
-  var an = d.animate([{ height: from + 'px' }, { height: to + 'px' }], { duration: 240, easing: 'ease' });
-  an.onfinish = an.oncancel = function () { if (!opening) d.open = false; d.style.overflow = ''; d.removeAttribute('data-anim'); };
+  // 2.50: open or close at once; what's below glides into place and the opened content fades in (it used to animate
+  // the height of the whole section)
+  var root = d.closest('#sheet, #picker') || $('view'), b0 = d.getBoundingClientRect().bottom, opening = !d.open;
+  d.open = opening;
+  var b1 = d.getBoundingClientRect().bottom;
+  glideFrom(b1, b0 - b1, root);
+  if (opening) for (var k = d.firstElementChild; k; k = k.nextElementSibling) if (k !== sm) k.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 240, easing: EASE_OUT });
 }, true);
 document.addEventListener('toggle', function (e) {
   var d = e.target;
