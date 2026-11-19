@@ -68,7 +68,7 @@ Confirm these against the repo the first time you open it, and update this secti
 - **Self-hosted fonts: yes** (done in 2.49).
 - **On hold, don't do or re-propose:** a build or minify step, and moving storage to IndexedDB.
 - **Haptics stay switchable off** (Settings → This phone → Haptics, per device). Any new haptic goes through `haptic()` so the switch covers it.
-- **Computer layout must fit any laptop window**, short or narrow included: nothing cut off, buttons in view without hunting for a hidden scrollbar, pinned bars that don't shift, and nothing behind a panel moving when it opens (`tests/specs/desktop.spec.js`; the `@scrollbar` test runs in Chromium with real scrollbars).
+- **Computer layout must fit any laptop window**, short or narrow included: nothing cut off, buttons in view without hunting for a hidden scrollbar, pinned bars that don't shift, and nothing behind a panel moving when it opens (`tests/specs/desktop.spec.js`; the `@chromium` test runs in Chromium with real scrollbars).
 - **Merging:** the owner says "merge" after trying the Cloudflare preview; only then fast-forward `main` and push.
 
 ## Code style (match what's there)

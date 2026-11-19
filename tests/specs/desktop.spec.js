@@ -93,7 +93,7 @@ test.describe('preview data, 1280×620', function () {
 // panel may move sideways, and the panel and its dimmed backdrop still reach the window's edge
 test.describe('side panel, 1280×720 with a scrollbar', function () {
   test.use({ viewport: { width: 1280, height: 720 }, screen: { width: 1280, height: 720 }, hasTouch: false, isMobile: false });
-  test('the page behind doesn’t shift when a panel opens or closes @scrollbar', async function ({ page, app }) {
+  test('the page behind doesn’t shift when a panel opens or closes @chromium', async function ({ page, app }) {
     await app.boot({ state: boot.connectedState() });
     await app.synced();
     function pos() {
@@ -115,5 +115,71 @@ test.describe('side panel, 1280×720 with a scrollbar', function () {
     await page.evaluate(function () { window.__runway.closeSheet(); });
     await page.waitForTimeout(500);
     expect(await pos()).toEqual(before);
+  });
+});
+
+// bars pinned to the window (Plan's "1 change · Review & save") stay put too when a panel opens over them
+test.describe('Plan bar, 1280×720 with a scrollbar', function () {
+  test.use({ viewport: { width: 1280, height: 720 }, screen: { width: 1280, height: 720 }, hasTouch: false, isMobile: false });
+  test('Review & save opens without the change bar moving @chromium', async function ({ page, app }) {
+    await app.boot({ state: { v: 1, demo: true, tx: [], outbox: [], welcomed: true, toured: true, hu: 2026 * 12 + 10, cfg: {} } });
+    await page.click('.tab[data-v="plan"]');
+    await page.waitForFunction(function () { return !document.documentElement.hasAttribute('data-vt'); });
+    await page.locator('#view [data-act="pgogrp"]').first().click();
+    await page.evaluate(function () { var R = window.__runway; R.S.plan.vals.rent = { g: 'bills', a: 9999 }; R.render(); });
+    var bar = page.locator('#plan_bar .pbar');
+    await expect(bar).toBeVisible();
+    expect(await page.evaluate(function () { return innerWidth - document.documentElement.clientWidth; }), 'the page shows a scrollbar').toBeGreaterThan(0);
+    var before = await bar.boundingBox();
+    await page.click('#plan_bar [data-act="psave"]');
+    await expect(page.locator('#sheet.on')).toBeVisible();
+    await page.waitForTimeout(500);
+    var open = await bar.boundingBox();
+    expect(Math.round(open.x)).toBe(Math.round(before.x));
+  });
+});
+
+// a mouse press that starts during the tab cross-fade and lets go after it has ended still clicks what's under it
+['', ' @chromium'].forEach(function (tag) {
+  test.describe('quick click after a tab switch, 1280×720', function () {
+    test.use({ viewport: { width: 1280, height: 720 }, screen: { width: 1280, height: 720 }, hasTouch: false, isMobile: false });
+    test('a press during the cross-fade, released after it, isn’t lost' + tag, async function ({ page, app }) {
+      await app.boot({ state: { v: 1, demo: true, tx: [], outbox: [], welcomed: true, toured: true, hu: 2026 * 12 + 10, cfg: {} } });
+      await page.addStyleTag({ content: 'html[data-vt]::view-transition-old(root),html[data-vt]::view-transition-new(root){animation-duration:.6s !important}' });
+      await page.click('.tab[data-v="plan"]');
+      await page.waitForFunction(function () { return !document.documentElement.hasAttribute('data-vt'); });
+      var box = await page.locator('#view [data-act="pgogrp"]').first().boundingBox();
+      await page.click('.tab[data-v="month"]');
+      await page.waitForFunction(function () { return !document.documentElement.hasAttribute('data-vt'); });
+      await page.click('.tab[data-v="plan"]');                                  // the cross-fade starts…
+      await page.waitForTimeout(150);
+      expect(await page.evaluate(function () { return document.documentElement.hasAttribute('data-vt'); })).toBe(true);
+      await page.mouse.move(box.x + 30, box.y + box.height / 2);
+      await page.mouse.down();                                                 // …the press lands on it…
+      await page.waitForTimeout(700);                                          // …and lets go after it's over
+      await page.mouse.up();
+      await expect.poll(function () { return page.evaluate(function () { return window.__runway.S.plan.step; }); }).toBe('edit');
+    });
+  });
+});
+
+// a popup opened on top of another (Bills from Settings) has a Back button that returns to it
+test.describe('Settings → Bills, 1280×720', function () {
+  test.use({ viewport: { width: 1280, height: 720 }, screen: { width: 1280, height: 720 }, hasTouch: false, isMobile: false });
+  test('Bills opened from Settings goes Back to Settings', async function ({ page, app }) {
+    await app.boot({ state: boot.connectedState() });
+    await app.synced();
+    await page.click('.top [data-act="settings"]');
+    await expect(page.locator('#sheet.on')).toBeVisible();
+    var open = page.locator('#sheet [data-act="recur"]').first();
+    if (!(await open.isVisible())) {                                          // it may live inside a closed section
+      var sec = page.locator('#sheet details[data-sec]:has([data-act="recur"]) > summary').first();
+      await sec.click();
+    }
+    await page.locator('#sheet [data-act="recur"]').first().click();
+    await expect(page.locator('#sheet .shead h2')).toHaveText('Recurring bills');
+    await expect(page.locator('#sheet .shead [data-act="sback"]')).toHaveText('Back');
+    await page.locator('#sheet .shead [data-act="sback"]').click();
+    await expect(page.locator('#sheet .shead h2')).toHaveText('Settings');
   });
 });

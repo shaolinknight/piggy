@@ -453,7 +453,7 @@ html[data-density=compact] .field{margin-bottom:9px}
 .prow.dim .pl b{color:var(--t3)}
 .chgt{color:var(--warn);font-weight:600}
 .linkbtn{color:var(--ac);font-weight:600;font-size:inherit;text-decoration:underline;text-underline-offset:2px}
-#bulk_bar{position:fixed;z-index:29;left:16px;right:16px;bottom:calc(70px + env(safe-area-inset-bottom));max-width:488px;margin:0 auto}
+#bulk_bar{position:fixed;z-index:29;left:16px;right:calc(16px + var(--lockw,0px));bottom:calc(70px + env(safe-area-inset-bottom));max-width:488px;margin:0 auto}
 .pbar.bbar{flex-direction:row;align-items:center;gap:6px;padding:8px 8px 8px 14px}
 .bbar span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bbar button{flex:none;padding:0 12px}
@@ -484,7 +484,7 @@ body.on-bulk main{padding-bottom:140px}
 html[data-fs=xl] .mchips,html[data-fs=l] .mchips{grid-template-columns:repeat(4,minmax(0,1fr))}
 .chip.chipw{white-space:normal;height:auto;min-height:36px;padding-top:7px;padding-bottom:7px;text-align:left;max-width:100%}
 .mchips .chip{padding:0;justify-content:center;text-align:center}
-#plan_bar{position:fixed;z-index:29;left:16px;right:16px;bottom:calc(70px + env(safe-area-inset-bottom));max-width:488px;margin:0 auto}
+#plan_bar{position:fixed;z-index:29;left:16px;right:calc(16px + var(--lockw,0px));bottom:calc(70px + env(safe-area-inset-bottom));max-width:488px;margin:0 auto}
 .pbar{display:flex;align-items:center;gap:8px;background:var(--t1);color:var(--bg);border-radius:var(--r);padding:8px 8px 8px 14px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
 .pbar span{flex:1;font-weight:600;font-size:14px}
 .pbar button{height:40px;padding:0 14px;border-radius:var(--r2);font-weight:700;color:var(--bg)}
@@ -963,7 +963,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
   .tab.on{background:var(--acd)}
   #fab{left:16px;top:66px;right:auto;bottom:auto;width:56px;height:56px}
   #fab.away{transform:none;opacity:1;pointer-events:auto}
-  #toast{left:112px;right:24px}
+  #toast{left:112px;right:calc(24px + var(--lockw,0px))}
   .swtip{display:none}
 }
 @media (min-width:960px){
@@ -1007,7 +1007,7 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
   #picker.on{transform:translate(-50%,-50%);opacity:1;transition:transform .2s ease,opacity .2s ease}
   .pkhead{order:-1;padding:16px 0 10px;border-top:0}.pktop{display:none}
   #pk_body.q{justify-content:flex-start}
-  #toast{left:272px;right:32px}
+  #toast{left:272px;right:calc(32px + var(--lockw,0px))}
   .kbd{display:inline-block}
 }
 .khint,.thead{display:none}
@@ -2465,15 +2465,25 @@ var VT_ON = false, VT_TOK = 0, VT_NOW = null;          // 2.50: a tab switch's V
 document.addEventListener('touchend', function (e) {
   if (VT_NOW && e.target === document.documentElement) try { VT_NOW.skipTransition(); } catch (er) {}
 }, true);
+// A press that starts on the layer and lets go after the cross-fade has ended (down and up on different things) is
+// sent by the browser to the page itself, not to the button: remember the press and pass that click on too.
+var VT_DOWN = 0;
+document.addEventListener('mousedown', function (e) {
+  if (!VT_NOW || e.target !== document.documentElement) return;
+  VT_DOWN = Date.now();
+  try { VT_NOW.skipTransition(); } catch (er) {}
+}, true);
 document.addEventListener('click', function (e) {
-  var vt = VT_NOW;
-  if (!vt || e.target !== document.documentElement) return;
+  var vt = VT_NOW, late = Date.now() - VT_DOWN < 1500;
+  if ((!vt && !late) || e.target !== document.documentElement) return;
+  VT_DOWN = 0;
   var x = e.clientX, y = e.clientY;
-  try { vt.skipTransition(); } catch (er) {}
-  vt.finished.then(function () {
+  var pass = function () {
     var el = document.elementFromPoint(x, y);
     if (el && el !== document.documentElement && el !== document.body && el.click) el.click();
-  }, function () {});
+  };
+  if (vt) { try { vt.skipTransition(); } catch (er) {} vt.finished.then(pass, function () {}); }
+  else pass();
 }, true);
 function slideView(dir) {
   var v = $('view'); if (!v || !v.animate) return;
@@ -6934,10 +6944,12 @@ function lockPage(on) {
     // a computer showing scrollbars loses the page's scrollbar while it's pinned: keep the page as wide as it was, or
     // everything behind the sheet jumps sideways by the scrollbar's width (the sheet itself still reaches the edge)
     var sb = window.innerWidth - document.documentElement.clientWidth;
-    LOCKY = window.scrollY; b.style.top = -LOCKY + 'px'; if (sb > 0) b.style.width = 'calc(100% - ' + sb + 'px)';
+    // bars pinned to the window (Review & save, the toast) add --lockw to their right edge to stay put too
+    LOCKY = window.scrollY; b.style.top = -LOCKY + 'px';
+    if (sb > 0) { b.style.width = 'calc(100% - ' + sb + 'px)'; document.documentElement.style.setProperty('--lockw', sb + 'px'); }
     b.classList.add('locked');
   }
-  if (!on && b.classList.contains('locked')) { b.classList.remove('locked'); b.style.top = ''; b.style.width = ''; window.scrollTo(0, LOCKY); }
+  if (!on && b.classList.contains('locked')) { b.classList.remove('locked'); b.style.top = ''; b.style.width = ''; document.documentElement.style.removeProperty('--lockw'); window.scrollTo(0, LOCKY); }
 }
 
 var SHEET_STACK = [];
@@ -7209,6 +7221,9 @@ function renderSheet() {
   } else if (SHEET.kind === 'recap') {
     h += recapSheetHtml(SHEET.arg);
   }
+  // opened on top of another popup (Bills from Settings, say): its Done / Close goes back to that one instead of
+  // closing both, so there's always a way back
+  if (SHEET_STACK.length) h = h.replace(/(<div class="shead"><h2>[\s\S]*?<\/h2>)<button data-act="close">[^<]*<\/button>/, '$1<button data-act="sback">Back</button>');
   $('sheet').innerHTML = h;
   $('sheet').classList.toggle('hasbar', !!$('sheet').querySelector('.stickybar'));
   if (SHEET.kind === 'add') suggest();
@@ -9986,7 +10001,9 @@ document.addEventListener('click', function (e) {
 var NEWS = [
   { v: '2.54', items: [
     ['💻', 'Fits any computer window', 'On your Mac, an entry you open in Activity now always shows Delete, Cancel and Save, however small the window. In a narrow window it floats over the list, and the list tidies its columns to fit.'],
-    ['🪟', 'Steady behind side panels', 'On your Mac, opening a category, Review & save or Settings no longer nudges the page behind it sideways.']
+    ['🪟', 'Steady behind side panels', 'On your Mac, opening a category, Review & save or Settings no longer nudges the page, or the Review & save bar, sideways.'],
+    ['↩️', 'A way back', 'Popups opened from another one, like Bills from Settings, now have a Back button that takes you back to it.'],
+    ['🖱️', 'Quick clicks count', 'Clicking right after switching tabs on your Mac now always does what you clicked.']
   ] },
   { v: '2.53', items: [
     ['🚀', 'Faster after you save', 'With the updated sheet script (v22), Piggy only re-reads the parts of your sheet that changed, so checking in after you add an entry is much quicker.'],
