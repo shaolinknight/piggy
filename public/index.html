@@ -1431,7 +1431,7 @@ body.padon main{padding-bottom:340px}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.50';
+var VERSION = '2.51';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -9926,6 +9926,10 @@ document.addEventListener('click', function (e) {
 
 // ---- 2.44: after an update, a popup with what's new (once per update; also in Settings → What's new)
 var NEWS = [
+  { v: '2.51', items: [
+    ['🔠', 'Larger text fits again', 'With Larger or Large text, popups like New entry no longer start above the top of the screen: the title and Close are always in reach.'],
+    ['📐', 'Sized to what you can see', 'Popups and the keypad size themselves to the part of the screen that’s actually visible on iPhone.']
+  ] },
   { v: '2.50', items: [
     ['🧈', 'Smoother everywhere', 'Opening an entry, adding one, swiping one away, and opening a group or a section in Settings now glide into place instead of stretching, which keeps them smooth on the phone.'],
     ['✨', 'Gentler tab changes', 'Switching tabs cross-fades: the screen you’re leaving holds still until the next one is ready.'],

@@ -16,6 +16,26 @@ The web app URL doesn't change, so there's nothing to change in Piggy.
 
 Don't use Settings → "Copy the script" for this: that button is for setting up a new sheet and puts a new passcode in the script.
 
+## What's new in 2.51
+
+Phase 3 (polish).
+
+- **Larger text no longer pushes popups off the screen.** The text-size setting zooms the page, which also multiplied every screen-based size. With Larger text, the New entry sheet started 69–88 px above the top of the screen, hiding its title and Close.
+  - The zoom is now published as `--z`, and screen-based sizes divide by it.
+  - The screen tests check the popup's top is on screen at every size and text size.
+- **Screen-based sizes use `dvh`** (the height you can actually see between Safari's bars), with `vh` as the fallback.
+- **Status bar and splash colours** start as the default palette's background everywhere (the page meta tag and the manifest); Piggy still switches to your palette before it draws anything.
+- **Wide layout (Mac):** the sidebars keep their scrolling to themselves.
+- **Audit, no change needed:**
+  - Every fixed bar, popup and toast already allows for the notch and home bar.
+  - The main page's own bounce stays off, so Piggy's pull-to-refresh works.
+  - The keyboard-fit motion of the entry sheet is unchanged; it needs real-phone judgement.
+
+Files changed:
+- `public/index.html`
+- `public/sw.js` (cache `piggy-shell-25`)
+- `public/manifest.webmanifest`
+
 ## What's new in 2.50
 
 Phase 2 (motion). Everyday animations now move only things the phone's graphics chip can draw by itself (position and fade); none of them resize or repaint the page on every frame any more.
