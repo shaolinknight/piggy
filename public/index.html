@@ -1423,6 +1423,59 @@ body.padon main{padding-bottom:340px}
 .nwold summary{display:flex;justify-content:space-between;font-weight:600;cursor:pointer;list-style:none}
 .nwold summary span{font-weight:400;color:var(--t3);font-size:14px}
 .nwold summary::-webkit-details-marker{display:none}
+/* ===================== 2.55: a picture behind the app, and frosted glass =====================
+   Settings → Appearance → Background. The picture is a fixed layer behind everything, so it stays put while you
+   scroll. Each one sets light or dark to match it (a night city needs light text). Pictures load only once picked. */
+html[data-bg]::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--sc)}
+html[data-bg] body,html[data-bg] .top{background:transparent}
+[data-sc]{background:var(--sc-sw)}
+html[data-bg=nyc],[data-sc=nyc]{
+  --sc:url(scenes/nyc.svg) center bottom/auto 560px repeat-x,radial-gradient(90% 38% at 50% 100%,rgba(255,150,95,.55) 0%,rgba(255,150,95,0) 70%),linear-gradient(180deg,#141944 0%,#38296b 40%,#bf5578 74%,#ff9a6b 100%);
+  --sc-sw:url(scenes/nyc.svg) center bottom/auto 75% no-repeat,linear-gradient(180deg,#141944 0%,#38296b 40%,#bf5578 74%,#ff9a6b 100%)}
+html[data-bg=tokyo],[data-sc=tokyo]{
+  --sc:url(scenes/tokyo.svg) center bottom/auto 560px repeat-x,radial-gradient(60% 30% at 18% 100%,rgba(62,230,255,.32) 0%,rgba(62,230,255,0) 70%),linear-gradient(180deg,#0b0524 0%,#2b0f5c 45%,#7a1f8c 78%,#e24a86 100%);
+  --sc-sw:url(scenes/tokyo.svg) center bottom/auto 75% no-repeat,linear-gradient(180deg,#0b0524 0%,#2b0f5c 45%,#7a1f8c 78%,#e24a86 100%)}
+html[data-bg=paris],[data-sc=paris]{
+  --sc:url(scenes/paris.svg) center bottom/auto 560px repeat-x,radial-gradient(70% 35% at 50% 100%,rgba(255,214,150,.7) 0%,rgba(255,214,150,0) 70%),linear-gradient(180deg,#bcc7e8 0%,#ecc9d6 52%,#ffdcb4 100%);
+  --sc-sw:url(scenes/paris.svg) center bottom/auto 75% no-repeat,linear-gradient(180deg,#bcc7e8 0%,#ecc9d6 52%,#ffdcb4 100%)}
+html[data-bg=sf],[data-sc=sf]{
+  --sc:url(scenes/sf.svg) center bottom/auto 560px repeat-x,linear-gradient(180deg,#c3d3e4 0%,#dde7f0 45%,#f3ece6 78%,#ffd8bd 100%);
+  --sc-sw:url(scenes/sf.svg) center bottom/auto 75% no-repeat,linear-gradient(180deg,#c3d3e4 0%,#dde7f0 45%,#f3ece6 78%,#ffd8bd 100%)}
+html[data-bg=spring],[data-sc=spring]{
+  --sc:url(scenes/petals.svg) 0 0/420px 420px repeat,url(scenes/spring.svg) center bottom/auto 560px repeat-x,radial-gradient(40% 25% at 82% 14%,rgba(255,247,200,.9) 0%,rgba(255,247,200,0) 70%),linear-gradient(180deg,#f6d7ea 0%,#fbe5ee 45%,#eaf4de 100%);
+  --sc-sw:url(scenes/spring.svg) center bottom/auto 75% no-repeat,linear-gradient(180deg,#f6d7ea 0%,#fbe5ee 45%,#eaf4de 100%)}
+html[data-bg=summer],[data-sc=summer]{
+  --sc:url(scenes/summer.svg) center bottom/auto 560px repeat-x,radial-gradient(35% 22% at 78% 38%,rgba(255,244,176,.95) 0%,rgba(255,244,176,0) 70%),linear-gradient(180deg,#9edcf2 0%,#c3eaf5 46%,#ffefc2 100%);
+  --sc-sw:url(scenes/summer.svg) center bottom/auto 75% no-repeat,linear-gradient(180deg,#9edcf2 0%,#c3eaf5 46%,#ffefc2 100%)}
+html[data-bg=autumn],[data-sc=autumn]{
+  --sc:url(scenes/leaves.svg) 0 0/420px 420px repeat,url(scenes/autumn.svg) center bottom/auto 560px repeat-x,radial-gradient(50% 28% at 20% 12%,rgba(255,244,214,.8) 0%,rgba(255,244,214,0) 70%),linear-gradient(180deg,#ffe4bd 0%,#ffc78a 50%,#f59a58 100%);
+  --sc-sw:url(scenes/autumn.svg) center bottom/auto 75% no-repeat,linear-gradient(180deg,#ffe4bd 0%,#ffc78a 50%,#f59a58 100%)}
+html[data-bg=winter],[data-sc=winter]{
+  --sc:url(scenes/snow.svg) 0 0/400px 400px repeat,url(scenes/winter.svg) center bottom/auto 560px repeat-x,linear-gradient(180deg,#d3e1f1 0%,#e6eef8 50%,#f6faff 100%);
+  --sc-sw:url(scenes/winter.svg) center bottom/auto 75% no-repeat,linear-gradient(180deg,#d3e1f1 0%,#e6eef8 50%,#f6faff 100%)}
+/* bars that covered what scrolled under them with the page colour: see-through over the picture */
+html[data-bg] .mgrp>.mhead{background:transparent}
+html[data-bg] .thead{background:color-mix(in srgb,var(--bg) 80%,transparent);-webkit-backdrop-filter:saturate(1.5) blur(18px);backdrop-filter:saturate(1.5) blur(18px)}
+html[data-bg] .psegs{box-shadow:none}
+@media (min-width:960px){html[data-bg] .top{background:var(--p1)}}
+/* frosted glass: the page's cards and lists, the tabs and popups let the picture through, blurred. Only big surfaces
+   blur (rows inside a list don't), and glass on glass is avoided: cards inside a popup stay solid. */
+html[data-glass]{--gf:blur(16px) saturate(1.5) brightness(1.06)}
+html[data-glass][data-tone=dark]{--gf:blur(16px) saturate(1.4) brightness(.8)}
+html[data-glass] #view .card,html[data-glass] #view .list,html[data-glass] .tabs{background:color-mix(in srgb,var(--p1) 78%,transparent);-webkit-backdrop-filter:var(--gf);backdrop-filter:var(--gf)}
+@media (min-width:960px){html[data-glass] .top{background:color-mix(in srgb,var(--p1) 78%,transparent);-webkit-backdrop-filter:var(--gf);backdrop-filter:var(--gf)}}
+html[data-glass] #view .swipe .tx{background:transparent}
+html[data-glass] #view .swipe.l .tx,html[data-glass] #view .swipe.r .tx{background:var(--p1)}          /* solid while dragged: the action under it shows only beside it */
+html[data-glass] #sheet{background:color-mix(in srgb,var(--bg) 82%,transparent);-webkit-backdrop-filter:var(--gf);backdrop-filter:var(--gf)}
+html[data-glass] .ledger .mgroup.open,html[data-glass] .ptot{background:color-mix(in srgb,var(--bg) 40%,transparent)}
+/* the background picker */
+.bgsws{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.bgsw{display:flex;flex-direction:column;align-items:center;gap:5px;padding:4px 4px 6px;border-radius:var(--r2);border:2px solid transparent;font-size:12.5px;font-weight:600;color:var(--t2);min-width:0}
+.bgsw.on{border-color:var(--ac);color:var(--t1)}
+.bgsw i{display:block;width:100%;aspect-ratio:4/3;border-radius:calc(var(--r2) - 2px);border:1px solid var(--b1)}
+.bgsw i.plain{background:var(--bg);position:relative}
+.bgsw i.plain::after{content:'';position:absolute;left:18%;right:18%;top:28%;bottom:28%;border-radius:6px;background:var(--p1);border:1px solid var(--b1)}
+.bgsw span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -1551,6 +1604,23 @@ var CORNERS = { sharp: ['Sharp', '6px', '4px'], soft: ['Soft', '16px', '12px'], 
 var CARDS = { outline: 'Outline', flat: 'Flat', raised: 'Raised' };
 var DENSITY = { comfy: 'Comfortable', compact: 'Compact' };
 var FSIZE = { m: ['Standard', 1], l: ['Large', 1.1], xl: ['Larger', 1.2] };
+// 2.55: pictures behind the app. Each sets light or dark to match it (light text on a night city); top = the colour
+// at the top of the picture, for the phone's status bar.
+var SCENES = {
+  nyc: { name: 'New York', dark: true, top: '#141944' },
+  tokyo: { name: 'Tokyo', dark: true, top: '#0b0524' },
+  paris: { name: 'Paris', dark: false, top: '#bcc7e8' },
+  sf: { name: 'San Francisco', dark: false, top: '#c3d3e4' },
+  spring: { name: 'Spring', dark: false, top: '#f6d7ea' },
+  summer: { name: 'Summer', dark: false, top: '#9edcf2' },
+  autumn: { name: 'Autumn', dark: false, top: '#ffe4bd' },
+  winter: { name: 'Winter', dark: false, top: '#d3e1f1' }
+};
+function scene() { return SCENES[S.cfg.bg] || null; }
+// frosted glass needs a picture to show through; it's on unless turned off, or the phone asks for less see-through
+function glassOn() {
+  return !!scene() && S.cfg.glass !== 'off' && !(window.matchMedia && window.matchMedia('(prefers-reduced-transparency: reduce)').matches);
+}
 var LOADED_FONTS = {};
 function loadFont(key) {
   var st = STYLES[key];
@@ -1942,8 +2012,11 @@ function catList(kind) {
 
 // ------------------------------------------------------------------ theme
 function applyTheme() {
-  var pal = PALETTES[S.cfg.pal] || PALETTES.coastline;
-  var dark = S.cfg.mode === 'dark' || (S.cfg.mode === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pal = PALETTES[S.cfg.pal] || PALETTES.coastline, sc = scene(), root = document.documentElement;
+  var dark = sc ? sc.dark : S.cfg.mode === 'dark' || (S.cfg.mode === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  if (sc) root.setAttribute('data-bg', S.cfg.bg); else root.removeAttribute('data-bg');
+  if (glassOn()) root.setAttribute('data-glass', 'on'); else root.removeAttribute('data-glass');
+  root.setAttribute('data-tone', dark ? 'dark' : 'light');
   var v = dark ? pal.dark : pal.light, st = document.documentElement.style;
   Object.keys(v).forEach(function (k) { st.setProperty('--' + k, v[k]); });
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
@@ -1964,7 +2037,7 @@ function applyTheme() {
   if (S.cfg.appname) applyAppName();
   document.documentElement.setAttribute('data-cards', S.cfg.cards);
   var meta = document.querySelector('meta[name=theme-color]');
-  if (meta) meta.setAttribute('content', v.bg);
+  if (meta) meta.setAttribute('content', sc ? sc.top : v.bg);
 }
 
 // ------------------------------------------------------------------ rendering: shell
@@ -7372,7 +7445,7 @@ function appearanceHtml() {
     return '<details class="sub" data-sec="' + id + '"' + (isOpen(id) ? ' open' : '') + '><summary>' + title + '<span>' + val + '</span></summary><div class="subin">' + body + '</div></details>';
   }
   var h = '<details class="set" data-sec="look"' + (isOpen('look') ? ' open' : '') + '><summary>Appearance<span>' + pal.name + ' · ' +
-    ({ auto: 'Auto', light: 'Light', dark: 'Dark' })[S.cfg.mode] + '</span></summary><div class="inner">';
+    (scene() ? scene().name : ({ auto: 'Auto', light: 'Light', dark: 'Dark' })[S.cfg.mode]) + '</span></summary><div class="inner">';
   // up front: color, light/dark, text size
   var b = '<div class="swatches">';
   Object.keys(PALETTES).forEach(function (k) {
@@ -7380,7 +7453,16 @@ function appearanceHtml() {
     b += '<button class="sw' + (S.cfg.pal === k ? ' on' : '') + '" data-act="pal" data-v="' + k + '" aria-label="' + PALETTES[k].name + '"><i style="background:linear-gradient(135deg,' + v.ha + ',' + v.hb + ')"><b style="background:' + v.ac + '"></b><span class="swg">' + ['gb', 'gd', 'go', 'gs'].map(function (g) { return '<em style="background:' + v[g] + '"></em>'; }).join('') + '</span></i>' + PALETTES[k].name + '</button>';
   });
   h += '<div class="flabel">Color · ' + pal.name + '</div>' + b + '</div>';
-  h += '<div class="flabel" style="margin-top:12px">Light / dark</div>' + seg('mode', { auto: 'Match device', light: 'Light', dark: 'Dark' }, S.cfg.mode);
+  // 2.55: a picture behind the app, and whether cards are frosted glass over it
+  var sc = scene(), bgs = '<div class="bgsws">' + [''].concat(Object.keys(SCENES)).map(function (k) {
+    var on = (S.cfg.bg || '') === k;
+    return '<button class="bgsw' + (on ? ' on' : '') + '" data-act="bg" data-v="' + k + '" aria-pressed="' + on + '"><i' + (k ? ' data-sc="' + k + '"' : ' class="plain"') + '></i><span>' + (k ? SCENES[k].name : 'Plain') + '</span></button>';
+  }).join('') + '</div>';
+  h += '<div class="flabel" style="margin-top:12px">Background · ' + (sc ? sc.name : 'Plain') + '</div>' + bgs;
+  if (sc) h += '<div class="flabel" style="margin-top:12px">Frosted glass</div>' + seg('glass', { on: 'On', off: 'Off' }, S.cfg.glass === 'off' ? 'off' : 'on') +
+    '<div class="hint" style="margin-top:6px">On: cards let the picture show through, softly blurred. Off: cards stay solid.</div>';
+  h += '<div class="flabel" style="margin-top:12px">Light / dark</div>' + (sc ? '<div class="hint">Set by the picture: ' + (sc.dark ? 'dark' : 'light') + '. Choose Plain to pick it yourself.</div>'
+    : seg('mode', { auto: 'Match device', light: 'Light', dark: 'Dark' }, S.cfg.mode));
   h += '<div class="flabel" style="margin-top:12px">Text size</div>' + seg('fsize', FSIZE, S.cfg.fsize || 'm');
   // everything else
   var more = '';
@@ -8383,7 +8465,7 @@ function sheetSame() {
 }
 
 // ---- your settings, copied to the sheet's "app settings" tab so a reinstall gets them back
-var PREF_KEYS = ['pal', 'mode', 'style', 'corners', 'cards', 'density', 'icon', 'iconc', 'appname', 'fsize', 'launchAdd'];
+var PREF_KEYS = ['pal', 'mode', 'style', 'corners', 'cards', 'density', 'icon', 'iconc', 'appname', 'fsize', 'launchAdd', 'bg', 'glass'];
 function prefsObj() {
   var cfg = {};
   PREF_KEYS.forEach(function (k) { cfg[k] = S.cfg[k]; });
@@ -8418,6 +8500,8 @@ function adoptPrefs(p) {
   if (CARDS[c.cards]) S.cfg.cards = c.cards;
   if (DENSITY[c.density]) S.cfg.density = c.density;
   if (FSIZE[c.fsize]) S.cfg.fsize = c.fsize;
+  if (c.bg === '' || SCENES[c.bg]) S.cfg.bg = c.bg;
+  if (c.glass === 'on' || c.glass === 'off') S.cfg.glass = c.glass;
   if (ICONS[c.icon]) S.cfg.icon = c.icon;
   if (ICON_COLORS[c.iconc]) S.cfg.iconc = c.iconc;
   if (c.appname) S.cfg.appname = String(c.appname).slice(0, 14);
@@ -9674,6 +9758,8 @@ document.addEventListener('click', function (e) {
     case 'density': S.cfg.density = v; save(); applyTheme(); renderSheet(); render(); break;
     case 'fsize': S.cfg.fsize = FSIZE[v] ? v : 'm'; save(); applyTheme(); renderSheet(); render(); break;
     case 'mode': S.cfg.mode = v; save(); applyTheme(); renderSheet(); break;
+    case 'bg': S.cfg.bg = SCENES[v] ? v : ''; save(); applyTheme(); var scb = $('sheet').scrollTop; renderSheet(); $('sheet').scrollTop = scb; break;
+    case 'glass': S.cfg.glass = v === 'off' ? 'off' : 'on'; save(); applyTheme(); var scg = $('sheet').scrollTop; renderSheet(); $('sheet').scrollTop = scg; break;
     case 'export': exportData(); break;
     case 'import': $('importFile').click(); break;
   }

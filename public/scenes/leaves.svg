@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="420" height="420">
+<defs><path id="lf" d="M0 0 C6 -9 16 -9 20 0 C14 7 6 7 0 0 Z"/></defs>
+<use href="#lf" transform="translate(40 60) rotate(30)" fill="#e0561f"/>
+<use href="#lf" transform="translate(150 25) rotate(-20) scale(.8)" fill="#f2a33a"/>
+<use href="#lf" transform="translate(260 90) rotate(120) scale(1.1)" fill="#d33f1f"/>
+<use href="#lf" transform="translate(370 40) rotate(70)" fill="#f6c344"/>
+<use href="#lf" transform="translate(95 170) rotate(200) scale(1.2)" fill="#c93a1e"/>
+<use href="#lf" transform="translate(210 200) rotate(-70) scale(.9)" fill="#e67e22"/>
+<use href="#lf" transform="translate(330 180) rotate(150)" fill="#f2a33a"/>
+<use href="#lf" transform="translate(30 290) rotate(95) scale(.8)" fill="#d33f1f"/>
+<use href="#lf" transform="translate(160 320) rotate(-130) scale(1.1)" fill="#e0561f"/>
+<use href="#lf" transform="translate(290 300) rotate(20)" fill="#f6c344"/>
+<use href="#lf" transform="translate(385 360) rotate(-100) scale(.9)" fill="#c93a1e"/>
+<use href="#lf" transform="translate(90 395) rotate(60) scale(1.1)" fill="#e67e22"/>
+</svg>
