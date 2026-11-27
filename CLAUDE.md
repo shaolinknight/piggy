@@ -16,12 +16,13 @@ Confirm these against the repo the first time you open it, and update this secti
     - JS in one inline `<script>` (~638 KB);
     - icons as base64 (~12 KB): the apple-touch-icon and favicon are inline `data:` PNGs.
 
-    It's plain ES5 (`var`, `function`, no modules, no framework, no build step). `var VERSION = '2.54'` sits near line 1460. The whole script is wrapped in `(function () { 'use strict'; … boot(); })();`, so `VERSION`, `S`, `checkUpdate` and the rest are **not** globals. Reach them through `window.__runway`.
+    It's plain ES5 (`var`, `function`, no modules, no framework, no build step). `var VERSION = '2.55'` sits near line 1513. The whole script is wrapped in `(function () { 'use strict'; … boot(); })();`, so `VERSION`, `S`, `checkUpdate` and the rest are **not** globals. Reach them through `window.__runway`.
   - **`public/sw.js`** is the service worker. `var CACHE = 'piggy-shell-NN'` must go up by one every release.
     - The app page is served cache-first and a fresh copy is fetched in the background.
     - When the page text changes, the worker posts `{type:'updated'}`. The app reloads itself if it was opened in the last 15 seconds; otherwise it shows a "Reload" toast. The app also asks for the page every 30 minutes while it's open, and when you come back to it.
     - Calls to `script.google(usercontent).com` and `script.txt` are never cached.
     - The two default fonts in `public/fonts/` are precached and never refreshed (`public/_headers` marks them immutable). A font change needs a new file name.
+  - **`public/scenes/`** (2.55): the background pictures (SVG). One loads only when picked (`S.cfg.bg`), and the service worker keeps it after its first load. `SCENES` in `index.html` lists them, each with its light or dark tone; `glassOn()` decides frosted glass (`S.cfg.glass`). Headless WebKit doesn't draw `backdrop-filter`, so check glass in Chromium screenshots (`tests/perf/glass.js` measures its scroll cost).
   - **`public/manifest.webmanifest`**: `display: standalone`, theme colour, icons (`icon-192.png`, `icon-512.png`).
   - **`public/script.txt`** **is** the Apps Script backend (script `VERSION = 22`); there is no separate `Code.gs` file in the repo. The app links to it so people can paste it into their sheet. It must always ship with `var PASSCODE = 'CHANGE-ME';`. Never commit a real passcode, sheet URL or deployment ID.
 - **`SETUP.md`** (at the root, not in `public/`) tells the owner how to update the sheet script safely and lists "What's new" for each release.

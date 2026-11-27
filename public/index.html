@@ -1510,7 +1510,7 @@ html[data-glass] .ledger .mgroup.open,html[data-glass] .ptot{background:color-mi
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.54';
+var VERSION = '2.55';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -10120,6 +10120,10 @@ document.addEventListener('click', function (e) {
 
 // ---- 2.44: after an update, a popup with what's new (once per update; also in Settings → What's new)
 var NEWS = [
+  { v: '2.55', items: [
+    ['🏙️', 'Pictures behind your budget', 'Settings → Appearance → Background: pick New York, Tokyo, Paris, San Francisco, or spring, summer, autumn or winter. Plain keeps Piggy as it was.'],
+    ['🧊', 'Frosted glass', 'With a picture, your cards turn to frosted glass so it shows softly through. Prefer solid cards? Turn Frosted glass off; the picture stays.']
+  ] },
   { v: '2.54', items: [
     ['💻', 'Fits any computer window', 'On your Mac, an entry you open in Activity now always shows Delete, Cancel and Save, however small the window. In a narrow window it floats over the list, and the list tidies its columns to fit.'],
     ['🪟', 'Steady behind side panels', 'On your Mac, opening a category, Review & save or Settings no longer nudges the page, or the Review & save bar, sideways.'],
