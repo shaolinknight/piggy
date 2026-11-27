@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 560" width="1600" height="560">
+<defs>
+<pattern id="w" width="16" height="22" patternUnits="userSpaceOnUse"><rect x="5" y="6" width="6" height="11" rx="1" fill="#ffd98a" opacity=".95"/></pattern>
+<linearGradient id="h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3666" stop-opacity="0"/><stop offset="1" stop-color="#3a3666" stop-opacity=".55"/></linearGradient>
+<g id="pb">
+<rect x="0" y="420" width="100" height="140"/><rect x="100" y="400" width="90" height="160"/><rect x="190" y="430" width="110" height="130"/><rect x="300" y="410" width="100" height="150"/><rect x="400" y="420" width="120" height="140"/><rect x="520" y="400" width="100" height="160"/><rect x="620" y="430" width="90" height="130"/>
+<rect x="910" y="420" width="100" height="140"/><rect x="1010" y="400" width="110" height="160"/><rect x="1120" y="430" width="90" height="130"/><rect x="1210" y="410" width="100" height="150"/><rect x="1310" y="420" width="120" height="140"/><rect x="1430" y="400" width="90" height="160"/><rect x="1520" y="430" width="80" height="130"/>
+</g>
+</defs>
+<g fill="#2e2c50" opacity=".55">
+<rect x="0" y="380" width="120" height="180"/><rect x="140" y="360" width="100" height="200"/><rect x="260" y="390" width="130" height="170"/><rect x="410" y="370" width="110" height="190"/><rect x="540" y="390" width="140" height="170"/><rect x="930" y="380" width="120" height="180"/><rect x="1070" y="360" width="110" height="200"/><rect x="1200" y="390" width="130" height="170"/><rect x="1350" y="370" width="120" height="190"/><rect x="1490" y="390" width="110" height="170"/>
+</g>
+<use href="#pb" fill="#1d1b36"/>
+<use href="#pb" fill="url(#w)"/>
+<g fill="#15132b">
+<polygon points="-4,420 104,420 90,394 10,394"/><polygon points="96,400 194,400 180,374 110,374"/><polygon points="186,430 304,430 290,404 200,404"/><polygon points="296,410 404,410 390,384 310,384"/><polygon points="396,420 524,420 510,394 410,394"/><polygon points="516,400 624,400 610,374 530,374"/><polygon points="616,430 714,430 700,404 630,404"/>
+<polygon points="906,420 1014,420 1000,394 920,394"/><polygon points="1006,400 1124,400 1110,374 1020,374"/><polygon points="1116,430 1214,430 1200,404 1130,404"/><polygon points="1206,410 1314,410 1300,384 1220,384"/><polygon points="1306,420 1434,420 1420,394 1320,394"/><polygon points="1426,400 1524,400 1510,374 1440,374"/><polygon points="1516,430 1604,430 1590,404 1530,404"/>
+</g>
+<path d="M700 560 L752 330 L766 330 L784 190 L792 190 L800 50 L808 190 L816 190 L834 330 L848 330 L900 560 L866 560 L838 430 Q800 398 762 430 L734 560 Z" fill="#d8a443"/>
+<rect x="744" y="326" width="112" height="10" fill="#d8a443"/><rect x="776" y="186" width="48" height="8" fill="#d8a443"/><rect x="799" y="6" width="2" height="44" fill="#d8a443"/>
+<path d="M745 380 H855 M728 480 H872 M772 260 H828" stroke="#fff1b8" stroke-opacity=".6" stroke-width="3" fill="none"/>
+<rect y="450" width="1600" height="110" fill="url(#h)"/>
+</svg>

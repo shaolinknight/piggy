@@ -18,19 +18,21 @@ Don't use Settings → "Copy the script" for this: that button is for setting up
 
 ## What's new in 2.55
 
-- **Background pictures.** Settings → Appearance → Background has Plain (the look you have now, still the default) and eight pictures: New York, Tokyo, Paris and San Francisco, and spring, summer, autumn and winter.
-  - The picture stays put behind the app while you scroll.
-  - Each picture sets light or dark to match it (the night cities are dark), so the text on it stays readable. Choose Plain to pick light or dark yourself again.
+- **Appearance has three kinds of look: Colors, Cities and Seasons.** Settings → Appearance opens on the kind you're using.
+  - **Colors** are the colour looks you have now. Picking one means no picture, exactly as before (still the default).
+  - **Cities:** New York, Tokyo, Paris, San Francisco. **Seasons:** spring, summer, autumn, winter. Each puts a picture behind the app that stays put while you scroll; the colour look you had keeps giving the accents.
+  - **Every picture has a day and a night version.** They follow Light / dark (or your phone, with Match device): daytime skylines, the Eiffel Tower lit gold at night, a moonlit sea, snowy pines under the moon.
   - The phone's status bar takes the colour at the top of the picture.
-  - A picture is only downloaded once you pick it (1 to 4 KB), then the app keeps it for offline use.
+  - A picture is only downloaded once you pick it (1 to 4 KB each), then the app keeps it for offline use.
 - **Frosted glass.** With a picture, cards, lists, the tab bar and popups turn to frosted glass, so the picture shows through softly. Turn Frosted glass off to keep solid cards over the picture. If your phone's Reduce Transparency setting is on, cards stay solid.
+  - With glass on, screens slide into place instead of cross-fading. A fade over frosted cards switches their blur off until it ends, which showed the picture sharp for a moment before the frost.
 - Your choice syncs to your other devices with the rest of Appearance. No sheet script change (still v22): the script keeps new settings as they are.
 - Speed: a picture alone costs nothing while scrolling. Frosted glass makes the phone blur the picture behind every card as you scroll; if scrolling ever feels less smooth, turn glass off.
 
 Files changed:
 - `public/index.html`
 - `public/sw.js` (cache `piggy-shell-29`)
-- `public/scenes/` (new: the pictures)
+- `public/scenes/` (new: the pictures, a day and a night file for each)
 
 ## What's new in 2.54
 

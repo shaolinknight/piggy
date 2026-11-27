@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 560" width="1600" height="560">
+<defs>
+<pattern id="hang" width="14" height="10" patternUnits="userSpaceOnUse"><rect width="1.5" height="10" fill="#e0603c" opacity=".75"/></pattern>
+<linearGradient id="fog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d89a8" stop-opacity="0"/><stop offset=".6" stop-color="#7d89a8" stop-opacity=".78"/><stop offset="1" stop-color="#7d89a8" stop-opacity=".92"/></linearGradient>
+</defs>
+<path d="M0 450 Q160 380 320 440 T640 430 L640 560 L0 560 Z" fill="#1c2638" opacity=".55"/>
+<path d="M960 440 Q1180 370 1340 430 T1600 430 L1600 560 L960 560 Z" fill="#1c2638" opacity=".55"/>
+<g fill="url(#hang)">
+<path d="M448 188 Q798 452 1148 188 L1148 420 L448 420 Z"/>
+<path d="M448 188 Q220 395 0 408 L0 420 L448 420 Z"/>
+<path d="M1148 188 Q1376 395 1600 408 L1600 420 L1148 420 Z"/>
+</g>
+<g fill="none" stroke="#e0603c" stroke-width="5" stroke-linecap="round">
+<path d="M448 188 Q798 452 1148 188"/><path d="M448 188 Q220 395 0 408"/><path d="M1148 188 Q1376 395 1600 408"/>
+</g>
+<rect x="0" y="420" width="1600" height="10" fill="#e0603c"/>
+<g fill="#e0603c">
+<rect x="436" y="186" width="12" height="274"/><rect x="460" y="186" width="12" height="274"/><rect x="432" y="176" width="44" height="12"/><rect x="436" y="240" width="36" height="9"/><rect x="436" y="300" width="36" height="9"/><rect x="436" y="360" width="36" height="9"/><rect x="436" y="408" width="36" height="9"/>
+<rect x="1136" y="186" width="12" height="274"/><rect x="1160" y="186" width="12" height="274"/><rect x="1132" y="176" width="44" height="12"/><rect x="1136" y="240" width="36" height="9"/><rect x="1136" y="300" width="36" height="9"/><rect x="1136" y="360" width="36" height="9"/><rect x="1136" y="408" width="36" height="9"/>
+</g>
+<rect x="0" y="380" width="1600" height="180" fill="url(#fog)"/>
+<ellipse cx="300" cy="470" rx="380" ry="18" fill="#7d89a8" opacity=".7"/>
+<ellipse cx="1250" cy="485" rx="420" ry="20" fill="#7d89a8" opacity=".7"/>
+<ellipse cx="800" cy="500" rx="520" ry="16" fill="#7d89a8" opacity=".6"/>
+</svg>
