@@ -1,0 +1,50 @@
+{
+  "at": "2026-11-27T07:53:59.719Z",
+  "runs": 3,
+  "looks": [
+    {
+      "look": "Plain",
+      "month": {
+        "p95": 16.7,
+        "slowPct": 0
+      },
+      "activity": {
+        "p95": 16.7,
+        "slowPct": 1
+      }
+    },
+    {
+      "look": "New York, glass on",
+      "month": {
+        "p95": 33.3,
+        "slowPct": 18
+      },
+      "activity": {
+        "p95": 33.3,
+        "slowPct": 13
+      }
+    },
+    {
+      "look": "New York, glass off",
+      "month": {
+        "p95": 16.7,
+        "slowPct": 0
+      },
+      "activity": {
+        "p95": 16.8,
+        "slowPct": 1
+      }
+    },
+    {
+      "look": "Autumn, glass on",
+      "month": {
+        "p95": 33.4,
+        "slowPct": 9
+      },
+      "activity": {
+        "p95": 33.4,
+        "slowPct": 20
+      }
+    }
+  ]
+}
