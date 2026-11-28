@@ -16,6 +16,19 @@ The web app URL doesn't change, so there's nothing to change in Piggy.
 
 Don't use Settings → "Copy the script" for this: that button is for setting up a new sheet and puts a new passcode in the script.
 
+## What's new in 2.57
+
+- **Stuck changes are said in words on the phone.** When changes can't reach your sheet, a line appears under the header: "Offline · 1 change waiting to send" (or "Can't save on this phone"). Tap it for Sync status. It goes away by itself once everything is sent. On a computer the words stay in the header as before. (Beside the month they would squeeze its name, which is why the phone only showed a dot.)
+- **Sync status keeps a short record of problems** (the last 30, on this device only; they don't sync), shows how long a change has been waiting, and has **Copy details**: a plain summary (version, script version, what's waiting, recent problems) to paste into a message. It never includes your passcode or sheet address.
+- **A nudge after a day.** If a change has been waiting more than a day, Piggy says so once each time you open it ("1 change hasn't reached your sheet since Monday"), with **See why**.
+- **Totals are rounded to the cent** as they're added up, so a category that's spent exactly its budget counts as exactly on budget (adding in floating point gave things like 0.30000000000000004).
+- **New tests** for the journeys that had none: changing a budget in Plan, splitting a purchase across categories, spreading one over months (including the next part arriving when its month comes, once), a new trip, and a savings goal. Plus the error record, the stuck line and the one-day nudge.
+- No sheet script change (still 23; 22 works too).
+
+Files changed:
+- `public/index.html`
+- `public/sw.js` (cache `piggy-shell-31`)
+
 ## What's new in 2.56 (sheet script 23)
 
 - **Nothing is lost quietly when the phone is full.** If the phone ever refuses to save (its storage is full), Piggy says so, sends what's waiting to the sheet straight away, and the sync dot stays red ("Can't save on this phone") until saving works again. Piggy also asks the browser to keep its data when space runs low.
