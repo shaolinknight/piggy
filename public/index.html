@@ -1691,6 +1691,16 @@ function nid(prefix) { S.seq = (S.seq || 1) + 1; return (prefix || 'L') + S.seq 
 // ------------------------------------------------------------------ helpers
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function r2(n) { return Math.round(n * 100) / 100; }
+// 2.57: totals are added up in floating point, so 0.1 + 0.2 comes out as 0.30000000000000004. Round a set of totals
+// (and the per-category maps inside it) to the cent, so comparisons such as "spent exactly the budget" hold.
+function cents(o) {
+  Object.keys(o).forEach(function (k) {
+    var v = o[k];
+    if (typeof v === 'number') o[k] = r2(v);
+    else if (v && typeof v === 'object') Object.keys(v).forEach(function (j) { if (typeof v[j] === 'number') v[j] = r2(v[j]); });
+  });
+  return o;
+}
 function money(n, cents) {
   var neg = n < -0.004, v = Math.abs(n);
   var s = cents ? v.toFixed(2) : Math.round(v).toString();
@@ -1883,7 +1893,7 @@ function budgetTotals(key) {
     if (b.g === 'save') t.save += a; else t.spend += a;
     if (FLEX[b.g]) t.flex += a;
   });
-  return (CACHE.bt[key] = t);
+  return (CACHE.bt[key] = cents(t));
 }
 // Did this category's budget change at the start of month `key`? Returns the previous amount, or null.
 function budgetPrev(cat, key) {
@@ -1982,8 +1992,7 @@ function monthStats(key) {
     var b = bmap(key)[c]; if (!b || b.rm || b.g === 'inc' || b.g === 'save') return;
     s.spentB += b.a - (s.cat[c] || 0);
   });
-  s.spentB = r2(s.spentB);
-  return (CACHE.ms[key] = s);
+  return (CACHE.ms[key] = cents(s));
 }
 
 function dataRange() {
