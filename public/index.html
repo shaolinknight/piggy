@@ -7169,8 +7169,8 @@ function inspHtml() {
   return '<div class="ihead"><h2>' + esc(t.v || t.c) + '</h2><span>' + (t.d ? shortDate(t.d) : MON[t.m]) + ' ' + t.y + ' · ' + esc(t.c) + '</span></div>' + txForm(t, false);
 }
 function syncEditPanel(focus) {
-  if (SHEET && SHEET.kind === 'edit') closeSheet();
   var ins = $('insp'); if (!ins) return;
+  if (SHEET && SHEET.kind === 'edit') closeSheet();       // (only where the panel exists: on a phone the popup is the editor)
   var want = UI.edit && findTx(UI.edit) ? UI.edit : '';
   if (ins.getAttribute('data-id') === want) return;
   ins.setAttribute('data-id', want); ins.innerHTML = inspHtml(); ins.scrollTop = 0;
@@ -8829,7 +8829,8 @@ function safeRender() {
 function safeSheet() {
   var ae = document.activeElement;
   var typingInSheet = SHEET && ae && $('sheet').contains(ae) && /INPUT|SELECT|TEXTAREA/.test(ae.tagName);
-  if (SHEET && SHEET.kind !== 'add' && !typingInSheet && Date.now() > SHEET_BUSY) renderSheet();
+  // (never a form you're filling in: redrawing it would throw away what you'd changed)
+  if (SHEET && SHEET.kind !== 'add' && SHEET.kind !== 'edit' && !typingInSheet && Date.now() > SHEET_BUSY) renderSheet();
 }
 
 function matchRef(list, ref) {
