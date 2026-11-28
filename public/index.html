@@ -938,6 +938,15 @@ button:active:not(:disabled){transform:scale(.97);transition:transform .08s}
 #toast.on{transform:none;opacity:1;pointer-events:auto}
 #toast span{flex:1;min-width:0;overflow-wrap:anywhere}
 #toast button{font-weight:700;color:var(--bg);text-decoration:underline;padding:4px}
+/* 2.58: on a phone, messages and Undo sit at the bottom, just above the tabs, where your thumb is (and a swipe down
+   puts them away). With a popup open they stay at the top, clear of its buttons. */
+@media (max-width:699px){
+  body:not(.locked) #toast{top:auto;bottom:calc(70px + env(safe-area-inset-bottom));transform:translateY(16px)}
+  body:not(.locked) #toast.on{transform:none}
+  body.on-plan:not(.locked) #toast,body.on-bulk:not(.locked) #toast{bottom:calc(132px + env(safe-area-inset-bottom))}
+  body.qb:not(.locked) #toast{bottom:calc(var(--tabh,64px) + 66px)}
+  #toast button{min-height:44px;padding:4px 8px}
+}
 .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
 
 /* ===================== computers & big screens ===================== */
@@ -2672,14 +2681,15 @@ window.addEventListener('scroll', function () { if (!MINI_RAF) MINI_RAF = reques
   }, { passive: true });
   document.addEventListener('touchmove', function (e) {
     if (!on) return;
-    dx = e.touches[0].clientX - x0; dy = Math.min(0, e.touches[0].clientY - y0);
+    dy = e.touches[0].clientY - y0; dx = e.touches[0].clientX - x0;
+    dy = toastLow() ? Math.max(0, dy) : Math.min(0, dy);              // away from the screen's edge it sits on
     var t = $('toast'); t.style.transition = 'none'; t.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; t.style.opacity = String(Math.max(0, 1 - (Math.abs(dx) + Math.abs(dy)) / 220));
   }, { passive: true });
   document.addEventListener('touchend', function () {
     if (!on) return; on = false;
     var t = $('toast'); t.style.transition = '';
-    if (Math.abs(dx) > 70 || dy < -28) {
-      t.style.transform = Math.abs(dx) > 70 ? 'translateX(' + (dx > 0 ? 120 : -120) + '%)' : 'translateY(-140%)'; t.style.opacity = '0';
+    if (Math.abs(dx) > 70 || Math.abs(dy) > 28) {
+      t.style.transform = Math.abs(dx) > 70 ? 'translateX(' + (dx > 0 ? 120 : -120) + '%)' : 'translateY(' + (dy > 0 ? 140 : -140) + '%)'; t.style.opacity = '0';
       setTimeout(function () { t.classList.remove('on'); t.style.transform = ''; t.style.opacity = ''; UNDO = null; }, 220);
     } else { t.style.transform = ''; t.style.opacity = ''; toastTimer = setTimeout(function () { t.classList.remove('on'); UNDO = null; }, 2500); }
   }, { passive: true });
@@ -8334,6 +8344,7 @@ function sentRef(op, t) {
 
 // ------------------------------------------------------------------ undo
 var UNDO = null, toastTimer = null;
+function toastLow() { var t = $('toast'); return !!t && t.getBoundingClientRect().top > window.innerHeight / 2; }
 function toast(msg, undo, label) {
   UNDO = undo || null;
   if (undo && !label) haptic();                 // something was done (and can be undone): a tap you can feel
@@ -8342,7 +8353,7 @@ function toast(msg, undo, label) {
   $('toastBtn').style.display = undo ? '' : 'none';
   $('toast').classList.add('on');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(function () { $('toast').classList.remove('on'); UNDO = null; }, label ? 8000 : undo ? 4000 : msg.length > 80 ? 7000 : 1800);     // a longer message stays long enough to read
+  toastTimer = setTimeout(function () { $('toast').classList.remove('on'); UNDO = null; }, label ? 8000 : undo ? 7000 : msg.length > 80 ? 7000 : 1800);     // Undo stays 7 s (2.58; it was 4), and a longer message long enough to read
 }
 
 function doUndo() {
