@@ -1,6 +1,6 @@
 // A stand-in for the Apps Script web app (script version 19), answered through Playwright routing.
 // It keeps an in-memory sheet and answers the same request and response shapes as the real script:
-//   GET  ?action=pull|ping&pass=…           -> pull_() / ping
+//   GET  ?action=pull|ping&pass=…           -> pull_() / ping   (v23: a pull can also come as a POST, passcode in the body)
 //   POST {action, pass, oid, …} as text/plain -> add, update, delete, budget, budgets, prefs, …
 // and it can be slow or fail on purpose:
 //   mock.latency = 1500                      every answer waits 1.5 s (or { pull: 4000, add: 0 } per action)
@@ -184,7 +184,7 @@ MockSheet.prototype.attach = function (target) {
     } else {
       try { p = JSON.parse(req.postData() || ''); } catch (e) { p = {}; }
     }
-    var entry = { action: p.action, oid: p.oid || '', since: p.since || '', fresh: p.fresh === '1', at: Date.now(), status: 'pending', bytes: 0 };
+    var entry = { action: p.action, oid: p.oid || '', since: p.since || '', fresh: p.fresh === '1' || p.fresh === 1, method: req.method === 'GET' || (typeof req.method === 'function' && req.method() === 'GET') ? 'GET' : 'POST', at: Date.now(), status: 'pending', bytes: 0 };
     self.log.push(entry);
     var mode = self.failureFor(p.action);
     return wait(self.delayFor(p.action)).then(function () {
@@ -216,7 +216,7 @@ MockSheet.prototype.listen = function () {
         if (req.method === 'GET') new URL(req.url, 'http://x').searchParams.forEach(function (v, k) { p[k] = v; });
         else { try { p = JSON.parse(Buffer.concat(chunks).toString() || ''); } catch (e) { p = {}; } }
         if (req.method === 'OPTIONS') { res.writeHead(204, cors()); return res.end(); }
-        var entry = { action: p.action, oid: p.oid || '', since: p.since || '', fresh: p.fresh === '1', at: Date.now(), status: 'pending', bytes: 0 };
+        var entry = { action: p.action, oid: p.oid || '', since: p.since || '', fresh: p.fresh === '1' || p.fresh === 1, method: req.method === 'GET' || (typeof req.method === 'function' && req.method() === 'GET') ? 'GET' : 'POST', at: Date.now(), status: 'pending', bytes: 0 };
         self.log.push(entry);
         var mode = self.failureFor(p.action);
         wait(self.delayFor(p.action)).then(function () {
