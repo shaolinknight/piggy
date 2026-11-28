@@ -3024,7 +3024,7 @@ function attnItems(key) {
 }
 function attnHtml(key) {
   var it = attnItems(key); if (!it.length) return '';
-  var show = UI.attnAll ? it : it.slice(0, 2);
+  var show = UI.attnAll ? it : it.slice(0, 1);      // 2.58: the most pressing one; the rest fold under "+N more"
   var h = '<section class="card attn" id="attn">' + show.map(function (x) {
     var dv = x.v !== undefined ? ' data-v="' + esc(x.v) + '"' : '', dk = x.k !== undefined ? ' data-k="' + x.k + '"' : '';
     return '<div class="ai' + (x.tone ? ' ' + x.tone : '') + '" data-ai="' + x.id + '"><span class="aico" aria-hidden="true">' + x.ico + '</span>' +
@@ -3032,7 +3032,7 @@ function attnHtml(key) {
       '<button class="aigo" data-act="' + x.act + '"' + dv + dk + '>' + x.go + '</button>' +
       '<button class="aix" data-act="attnx" data-v="' + x.id + '" data-s="' + esc(x.sig || '') + '" aria-label="Put away">×</button></div>';
   }).join('');
-  if (it.length > 2) h += '<button class="aimore" data-act="attnmore">' + (UI.attnAll ? 'Show less' : '+' + (it.length - 2) + ' more') + '</button>';
+  if (it.length > 1) h += '<button class="aimore" data-act="attnmore">' + (UI.attnAll ? 'Show less' : '+' + (it.length - 1) + ' more') + '</button>';
   return h + '</section>';
 }
 
@@ -3192,11 +3192,11 @@ function viewMonth() {
   }
 
   if (!wide) {
-    h += '<div class="mcols"><div class="mcol mcol1">' + attn + hero + '</div><div class="mcol mcol2">';
+    h += '<div class="mcols"><div class="mcol mcol1">' + hero + attn + '</div><div class="mcol mcol2">';
     if (empty) return h + empty + '</div></div>';
     return h + groups + side + '</div></div>';
   }
-  h += attn + hero;
+  h += hero + attn;                     // 2.58: the answer first, then what needs doing
   if (empty) return h + empty;
   h += '<div class="dcols"><div class="dmain">' +
     (groups ? '<section class="card ledger" aria-label="Categories"><div class="lhead" aria-hidden="true"><span>Group</span><span>Spent</span><span>Budget</span><span>Left</span><span>Pace</span><span></span></div>' + groups + '</section>' : '') +
