@@ -46,7 +46,7 @@ function install(sheets) {
     LockService: { getScriptLock: function () { return { waitLock: function () {}, releaseLock: function () {} }; } },
     Session: { getScriptTimeZone: function () { return 'America/Denver'; } },
     Logger: { log: function () {} },
-    Utilities: { formatDate: function (d) { return d.toISOString().slice(0, 10); }, parseDate: function (s) { return new Date(s); } },
+    Utilities: { formatDate: function (d) { return d.toISOString().slice(0, 10); }, parseDate: function (s) { return new Date(s); }, sleep: function () {} },
     ContentService: { createTextOutput: function (t) { return { setMimeType: function () { return t; } }; }, MimeType: { JSON: 'json' } }
   };
   return { globals: g, props: props, cache: cache };

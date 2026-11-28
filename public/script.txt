@@ -1,5 +1,5 @@
 /**
- * PIGGY — connector between the Piggy app and your Google Sheet.   (script version 22)
+ * PIGGY — connector between the Piggy app and your Google Sheet.   (script version 23)
  *
  * Paste this whole file into your sheet's  Extensions → Apps Script  editor (a new, empty sheet is fine),
  * change PASSCODE below, then Deploy → New deployment → Web app
@@ -46,7 +46,7 @@ var RECUR_TAB = 'recurring';             // the tab that lists your trips (creat
 var BUDGET_SOURCE = '';              // '' = find your budget tabs automatically.
                                      // Or name one tab to always read from, e.g. '2026 budget'.
 
-var VERSION = 22;
+var VERSION = 23;
 var VIEW_MARK = 'runway spending view';
 var GOALS_TAB = 'goals';
 var PREFS_TAB = 'app settings';
@@ -85,11 +85,12 @@ function route_(p) {
   CUR_OID = p && p.oid ? String(p.oid).slice(0, 60) : '';
   CUR_ACTION = p && p.action ? String(p.action) : ''; TOUCHED = [];
   if (PASSCODE === 'CHANGE-ME') return { ok: false, error: 'set_passcode' };
-  if (String(p.pass || '') !== PASSCODE) return { ok: false, error: 'bad_passcode' };
+  if (tooManyWrong_()) return { ok: false, error: 'locked' };
+  if (String(p.pass || '') !== PASSCODE) { wrongPass_(); return { ok: false, error: 'bad_passcode' }; }
   try {
     switch (p.action) {
       case 'ping': return { ok: true, v: VERSION, name: SpreadsheetApp.getActive().getName() };
-      case 'pull': return pull_(p.since, p.fresh === '1');
+      case 'pull': return pull_(p.since, p.fresh === '1' || p.fresh === 1 || p.fresh === true);   // v23: also sent as a POST (passcode in the body)
       case 'add': return locked_(function () { return add_(p.tx); });
       case 'update': return locked_(function () { return update_(p.ref, p.tx); });
       case 'delete': return locked_(function () { return delete_(p.ref); });
@@ -142,10 +143,23 @@ function opList_() {
   try { return JSON.parse(PropertiesService.getScriptProperties().getProperty(OPS_KEY) || '[]'); } catch (e) { return []; }
 }
 function opDone_(oid) { return opList_().indexOf(oid) >= 0; }
+// v23: Google stores at most 9 KB in one setting, which 500 ids outgrew at about 420. Past that, saving the list failed
+// after the change was made, so the app was told it failed, retried, and the row was written again each time. 150 ids
+// (about 3.5 KB) covers retries, which come within minutes; and a change that was made is never reported as failed.
+var OPS_KEEP = 150;
 function opMark_(oid) {
   var l = opList_(); l.push(oid);
-  if (l.length > 500) l = l.slice(l.length - 500);      // the last 500 changes is plenty: retries come within minutes
-  PropertiesService.getScriptProperties().setProperty(OPS_KEY, JSON.stringify(l));
+  if (l.length > OPS_KEEP) l = l.slice(l.length - OPS_KEEP);
+  try { PropertiesService.getScriptProperties().setProperty(OPS_KEY, JSON.stringify(l)); } catch (e) {}
+}
+// v23: after 20 wrong passcodes in 10 minutes, every request is refused for the rest of those 10 minutes, so nobody
+// can try passcode after passcode. The app keeps its changes and tries again later.
+var BAD_KEY = 'piggy.bad', BAD_MAX = 20, BAD_SECS = 600;
+function tooManyWrong_() {
+  try { return (+CacheService.getScriptCache().get(BAD_KEY) || 0) >= BAD_MAX; } catch (e) { return false; }
+}
+function wrongPass_() {
+  try { var c = CacheService.getScriptCache(); c.put(BAD_KEY, String((+c.get(BAD_KEY) || 0) + 1), BAD_SECS); } catch (e) {}
 }
 
 // ---------------------------------------------------------------- "has anything changed?" (v20)
