@@ -8319,7 +8319,11 @@ function api(payload) {
   // 2.49: a full read of a real sheet takes 7-14 s and Google is sometimes slower still, so the pull gets 45 s
   var timeout = new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, slow ? 120000 : payload.action === 'pull' ? 45000 : 25000); });
   var req;
-  if (payload.action === 'pull' || payload.action === 'ping') {
+  // 2.56: a v23 script takes reads as a POST too, so the passcode goes in the body, not the web address (where it can
+  // end up in Google's request logs). Older scripts, and the first check when connecting, still use the address.
+  if (payload.action === 'pull' && (S.scriptV || 0) >= 23) {
+    req = fetch(url, { method: 'POST', body: JSON.stringify({ action: 'pull', pass: S.cfg.pass, since: payload.since || '', fresh: payload.fresh ? 1 : 0 }), redirect: 'follow' });
+  } else if (payload.action === 'pull' || payload.action === 'ping') {
     req = fetch(url + (url.indexOf('?') >= 0 ? '&' : '?') + 'action=' + payload.action + '&pass=' + encodeURIComponent(S.cfg.pass) +
       (payload.since ? '&since=' + encodeURIComponent(payload.since) : '') + (payload.fresh ? '&fresh=1' : '') + '&t=' + Date.now(), { redirect: 'follow' });
   } else {
@@ -8352,6 +8356,7 @@ function errText(e) {
   if (s === 'bad_passcode') return 'The passcode doesn’t match the one in the script.';
   if (s === 'set_passcode') return 'Change PASSCODE in the script, save, and deploy a new version.';
   if (s === 'timeout') return 'The sheet took too long to answer. Will retry.';
+  if (s === 'locked') return 'Too many wrong passcodes were tried, so the sheet is pausing for 10 minutes. Will retry.';
   if (/Failed to fetch|NetworkError|Load failed|http_/.test(s)) return 'Couldn’t reach the sheet (offline, or the URL is wrong). Will retry.';
   return s;
 }
