@@ -18,6 +18,9 @@ Don't use Settings → "Copy the script" for this: that button is for setting up
 
 ## What's new in 2.58
 
+- **Fixed: an edit could save over the entry next to it.** Entries read from the sheet are named after their row, and a new entry at the top of a month (from this phone or another device) moves every row below it down one. If Piggy picked up the sheet's newer copy while an entry was open for editing, Save could land on the entry that had moved into that row: the edited entry then appeared twice on the sheet (before and after) and its neighbour was overwritten. Entries now keep their name across refreshes, so an edit, a delete or an Undo always lands on the entry you opened. This affected 2.57 and earlier too, on the phone and the computer.
+  - **If it happened to you:** of the two copies, the one that is in the wrong place is where another purchase used to be. Look at the entries just above and below it in that month, and use the sheet's **File → Version history** to see what that row held before, then add it back. Delete the extra copy.
+- Also fixed in the new edit popup: a sync finishing while it was open closed it, and a refresh could redraw it and drop what you'd typed.
 - **On the phone, an entry opens in its own popup** when you tap it in Activity (or in a category's list). Save, Cancel and Delete sit pinned at the popup's foot, so they're always in reach (inside the list, Save could end up under the tab bar). Opened from a category's popup, it goes back there when you're done. A computer keeps the panel beside the list.
 - **Messages and Undo sit at the bottom on the phone**, just above the tabs, and **Undo stays 7 seconds** (it was 4). Swipe one down to put it away. With a popup open they show at the top, clear of its buttons.
 - **Month leads with the answer.** Your number comes first; the reminders (review the budget, a bill to check off…) come after it, one at a time with "+N more".
