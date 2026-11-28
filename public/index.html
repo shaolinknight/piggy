@@ -720,6 +720,13 @@ body.on-plan main{padding-bottom:190px}
 .calnav{display:flex;align-items:center;justify-content:space-between;margin:4px 0 6px}
 .calnav button{width:36px;height:36px;border-radius:var(--r2);background:var(--p2);display:grid;place-items:center;color:var(--t2)}
 .calnav button:disabled{opacity:.35}
+/* 2.58: every small control can be tapped across at least 44×44 pt (Apple's minimum) without looking any bigger: an
+   invisible hit area centred on it. Rows that sit edge to edge grow a little instead, so their hit areas never overlap. */
+.ttl .tnav,.sync.quiet,.icon-btn,.aix,.aigo,.chip,.linkbtn,.calnav button{position:relative}
+.ttl .tnav{z-index:1}                  /* over the month's name beside it, which isn't a button */
+.ttl .tnav::after,.sync.quiet::after,.icon-btn::after,.aix::after,.aigo::after,.chip::after,.linkbtn::after,.calnav button::after{
+  content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);transform:translate(-50%,-50%)}
+.aimore,.hdet{min-height:44px}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .cdow{font-style:normal;text-align:center;font-size:11px;font-weight:700;color:var(--t3);padding-bottom:2px}
 .cday{aspect-ratio:1;border-radius:8px;background:var(--p2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--t2);min-width:0;min-height:0;overflow:hidden;line-height:1.1;padding:0;box-sizing:border-box;font-weight:500}
