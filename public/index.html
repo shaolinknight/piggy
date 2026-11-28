@@ -73,6 +73,11 @@ button{cursor:pointer;border:0;background:none;padding:0}
 @keyframes syncpulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.45}}
 .sync{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--t2);padding:6px 10px;border-radius:999px;background:var(--p2)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--t3)}
+.stuckbar{display:flex;align-items:center;gap:8px;width:calc(100% - 32px);min-height:44px;margin:0 16px 10px;padding:8px 14px;border-radius:12px;
+  background:color-mix(in srgb,var(--bad) 9%,var(--p1));border:1px solid color-mix(in srgb,var(--bad) 22%,transparent);color:var(--t1);font-size:14px;text-align:left}
+.stuckbar[hidden]{display:none}
+.stuckbar span{flex:1;min-width:0}
+.stuckbar b{font-weight:600;color:var(--ac);flex:none}
 .dot.ok{background:var(--ok)}.dot.wait{background:var(--warn)}.dot.err{background:var(--bad)}
 .icon-btn{width:38px;height:38px;border-radius:var(--r2);display:grid;place-items:center;color:var(--t2)}
 .icon-btn svg{width:22px;height:22px}
@@ -1214,6 +1219,7 @@ button,[data-act],summary,.chip{touch-action:manipulation}
   .top .brand,.top .ttl{display:none}
   .sync.quiet{width:auto;height:auto;padding:6px 10px;background:var(--p2)}
   .sync.quiet span{position:static;width:auto;height:auto;clip:auto;white-space:nowrap}
+  .stuckbar{display:none !important}
   .top #refreshBtn{display:flex;margin-left:auto}
   .tabs{overflow-y:auto;overscroll-behavior:contain;padding-bottom:76px}
   main#view{padding-top:22px}
@@ -1466,6 +1472,7 @@ html[data-glass] #view.vin{animation:vinG .22s cubic-bezier(.2,.8,.2,1)}
     <button class="icon-btn" id="refreshBtn" data-act="refreshnow" aria-label="Refresh" title="Refresh: get the latest from your sheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button>
     <button class="icon-btn" data-act="settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </header>
+  <button class="stuckbar" id="stuckbar" data-act="sync" hidden><i class="dot err"></i><span id="stuckTxt"></span><b>Details</b></button>
   <main id="view"></main>
 </div>
 <button id="fab" data-act="add" aria-label="Add entry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -2120,7 +2127,7 @@ function renderSync() {
   else if (SAVE_FAIL) { label = 'Can’t save on this phone'; cls = 'err'; }
   else if (localMode()) { label = isWide() ? 'On this device' : 'On this phone'; cls = 'ok'; }
   else if (SYNCING) { label = 'Syncing…'; cls = 'wait'; }
-  else if (S.syncErr && n) { label = n + ' waiting'; cls = 'err'; }
+  else if (S.syncErr && n) { label = (!navigator.onLine || /Couldn’t reach|took too long/.test(S.syncErr) ? 'Offline · ' : '') + n + ' waiting'; cls = 'err'; }
   else if (S.syncErr) { label = 'Sync issue'; cls = 'err'; }
   else if (n) { label = n + ' waiting'; cls = 'wait'; }
   else {
@@ -2131,6 +2138,13 @@ function renderSync() {
   txt.textContent = label;
   // 2.29: on phones it's always just the dot (it pulses while syncing), so the month never gets squeezed; tap it for the details
   var sb = $('syncBtn'); if (sb) { sb.classList.add('quiet'); sb.classList.toggle('busy', !!SYNCING); sb.setAttribute('aria-label', label); sb.title = label; }
+  // 2.57: when changes are stuck, the phone says so in words on a line of its own under the header (beside the month
+  // it would squeeze the month's name), not only with a red dot. A wide screen already shows the words in the header.
+  var bar = $('stuckbar'), stuck = cls === 'err' && (n > 0 || SAVE_FAIL);
+  if (bar) {
+    bar.hidden = !stuck;
+    if (stuck) $('stuckTxt').textContent = SAVE_FAIL ? 'Can’t save on this phone' : (/^Offline/.test(label) ? 'Offline · ' : '') + waitingWords();
+  }
 }
 
 // ---- weekly check-in: Sunday to Tuesday, a short look back at last week (Sun–Sat)
