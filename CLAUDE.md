@@ -16,7 +16,7 @@ Confirm these against the repo the first time you open it, and update this secti
     - JS in one inline `<script>` (~638 KB);
     - icons as base64 (~12 KB): the apple-touch-icon and favicon are inline `data:` PNGs.
 
-    It's plain ES5 (`var`, `function`, no modules, no framework, no build step). `var VERSION = '2.55'` sits near line 1513. The whole script is wrapped in `(function () { 'use strict'; … boot(); })();`, so `VERSION`, `S`, `checkUpdate` and the rest are **not** globals. Reach them through `window.__runway`.
+    It's plain ES5 (`var`, `function`, no modules, no framework, no build step). `var VERSION = '2.56'` sits near line 1492. The whole script is wrapped in `(function () { 'use strict'; … boot(); })();`, so `VERSION`, `S`, `checkUpdate` and the rest are **not** globals. Reach them through `window.__runway`.
   - **`public/sw.js`** is the service worker. `var CACHE = 'piggy-shell-NN'` must go up by one every release.
     - The app page is served cache-first and a fresh copy is fetched in the background.
     - When the page text changes, the worker posts `{type:'updated'}`. The app reloads itself if it was opened in the last 15 seconds; otherwise it shows a "Reload" toast. The app also asks for the page every 30 minutes while it's open, and when you come back to it.
@@ -26,7 +26,7 @@ Confirm these against the repo the first time you open it, and update this secti
     - **Frosted glass and fades don't mix:** an ancestor with opacity below 1 turns `backdrop-filter` off until it's back to 1, so the picture shows sharp and then frosts over. With glass on, `#view`, `.ppane` and `.mgrp` are pinned to `opacity:1 !important` (it outranks animations) and tab switches skip the View Transition. Don't fade anything that holds glass cards.
     - Headless WebKit doesn't draw `backdrop-filter`, so check glass in Chromium screenshots (`tests/perf/glass.js` measures its scroll cost).
   - **`public/manifest.webmanifest`**: `display: standalone`, theme colour, icons (`icon-192.png`, `icon-512.png`).
-  - **`public/script.txt`** **is** the Apps Script backend (script `VERSION = 22`); there is no separate `Code.gs` file in the repo. The app links to it so people can paste it into their sheet. It must always ship with `var PASSCODE = 'CHANGE-ME';`. Never commit a real passcode, sheet URL or deployment ID.
+  - **`public/script.txt`** **is** the Apps Script backend (script `VERSION = 23`); there is no separate `Code.gs` file in the repo. The app links to it so people can paste it into their sheet. It must always ship with `var PASSCODE = 'CHANGE-ME';`. Never commit a real passcode, sheet URL or deployment ID.
 - **`SETUP.md`** (at the root, not in `public/`) tells the owner how to update the sheet script safely and lists "What's new" for each release.
 - **`tests/`** holds the Playwright behaviour tests and the perf baseline. It's not deployed; see `tests/README.md`.
 
@@ -35,17 +35,19 @@ Confirm these against the repo the first time you open it, and update this secti
 1. **Opening the app:** `boot()` (near line 9813) reads `STORE.get('runway.v1')`. That's localStorage, or `window.storage` when present. It parses the whole state object `S`, runs `migrate()`, calls `render()` straight away from the saved copy, then calls `sync()`. So the first paint already comes from the cache; nothing waits on the network.
 2. **`sync()`** (near line 8221):
    - It sends `S.outbox` one operation at a time through `api()` (a POST with a JSON body, sent as text/plain to avoid a CORS preflight). Each operation carries an `oid` so the script can skip a change it already made.
-   - Then it calls `api({action:'pull'})`, a GET with `?action=pull&pass=…` plus what `pullAsk()` adds. The pull's timeout is 45 s; other requests 25 s, or 120 s for heavy actions.
+   - Then it calls `api({action:'pull'})`: a GET with `?action=pull&pass=…` plus what `pullAsk()` adds, or, when `S.scriptV >= 23`, a POST with the same fields in the body (keeps the passcode out of URLs and Google's logs). The pull's timeout is 45 s; other requests 25 s, or 120 s for heavy actions.
    - If the pull text matches the last one (`pullSig`), nothing is re-applied or redrawn.
 3. **`pull_()` in `script.txt`** returns all yearly logs (2022 to now), the yearly grids, the "app budget" tab, trips, recurring bills, "app settings" (prefs JSON) and goals. A full read takes ~5–9 s in the script and 9–16 s round trip on the owner's iPhone. Since v20–v22 it avoids most of that:
    - **v20/v21 `since`:** the client sends the last `stamp`; if nothing changed (and the watcher trigger is installed, via the one-time `piggySetup`), the answer is just `{same:true}` (1.3–3.3 s round trip).
    - **v22 cache:** unchanged tabs come from `CacheService` (6 h), keyed by per-tab stamps; app saves bump only the tabs they touch, hand edits in the sheet bump everything. `fresh=1` (a refresh you ask for, and once a day) bypasses the cache.
+   - **v23 safety:** the list of finished `oid`s (`piggy.ops`, one Script Property, 9 KB limit) keeps the last 150 (`OPS_KEEP`), and failing to store it never fails the change. After 20 wrong passcodes in 10 minutes every request gets `locked` (CacheService counter `piggy.bad`).
    - The client sends `since` only when `S.scriptV >= 20` and `fresh` only when `>= 22`. `forgetPull()` clears the stamps on connect, disconnect, `startLocal` and import.
 4. **Changes show instantly already:** `addTx`/edit/delete change `S` and re-render at once, push an operation into `S.outbox`, then call `flushSoon()`.
    - Failures that can never succeed (`NEVER_OK`, near line 8217: `not_found`, `bad_entry`, `bad_prefs`, `bad_year`, `bad_request`, `no_budget_tabs`, … plus `validation` and `unknown_action`) are dropped with a toast, so they never block what's queued behind them. The pull that follows then puts the sheet's copy back on screen; that is the only "rollback".
    - Anything else (offline, timeouts, passing Google errors, and a wrong passcode on purpose) stays at the head of the outbox and retries on every sync.
 5. **Prefs** sync field by field (`prefsObj`, `prefsChanged`, the `chg` list, `keepUnchanged_` on the server). Lists such as bills and categories are merged by union on the client. Spread purchases (pay over N months) post each payment with a fixed `oid` `sp-<id>-<i>`.
-6. **A first load with a sheet but no data yet** shows `skeletonHtml()` (see `firstLoad()`).
+6. **Saving locally (2.56):** `STORE.set` reports failures to `saveFailed()` (toast once, `flushSoon()`, sync label "Can't save on this phone") and successes to `saveOk()`. A saved copy that won't parse is kept as `runway.v1.damaged` before anything is saved over it. Exports leave out `cfg.url`/`cfg.pass`; import keeps the current connection when the file has none, takes an `arm()` second tap, and has Undo. `newDay()` catches `NOW` up with the clock (at midnight, and when a new entry form opens).
+7. **A first load with a sheet but no data yet** shows `skeletonHtml()` (see `firstLoad()`).
 
 ## Rules
 

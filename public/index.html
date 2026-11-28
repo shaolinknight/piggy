@@ -1489,7 +1489,7 @@ html[data-glass] #view.vin{animation:vinG .22s cubic-bezier(.2,.8,.2,1)}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.55';
+var VERSION = '2.56';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -10196,6 +10196,11 @@ document.addEventListener('click', function (e) {
 
 // ---- 2.44: after an update, a popup with what's new (once per update; also in Settings → What's new)
 var NEWS = [
+  { v: '2.56', items: [
+    ['🛟', 'Nothing lost quietly', 'If your phone ever runs out of room to save, Piggy now tells you and sends your changes straight to the sheet, instead of losing them when it closes.'],
+    ['🕛', 'Right day after midnight', 'Left Piggy open overnight? New entries now get the new day, and the screen moves on by itself.'],
+    ['🔒', 'Safer backups', 'Backup files no longer hold your sheet’s address or passcode. Restoring one asks for a second tap and can be undone.']
+  ] },
   { v: '2.55', items: [
     ['🏙️', 'Cities and seasons', 'Settings → Appearance now has Colors, Cities and Seasons. Pick New York, Tokyo, Paris or San Francisco, or spring, summer, autumn or winter, to put a picture behind your budget.'],
     ['🌙', 'Day and night', 'Every picture has a day and a night version that follow Light / dark, so it works all the time.'],

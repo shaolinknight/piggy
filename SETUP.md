@@ -16,6 +16,26 @@ The web app URL doesn't change, so there's nothing to change in Piggy.
 
 Don't use Settings → "Copy the script" for this: that button is for setting up a new sheet and puts a new passcode in the script.
 
+## What's new in 2.56 (sheet script 23)
+
+- **Nothing is lost quietly when the phone is full.** If the phone ever refuses to save (its storage is full), Piggy says so, sends what's waiting to the sheet straight away, and the sync dot stays red ("Can't save on this phone") until saving works again. Piggy also asks the browser to keep its data when space runs low.
+- **The right day after midnight.** With Piggy left open past midnight, a new entry used to be dated the day before. It now gets the new day, and the screen moves on to it (and to the new month on the 1st) by itself.
+- **Safer backups** (Settings → Backup):
+  - An exported file leaves out your sheet's address and passcode, so a backup that ends up somewhere else can't open your sheet. Restoring it keeps the sheet this phone is already connected to.
+  - Import asks for a second tap ("Replace all? Tap again"), and the "Backup restored" message has **Undo**.
+- **A damaged saved copy is set aside.** If what the phone saved can't be read, Piggy keeps it under its own name (`runway.v1.damaged`) instead of saving over it, and tells you to reconnect your sheet.
+- **Sheet script 23** (optional, but recommended; Piggy keeps working with 22):
+  - **A sheet that has seen many saves no longer gets stuck.** The script's list of finished changes outgrew Google's 9 KB limit for one setting after about 400 saves; from then on, each save was written to the sheet but reported as failed, so Piggy retried it and wrote it again. It now keeps the last 150, and a save is never reported as failed because of that list.
+  - **The passcode stays out of web addresses.** Piggy reads the sheet with a POST (passcode in the body) instead of putting it in the address, where Google's logs keep it.
+  - **Wrong passcodes are slowed down.** After 20 wrong passcodes in 10 minutes, the script refuses every request for 10 minutes. Piggy says "Too many wrong passcodes were tried…" and retries by itself.
+  - To update: follow "Updating the sheet script" above (keep your passcode, then **Deploy → Manage deployments → New version**). No need to run piggySetup again.
+  - If you see duplicate rows from before, they came from the stuck list; delete them in the sheet by hand.
+
+Files changed:
+- `public/index.html`
+- `public/sw.js` (cache `piggy-shell-30`)
+- `public/script.txt` (script version 23)
+
 ## What's new in 2.55
 
 - **Appearance has three kinds of look: Colors, Cities and Seasons.** Settings → Appearance opens on the kind you're using.
