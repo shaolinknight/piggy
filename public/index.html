@@ -1643,11 +1643,27 @@ var STORE = (window.storage && typeof window.storage.get === 'function') ? {
       .then(function (r) { return r && typeof r === 'object' && 'value' in r ? r.value : r; })
       .catch(function () { return null; });
   },
-  set: function (k, v) { return Promise.resolve().then(function () { return window.storage.set(k, v); }).catch(function () {}); }
+  set: function (k, v) { return Promise.resolve().then(function () { return window.storage.set(k, v); }).then(saveOk, saveFailed); }
 } : {
   get: function (k) { try { return Promise.resolve(localStorage.getItem(k)); } catch (e) { return Promise.resolve(null); } },
-  set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} return Promise.resolve(); }
+  set: function (k, v) { try { localStorage.setItem(k, v); saveOk(); } catch (e) { saveFailed(); } return Promise.resolve(); }
 };
+// 2.56: a save the phone refuses (its storage is full) used to fail silently, and changes made offline were gone after
+// a restart. Now it says so once, sends what's waiting to the sheet straight away, and the sync dot stays red.
+var SAVE_FAIL = false;
+function saveFailed() {
+  var first = !SAVE_FAIL;
+  SAVE_FAIL = true;
+  if (!first || !S || !$('syncDot')) return;
+  renderSync();
+  // a save is usually followed by its own "Added" toast with Undo: say this once that one has had its turn
+  setTimeout(function warn() {
+    if (UNDO) return setTimeout(warn, 800);
+    toast('Piggy can’t save on this phone right now (its storage is full). Sending your changes to the sheet so nothing is lost.');
+  }, 400);
+  if (!S.demo && S.cfg.url) flushSoon();
+}
+function saveOk() { if (SAVE_FAIL) { SAVE_FAIL = false; if (S && $('syncDot')) renderSync(); } }
 
 // ------------------------------------------------------------------ state
 var S = null;          // persisted
@@ -2091,6 +2107,7 @@ function renderSync() {
   var dot = $('syncDot'), txt = $('syncTxt'), cls = '', label;
   var n = S.outbox.length;
   if (S.demo) { label = 'Demo'; }
+  else if (SAVE_FAIL) { label = 'Can’t save on this phone'; cls = 'err'; }
   else if (localMode()) { label = isWide() ? 'On this device' : 'On this phone'; cls = 'ok'; }
   else if (SYNCING) { label = 'Syncing…'; cls = 'wait'; }
   else if (S.syncErr && n) { label = n + ' waiting'; cls = 'err'; }
@@ -2344,6 +2361,7 @@ function statusSheetHtml() {
   row('Script version', v + (v < 17 ? ' — update needed' : ' ✓'), v < 17 ? 'warn' : '');
   h += '</div>';
   if (S.syncErr) h += '<div class="spendsum" style="color:var(--bad)">' + esc(S.syncErr) + '</div>';
+  if (SAVE_FAIL) h += '<div class="spendsum" style="color:var(--bad)">This phone isn’t keeping your changes: its storage is full. What reached the sheet is safe. Free up space on the phone, then reopen Piggy.</div>';
   if (n) {
     h += '<div class="flabel" style="margin-top:14px">Waiting</div><div class="list">' + S.outbox.slice(0, 6).map(function (o) {
       var d = o.tx ? (o.op === 'delete' ? 'Delete ' : o.op === 'update' ? 'Change ' : 'Add ') + esc(o.tx.v || o.tx.c || '') + ' ' + money(o.tx.a, true) : o.op === 'delete' ? 'Delete an entry' : ({ budgets: 'Budget changes', budget: 'Budget change', trip: 'Trip', recur: 'Recurring bill', goal: 'Savings goal', prefs: 'Settings', regroup: 'Category group', tag: 'Trip tags' })[o.op] || o.op;
@@ -7311,6 +7329,7 @@ function renderSheet() {
 }
 
 function newTxDraft(kind) {
+  newDay();                             // 2.56: Piggy left open past midnight dated new entries yesterday
   var key = UI.tab === 'month' && UI.ym !== null ? UI.ym : nowYM();
   var y = ymY(key), m = ymM(key);
   // today, or the last day of the month you're looking at
@@ -8281,7 +8300,7 @@ function toast(msg, undo, label) {
   $('toastBtn').style.display = undo ? '' : 'none';
   $('toast').classList.add('on');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(function () { $('toast').classList.remove('on'); UNDO = null; }, label ? 8000 : undo ? 4000 : 1800);
+  toastTimer = setTimeout(function () { $('toast').classList.remove('on'); UNDO = null; }, label ? 8000 : undo ? 4000 : msg.length > 80 ? 7000 : 1800);     // a longer message stays long enough to read
 }
 
 function doUndo() {
@@ -9964,6 +9983,24 @@ document.addEventListener('visibilitychange', function () {
     if (S.outbox.length || Date.now() - S.lastSync > 60000) sync().then(function () { setTimeout(maybeHeadsUp, 600); }, function () {}); else { render(); setTimeout(maybeHeadsUp, 600); }
   }
 });
+// 2.56: and the screen moves on to the new day by itself at midnight (not while you're in the middle of something)
+function atMidnight() {
+  var n = new Date(), next = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 5);
+  setTimeout(function () {
+    if (newDay() && S && !SHEET && !entryInProgress()) render();
+    atMidnight();
+  }, next - n);
+}
+// Catch up with the clock. If you were looking at this month and a new one has begun, you're now looking at the new one.
+function newDay() {
+  if (FIXED_NOW) return false;
+  var was = todayStr(), wasYM = nowYM();
+  NOW = new Date();
+  if (todayStr() === was) return false;
+  CACHE = {};
+  if (UI.ym === wasYM) UI.ym = nowYM();
+  return true;
+}
 var lastY = 0;
 window.addEventListener('scroll', function () {
   var y = window.scrollY, fab = $('fab');
@@ -9980,7 +10017,10 @@ window.addEventListener('online', function () { if (S && !S.demo) sync(); });
 function boot() {
   STORE.get(KEY).then(function (raw) {
     var d = null;
-    try { d = raw ? JSON.parse(raw) : null; } catch (e) { d = null; }
+    var damaged = false;
+    try { d = raw ? JSON.parse(raw) : null; } catch (e) { d = null; damaged = true; }
+    // 2.56: if the saved copy can't be read, it's set aside under its own name before anything new is saved over it
+    if (damaged) STORE.set(KEY + '.damaged', raw);
     S = d ? migrate(d) : fresh();
     try {
       var qs = new URLSearchParams(location.search);
@@ -9995,6 +10035,10 @@ function boot() {
     if (!S.demo && !S.cfg.url) spreadTick();      // on this phone only: spread payments whose month has come (with a sheet: after it syncs)
     applyTheme();
     render();
+    if (damaged) setTimeout(function () { toast('Piggy couldn’t read what this phone had saved, so it started fresh. A copy was set aside. If you use a sheet, connect it again in Settings and everything comes back.'); }, 300);
+    // ask the browser not to clear Piggy's saved data when the phone runs low on space
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().then(null, function () {}); } catch (e) {}
+    atMidnight();
     var wantAdd = '';
     try { wantAdd = new URLSearchParams(location.search).get('add') || ''; } catch (e) {}
     if (wantAdd || S.cfg.launchAdd) openSheet('add', newTxDraft(/^i/.test(wantAdd) ? 'i' : 'e'));
