@@ -3664,6 +3664,11 @@ function txItem(t) {
 
 // The same form is used for adding (in the sheet) and inline editing (in the list).
 function activeTripNow() { var tn = tripNowInfo(); return tn && tn.now ? tn.t : null; }
+// 2.58: on a phone an entry you tap opens in its own popup (it used to open inside the list, where Save could sit
+// under the tab bar). A computer keeps the panel beside the list.
+function editSheet() { return !!(SHEET && SHEET.kind === 'edit'); }
+// done with it: back to the popup it was opened from (a category's entries, say), or closed
+function leaveEditSheet() { if (SHEET_STACK.length) sheetBack(); else closeSheet(); }
 function txForm(t, isNew) {
   var kind = t.k;
   var refund = kind === 'e' && t.a < 0;
@@ -3702,7 +3707,7 @@ function txForm(t, isNew) {
   if (!isNew && !t.demo && !spreadInfo(t) && !/split of \$/.test(t.n || '') && t.a > 0) h += '<button type="button" class="linkbtn logagain" data-act="logagain" id="f_again">Log this again for today</button>';
   // the preview note goes above the buttons: nothing may sit below a bar that pins to the bottom
   if (t.demo && !isNew) h += '<div class="hint">Preview data — changes here are just for trying things out and are cleared when you connect.</div>';
-  h += '<div class="btns' + (isNew ? ' stickybar' : '') + '">' + (isNew ? '<button type="button" class="btn" data-act="fsaveadd" id="f_saveadd">Save & add another</button>' : '<button type="button" class="btn danger" data-act="fdel" id="f_del">Delete</button>') +
+  h += '<div class="btns' + (isNew || editSheet() ? ' stickybar' : '') + '">' + (isNew ? '<button type="button" class="btn" data-act="fsaveadd" id="f_saveadd">Save & add another</button>' : '<button type="button" class="btn danger" data-act="fdel" id="f_del">Delete</button>') +
     (isNew ? '' : '<button type="button" class="btn" data-act="fcancel">Cancel</button>') +
     '<button type="submit" class="btn pri" id="f_save">' + (isNew ? 'Add' : 'Save') + '</button>' +
     (isMouse() ? '<div class="khint"><kbd>Enter</kbd> ' + (isNew ? 'add' : 'save') + (isNew ? ' · <kbd>Shift</kbd>+<kbd>Enter</kbd> add &amp; start the next one' : '') + ' · <kbd>Esc</kbd> ' + (isNew ? 'close' : 'cancel') + '</div>' : '') + '</div>';
@@ -7124,7 +7129,7 @@ function openSheet(kind, arg) {
   $('sheet').classList.add('on');
   if (!wasOpen) {
     var lt = LAST_TAP.el;
-    if (lt && Date.now() - LAST_TAP.at < 700 && lt.isConnected && kind !== 'add' && kind !== 'settings' && lt.offsetWidth > 200) growSheetFrom(lt);
+    if (lt && Date.now() - LAST_TAP.at < 700 && lt.isConnected && kind !== 'add' && kind !== 'edit' && kind !== 'settings' && lt.offsetWidth > 200) growSheetFrom(lt);
   }
   $('sheet').scrollTop = 0;
   if (!wasOpen) SHEET_RET = document.activeElement && document.activeElement !== document.body ? document.activeElement : (LAST_TAP.el && LAST_TAP.el.isConnected ? LAST_TAP.el : null);
@@ -8108,6 +8113,10 @@ function submitForm() {
       var before = editTx(id, v);
       var top = UI.editTop, typing = keyboardUp();
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      if (editSheet()) {
+        leaveEditSheet(); typing = false;
+        if (SHEET) { render(); renderSheet(); if (before) toast('Saved', { type: 'edit', id: id, before: before, after: pick(v), top: top }); flushSoon(); return; }   // back in the popup it came from
+      }
       UI.edit = null;
       // land on the entry (it may have moved to another month), or where it was if the filters now hide it; the rest glide into place
       var landed = null;
@@ -8345,6 +8354,7 @@ function doUndo() {
     // bring the form back with the changes that were discarded
     if (!findTx(u.id)) return;
     if (SHEET) closeSheet();
+    if (!isWide()) { UI.editTop = u.top; openSheet('edit', u.id); UI.tripTouched = true; rerenderForm(u.vals); return; }
     if (UI.tab !== 'activity') { UI.tab = 'activity'; UI.q = ''; UI.am = ''; UI.fk = 'all'; UI.lim = 100000; u.top = 120; }
     UI.edit = u.id; UI.editTop = u.top; UI.tripTouched = true;
     render();
@@ -9653,6 +9663,13 @@ document.addEventListener('click', function (e) {
         break;
       }
       var etop = el.getBoundingClientRect().top;
+      if (!isWide()) {
+        if (UI.edit) { UI.edit = null; if ($('txlist')) $('txlist').innerHTML = txListHtml(); }
+        UI.editTop = etop; UI.fmore = false; UI.spread = null; UI.split = null; UI.spEdit = null;
+        openSheet('edit', v);
+        UI.tripTouched = true;            // changing the date of an existing entry doesn't move it into a trip by itself
+        break;
+      }
       UI.edit = UI.edit === v ? null : v; UI.catTouched = false; UI.tripTouched = true; UI.fmore = false; UI.spread = null; UI.split = null; UI.spEdit = null;
       if (UI.edit) UI.editTop = etop;
       flipRows(function () { $('txlist').innerHTML = txListHtml(); });
@@ -9663,8 +9680,8 @@ document.addEventListener('click', function (e) {
       if (UI.edit) glideTo(v, 'open');    // …then slides up so the form is in view
       break;
     case 'fcancel':
-      var cid0 = UI.edit, cur0 = formVals(), orig0 = findTx(cid0);
-      flipRows(function () { closeEdit(cid0, true); });
+      var cid0 = editSheet() ? SHEET.arg : UI.edit, cur0 = formVals(), orig0 = findTx(cid0);
+      if (editSheet()) leaveEditSheet(); else flipRows(function () { closeEdit(cid0, true); });
       if (orig0 && cur0 && !sameTx(cur0, orig0)) toast('Changes discarded', { type: 'reedit', id: cid0, vals: cur0, top: UI.editTop });
       break;
     case 'fmore':
@@ -9731,7 +9748,11 @@ document.addEventListener('click', function (e) {
         var id = $('txform').getAttribute('data-id');
         var near = neighborOf(id), dtop = UI.editTop, dtyping = keyboardUp();
         if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-        var row0 = document.querySelector('#view [data-fk="' + id + '"]'), fm0 = $('txform'), copy;
+        if (editSheet()) {
+          leaveEditSheet(); dtyping = false;                // the popup goes, then the entry slides away in the list
+          if (SHEET) { var dc = deleteTx(id); render(); renderSheet(); if (dc) toast('Deleted ' + money(dc.a, true) + ' · ' + dc.c, { type: 'delete', tx: dc, top: dtop }); flushSoon(); return; }   // …or the popup it came from shows it gone
+        }
+        var row0 = document.querySelector('#view [data-fk="' + id + '"]'), fm0 = document.querySelector('#view #txform'), copy;
         var go = function () {
           var land = false;
           flipRows(function () { copy = deleteTx(id); UI.edit = null; render(); land = anchorTx(near, dtop, false); });
