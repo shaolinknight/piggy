@@ -1654,6 +1654,7 @@ var SAVE_FAIL = false;
 function saveFailed() {
   var first = !SAVE_FAIL;
   SAVE_FAIL = true;
+  if (first && S) logErr('Couldn’t save on this phone (its storage is full)');
   if (!first || !S || !$('syncDot')) return;
   renderSync();
   // a save is usually followed by its own "Added" toast with Undo: say this once that one has had its turn
@@ -2367,6 +2368,7 @@ function statusSheetHtml() {
   row('Your sheet', SYNCING ? 'Syncing…' : S.syncErr ? 'Problem' : 'Connected', S.syncErr ? 'bad' : 'ok');
   row('Last synced', ago(S.lastSync), Date.now() - S.lastSync > 86400000 ? 'warn' : '');
   row('Waiting to send', n ? n + ' change' + (n === 1 ? '' : 's') : 'nothing', n ? 'warn' : '');
+  if (n && oldestWaiting()) row('Waiting since', ago(oldestWaiting()), Date.now() - oldestWaiting() > 864e5 ? 'warn' : '');
   row('Script version', v + (v < 17 ? ' — update needed' : ' ✓'), v < 17 ? 'warn' : '');
   h += '</div>';
   if (S.syncErr) h += '<div class="spendsum" style="color:var(--bad)">' + esc(S.syncErr) + '</div>';
@@ -2378,6 +2380,13 @@ function statusSheetHtml() {
   }
   if (v && v < 16) h += '<div class="hint" style="margin-top:10px">Version 16 keeps bills that repeat every few weeks, months or years. Paste the newest Code.gs, then Deploy → Manage deployments → ✏️ → Version: New version → Deploy.</div>';
   h += '<button class="btn pri" style="width:100%;margin-top:14px" data-act="syncnow" id="st_sync"' + (SYNCING ? ' disabled' : '') + '>' + (SYNCING ? 'Syncing…' : 'Sync now') + '</button>';
+  // 2.57: what went wrong lately, newest first, and a way to hand it on
+  var log = (S.errlog || []).slice(-8).reverse();
+  h += '<div class="flabel" style="margin-top:18px">Recent problems</div>';
+  h += log.length ? '<div class="list" id="st_log">' + log.map(function (e) {
+    return '<div class="strow"><span>' + esc(e.m) + (e.n > 1 ? ' <small>×' + e.n + '</small>' : '') + '</span><b>' + ago(e.at) + '</b></div>'; }).join('') + '</div>'
+    : '<div class="hint">None. Problems reaching your sheet show here.</div>';
+  h += '<button class="btn" style="width:100%;margin-top:10px" data-act="copydetails">Copy details</button>';
   return h;
 }
 
@@ -8389,6 +8398,56 @@ function errText(e) {
   return s;
 }
 
+// 2.57: a short record of what went wrong, kept on this phone (not synced), for Settings → Sync status → Copy details
+function logErr(msg) {
+  if (!S || !msg) return;
+  var l = S.errlog || (S.errlog = []), last = l[l.length - 1];
+  if (last && last.m === msg) { last.n = (last.n || 1) + 1; last.at = Date.now(); return; }
+  l.push({ at: Date.now(), m: String(msg).slice(0, 300) });
+  if (l.length > 30) l.splice(0, l.length - 30);
+}
+// What's waiting, counted the way you'd count it: a settings update rides along and isn't "a change" of yours
+function waitingWords() {
+  var k = S.outbox.filter(function (op) { return op.op !== 'prefs'; }).length;
+  return k ? k + (k === 1 ? ' change' : ' changes') + ' waiting to send' : 'Settings waiting to send';
+}
+// When a waiting change was made (its id carries the time), or 0 if it can't tell
+function opAt(op) {
+  var m = /_([0-9a-z]{8})/.exec(op && op.oid || ''), t = m ? parseInt(m[1], 36) : 0;
+  return t > 1.5e12 && t < Date.now() + 864e5 ? t : 0;
+}
+function oldestWaiting() {
+  return S.outbox.reduce(function (lo, op) { var t = opAt(op); return t && (!lo || t < lo) ? t : lo; }, 0);
+}
+// Once each time Piggy is opened: changes that have been waiting more than a day get a word, not just a red dot
+var STALE_TOLD = false;
+function staleNudge() {
+  if (STALE_TOLD || S.demo || !S.outbox.length || SHEET) return;
+  var t = oldestWaiting(); if (!t || Date.now() - t < 864e5) return;
+  STALE_TOLD = true;
+  var n = S.outbox.filter(function (op) { return op.op !== 'prefs'; }).length || 1;
+  toast(n + (n === 1 ? ' change hasn’t' : ' changes haven’t') + ' reached your sheet since ' + new Date(t).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) + '.', function () { openSheet('status'); }, 'See why');
+}
+function copyDetails() {
+  var l = [], v = S.scriptV || 0;
+  l.push('Piggy ' + VERSION + ' · sheet script ' + v + ' · ' + (isWide() ? 'computer' : 'phone') + ' · ' + (navigator.onLine ? 'online' : 'offline'));
+  l.push('Last synced: ' + (S.lastSync ? new Date(S.lastSync).toISOString() : 'never'));
+  l.push('Waiting: ' + S.outbox.length + (S.outbox.length ? ' (' + S.outbox.map(function (o) { return o.op; }).join(', ') + ')' : '') + (oldestWaiting() ? ', oldest from ' + new Date(oldestWaiting()).toISOString() : ''));
+  if (S.syncErr) l.push('Now: ' + S.syncErr);
+  if (SAVE_FAIL) l.push('Can’t save on this phone');
+  (S.errlog || []).slice().reverse().forEach(function (e) { l.push(new Date(e.at).toISOString() + '  ' + e.m + (e.n > 1 ? '  (×' + e.n + ')' : '')); });
+  var txt = l.join('\n');
+  function done() { toast('Copied. Paste it wherever you like; it has no passcode or sheet address.'); }
+  try { navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt) ? done() : toast('Couldn’t copy on this device.'); }); }
+  catch (e) { if (fallbackCopy(txt)) done(); else toast('Couldn’t copy on this device.'); }
+}
+function fallbackCopy(txt) {
+  var ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:-9999px;font-size:16px';
+  document.body.appendChild(ta); ta.select();
+  var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+  ta.remove(); return ok;
+}
+
 function flushSoon() { clearTimeout(flushTimer); flushTimer = setTimeout(sync, 400); }
 // 2.53: every answer from the script that means "this change can never be made" (the rest are worth retrying)
 var NEVER_OK = /^(not_found|bad_entry|bad_prefs|bad_year|bad_request|no_budget_tabs|no_budget_found|no_tab|no_room_for_column|no_room_for_trip_column)$/;
@@ -8431,7 +8490,7 @@ function sync(full) {
       if (!res || !res.ok) {
         var e = (res && res.error) || 'unknown';
         if (e === 'unknown_action') {
-          S.outbox.shift(); dropped = true;
+          S.outbox.shift(); dropped = true; logErr('The sheet didn’t know “' + op.op + '” (script out of date); skipped');
           toast('Your sheet\u2019s script is out of date — paste the new Code.gs and deploy a new version.');
           save();
           return next();
@@ -8440,6 +8499,7 @@ function sync(full) {
         // behind it. (Google's own hiccups, such as timeouts, keep retrying; a wrong passcode blocks on purpose.)
         if (NEVER_OK.test(e) || /validation/i.test(e)) {
           S.outbox.shift(); dropped = true;               // can't ever succeed: drop it and say so
+          logErr('The sheet refused a change (' + op.op + '): ' + e + '; skipped');
           toast(e === 'not_found' ? 'A change couldn’t be matched to a sheet row (it was edited there). Skipped.' : 'The sheet rejected a change: ' + e);
           save();
           return next();
@@ -8476,7 +8536,9 @@ function sync(full) {
   }).catch(function (e) {
     SYNCING = false;
     S.syncErr = errText(e);
+    logErr(S.syncErr + (S.outbox.length ? ' (' + S.outbox.length + ' waiting)' : ''));
     save();
+    setTimeout(staleNudge, 1200);
     renderSync(); if (SHEET && SHEET.kind === 'settings') renderSheet();
     return false;
   });
@@ -9817,6 +9879,7 @@ document.addEventListener('click', function (e) {
     case 'bg': S.cfg.bg = SCENES[v] ? v : ''; save(); applyTheme(); var scb = $('sheet').scrollTop; renderSheet(); $('sheet').scrollTop = scb; break;
     case 'glass': S.cfg.glass = v === 'off' ? 'off' : 'on'; save(); applyTheme(); var scg = $('sheet').scrollTop; renderSheet(); $('sheet').scrollTop = scg; break;
     case 'export': exportData(); break;
+    case 'copydetails': copyDetails(); break;
     case 'import':
       // restoring replaces everything on this phone, so it takes a second tap (and can be undone right after)
       if (UI.armed !== 'import') { arm('import', el, 'Replace all? Tap again'); break; }
@@ -10001,7 +10064,7 @@ document.addEventListener('visibilitychange', function () {
   if (document.visibilityState === 'hidden') { HIDDEN_AT = Date.now(); return; }
   NOW = FIXED_NOW || new Date();      // the date may have moved on while Piggy was in the background (a new day, or month)
   if (HIDDEN_AT && Date.now() - HIDDEN_AT > 5 * 60000) { BILLS_CHECK = true; BILL_LATER = {}; }
-  if (HIDDEN_AT && Date.now() - HIDDEN_AT > AWAY_MS) { if (!S.cfg.url && spreadTick()) { CACHE = {}; VER++; } goHome(); HOME_AT = Date.now(); checkUpdate(); }
+  if (HIDDEN_AT && Date.now() - HIDDEN_AT > AWAY_MS) { STALE_TOLD = false; if (!S.cfg.url && spreadTick()) { CACHE = {}; VER++; } goHome(); HOME_AT = Date.now(); checkUpdate(); }
   if (document.visibilityState === 'visible' && S && !S.demo) {
     NOW = FIXED_NOW || new Date();
     if (UI.tab === 'month' && UI.ym !== null && HIDDEN_AT && Date.now() - HIDDEN_AT > AWAY_MS) UI.ym = nowYM();
@@ -10883,7 +10946,7 @@ document.addEventListener('visibilitychange', function () {
 });
 
 // test hook
-window.__runway = { backTarget: function () { var b = backTarget(); return b && { el: b.el.id, sheet: !!b.sheet }; }, get ESW() { return ESW; }, get MSW() { return MSW && { axis: MSW.axis, dx: MSW.dx }; }, oldDevices: function () { return oldDevices(); }, spPart: function (sp, i) { return spPart(sp, i); }, planTotals: function (k) { return planTotals(k); }, get S() { return S; }, UI: UI, sync: sync, applyPull: applyPull, monthStats: monthStats, budgetTotals: budgetTotals, render: render, save: function () { return save(); }, fitSheet: fitSheet, get FULLH() { return FULLH; }, setNow: function (d) { FIXED_NOW = d; NOW = d; }, planState: function () { return planState(); }, autoPay: function () { return autoPayBills(); }, closeSheet: function () { if (SHEET) closeSheet(); } };
+window.__runway = { backTarget: function () { var b = backTarget(); return b && { el: b.el.id, sheet: !!b.sheet }; }, get ESW() { return ESW; }, get MSW() { return MSW && { axis: MSW.axis, dx: MSW.dx }; }, oldDevices: function () { return oldDevices(); }, spPart: function (sp, i) { return spPart(sp, i); }, planTotals: function (k) { return planTotals(k); }, get S() { return S; }, UI: UI, sync: sync, applyPull: applyPull, monthStats: monthStats, budgetTotals: budgetTotals, render: render, save: function () { return save(); }, fitSheet: fitSheet, get FULLH() { return FULLH; }, setNow: function (d) { FIXED_NOW = d; NOW = d; }, planState: function () { return planState(); }, autoPay: function () { return autoPayBills(); }, closeSheet: function () { if (SHEET) closeSheet(); }, openSheet: function (k, a) { openSheet(k, a); }, copyDetails: function () { copyDetails(); } };
 
 boot();
 })();
