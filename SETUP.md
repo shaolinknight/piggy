@@ -16,6 +16,20 @@ The web app URL doesn't change, so there's nothing to change in Piggy.
 
 Don't use Settings → "Copy the script" for this: that button is for setting up a new sheet and puts a new passcode in the script.
 
+## What's new in 2.58
+
+- **On the phone, an entry opens in its own popup** when you tap it in Activity (or in a category's list). Save, Cancel and Delete sit pinned at the popup's foot, so they're always in reach (inside the list, Save could end up under the tab bar). Opened from a category's popup, it goes back there when you're done. A computer keeps the panel beside the list.
+- **Messages and Undo sit at the bottom on the phone**, just above the tabs, and **Undo stays 7 seconds** (it was 4). Swipe one down to put it away. With a popup open they show at the top, clear of its buttons.
+- **Month leads with the answer.** Your number comes first; the reminders (review the budget, a bill to check off…) come after it, one at a time with "+N more".
+- **Numbers are final the moment the app opens.** They used to count up from 0, so the first thing you read was wrong for half a second. A number that changes while you watch still counts to its new value.
+- **Small controls are easier to hit.** The month arrows, sync dot, settings, the × on reminders, chips and text links now answer a tap across at least 44 × 44 points (Apple's minimum), without looking any bigger.
+- The keyboard for amounts stays the iPhone's own (Piggy's keypad is still an option: Settings → This phone → Typing amounts).
+- No sheet script change (still 23; 22 works too).
+
+Files changed:
+- `public/index.html`
+- `public/sw.js` (cache `piggy-shell-32`)
+
 ## What's new in 2.57
 
 - **Stuck changes are said in words on the phone.** When changes can't reach your sheet, a line appears under the header: "Offline · 1 change waiting to send" (or "Can't save on this phone"). Tap it for Sync status. It goes away by itself once everything is sent. On a computer the words stay in the header as before. (Beside the month they would squeeze its name, which is why the phone only showed a dot.)

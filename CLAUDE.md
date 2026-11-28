@@ -16,7 +16,7 @@ Confirm these against the repo the first time you open it, and update this secti
     - JS in one inline `<script>` (~638 KB);
     - icons as base64 (~12 KB): the apple-touch-icon and favicon are inline `data:` PNGs.
 
-    It's plain ES5 (`var`, `function`, no modules, no framework, no build step). `var VERSION = '2.57'` sits near line 1497. The whole script is wrapped in `(function () { 'use strict'; … boot(); })();`, so `VERSION`, `S`, `checkUpdate` and the rest are **not** globals. Reach them through `window.__runway`.
+    It's plain ES5 (`var`, `function`, no modules, no framework, no build step). `var VERSION = '2.58'` sits near line 1513. The whole script is wrapped in `(function () { 'use strict'; … boot(); })();`, so `VERSION`, `S`, `checkUpdate` and the rest are **not** globals. Reach them through `window.__runway`.
   - **`public/sw.js`** is the service worker. `var CACHE = 'piggy-shell-NN'` must go up by one every release.
     - The app page is served cache-first and a fresh copy is fetched in the background.
     - When the page text changes, the worker posts `{type:'updated'}`. The app reloads itself if it was opened in the last 15 seconds; otherwise it shows a "Reload" toast. The app also asks for the page every 30 minutes while it's open, and when you come back to it.
@@ -109,6 +109,7 @@ These all shipped as bugs before. Don't reintroduce them.
   - **Focusing an input scrolls the page.** iOS scrolls the page to "help" whenever an input gets focus. The sheet and the bottom search therefore focus inputs themselves on `touchend` with `focus({preventScroll:true})` (see `TAPF`).
 - **The keyboard is a visual-viewport problem.** Sheets fit above it using `visualViewport` (`fitSheet`, `FULLH`). Measure the full height when the keyboard is down, never while it's moving.
 - **One form at a time.** Two `#txform` / `#f_a` elements in the DOM made new entries silently save nothing. Ids must stay unique.
+- **Editing on a phone is a popup (2.58).** Below the wide layout, tapping an entry opens `openSheet('edit', id)` (`editSheet()`, `leaveEditSheet()` goes back to a parent popup); `UI.edit` and the inline form are only the computer's panel now. The toast sits at the bottom on phones unless a popup is open (`body.locked`).
 - **Ghost taps.** If something moves out from under a finger between `pointerdown` and `click`, the click lands on whatever is underneath. Guard against it, as the keypad does with `PAD_DOWN`.
 - **Don't break position: sticky.** `html, body, #app` use `overflow-x: clip` (under `@supports`). `overflow-x: hidden` there breaks every sticky element.
 - **Don't break offscreen rows.** Activity lists use `content-visibility: auto`. Anything that measures or scrolls to a row must make its list visible first (see `txEl`).

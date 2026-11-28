@@ -1512,7 +1512,7 @@ html[data-glass] #view.vin{animation:vinG .22s cubic-bezier(.2,.8,.2,1)}
 'use strict';
 
 // ------------------------------------------------------------------ constants
-var VERSION = '2.57';
+var VERSION = '2.58';
 var KEY = 'runway.v1';
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -10322,6 +10322,11 @@ document.addEventListener('click', function (e) {
 
 // ---- 2.44: after an update, a popup with what's new (once per update; also in Settings → What's new)
 var NEWS = [
+  { v: '2.58', items: [
+    ['✏️', 'Edit in a popup', 'Tap an entry and it opens in its own popup, with Save, Cancel and Delete always in reach.'],
+    ['↩️', 'Undo at your thumb', 'Messages and Undo now sit at the bottom, just above the tabs, and Undo stays 7 seconds. Swipe down to put one away.'],
+    ['🎯', 'The answer first', 'Month opens with your number, already final (no counting up), and reminders fold under “+ more”.']
+  ] },
   { v: '2.57', items: [
     ['📡', 'Stuck changes, in words', 'When your changes can’t reach the sheet, a line under the header says so (“Offline · 1 change waiting to send”). Tap it to see what’s waiting.'],
     ['🗒️', 'A record of problems', 'Sync status now lists recent problems, and Copy details puts them in a message you can paste. It never includes your passcode or sheet address.'],
