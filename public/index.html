@@ -1664,9 +1664,10 @@ function saveFailed() {
   if (first && S) logErr('Couldn’t save on this phone (its storage is full)');
   if (!first || !S || !$('syncDot')) return;
   renderSync();
-  // a save is usually followed by its own "Added" toast with Undo: say this once that one has had its turn
+  // a save is usually followed by its own "Added" toast with Undo, and you may still be typing an entry: say this once
+  // both are done, or the toast that follows would cover it
   setTimeout(function warn() {
-    if (UNDO) return setTimeout(warn, 800);
+    if (UNDO || SHEET) return setTimeout(warn, 800);
     toast('Piggy can’t save on this phone right now (its storage is full). Sending your changes to the sheet so nothing is lost.');
   }, 400);
   if (!S.demo && S.cfg.url) flushSoon();
