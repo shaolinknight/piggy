@@ -7432,7 +7432,7 @@ function backupHtml() {
   h += '<details class="set" data-sec="backup"' + (isOpen('backup') ? ' open' : '') + '><summary>Backup<span>' + S.tx.length + ' entries on this device</span></summary><div class="inner">' +
     '<div class="btns"><button class="btn" data-act="export">Export</button><button class="btn" data-act="import">Import</button></div>' +
     '<input type="file" id="importFile" accept="application/json,.json" class="sr">' +
-    '<div class="hint">Your sheet is the real backup once connected. This file also keeps your settings and any unsynced changes.</div></div></details>';
+    '<div class="hint">Your sheet is the real backup once connected. This file also keeps your settings and any unsynced changes. It leaves out your sheet’s address and passcode.</div></div></details>';
   return h;
 }
 // 2.43: settings that belong to this device only (they don't sync to your other devices)
@@ -8799,7 +8799,10 @@ function addCategory(name, gid, amt, startKey) {
 
 // ------------------------------------------------------------------ backup
 function exportData() {
-  var blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
+  // 2.56: the file leaves out the sheet's address and passcode, so a backup that ends up somewhere else can't open the sheet
+  var copy = JSON.parse(JSON.stringify(S));
+  delete copy.cfg.url; delete copy.cfg.pass;
+  var blob = new Blob([JSON.stringify(copy, null, 1)], { type: 'application/json' });
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'piggy-backup-' + todayStr() + '.json';
@@ -8813,11 +8816,20 @@ function importData(file) {
     try {
       var d = JSON.parse(rd.result);
       if (!d || !Array.isArray(d.tx) || !d.cfg) throw new Error('bad');
+      // a backup made since 2.56 has no sheet address or passcode: stay connected to the sheet this phone already uses
+      if (!d.cfg.url && S.cfg.url) { d.cfg.url = S.cfg.url; d.cfg.pass = S.cfg.pass; }
+      var before = JSON.stringify(S);
       S = migrate(d); forgetPull();
       save(); applyTheme(); render(); renderSheet();
-      toast('Backup restored');
-      flushSoon();
-    } catch (e) { toast('That file isn’t a Runway backup.'); }
+      var mine = S;
+      toast('Backup restored', function () {
+        S = migrate(JSON.parse(before)); forgetPull();
+        save(); applyTheme(); render(); if (SHEET) renderSheet();
+        toast('Put back what you had');
+      });
+      // changes carried in the backup go to the sheet once Undo has had its moment
+      setTimeout(function () { if (S === mine) flushSoon(); }, 4500);
+    } catch (e) { toast('That file isn’t a Piggy backup.'); }
   };
   rd.readAsText(file);
 }
@@ -9796,7 +9808,11 @@ document.addEventListener('click', function (e) {
     case 'bg': S.cfg.bg = SCENES[v] ? v : ''; save(); applyTheme(); var scb = $('sheet').scrollTop; renderSheet(); $('sheet').scrollTop = scb; break;
     case 'glass': S.cfg.glass = v === 'off' ? 'off' : 'on'; save(); applyTheme(); var scg = $('sheet').scrollTop; renderSheet(); $('sheet').scrollTop = scg; break;
     case 'export': exportData(); break;
-    case 'import': $('importFile').click(); break;
+    case 'import':
+      // restoring replaces everything on this phone, so it takes a second tap (and can be undone right after)
+      if (UI.armed !== 'import') { arm('import', el, 'Replace all? Tap again'); break; }
+      UI.armed = null; el.textContent = el.dataset.label || 'Import'; el.classList.remove('armed');
+      $('importFile').click(); break;
   }
 });
 
