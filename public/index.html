@@ -8668,12 +8668,42 @@ function adoptPrefs(p) {
 }
 
 // Replaces local data with the sheet's, then re-applies anything still waiting to be sent.
+// 2.58: an entry from the sheet is named after its row, and rows move: a new entry at the top of a month pushes every
+// one below it down a row. So a name held by an open form, the edit popup or an Undo could point at the neighbour
+// after the sheet's copy arrived, and Save then wrote over that neighbour (the edited entry showed up twice, and the
+// neighbour was gone). Each entry now keeps the name it already had here, found by what it is (its month, store,
+// category and amount, as first read or as changed here), nearest row first. Only new entries get a row name.
+function keepIds(tx) {
+  var key = function (k, y, m, v, c, a) { return k + '|' + y + '|' + m + '|' + (v || '') + '|' + low(c) + '|' + Number(a).toFixed(2); };
+  var byKey = {}, used = {};
+  tx.forEach(function (t) { var k0 = key(t.k, t.y, t.m, t.v, t.c, t.a); (byKey[k0] = byKey[k0] || []).push(t); });
+  var waiting = {};                                  // entries still to be added: the sheet doesn't have them yet
+  S.outbox.forEach(function (op) { if (op.op === 'add' && op.tid) waiting[op.tid] = 1; });
+  function claim(list, r, id) {
+    var best = null;
+    (list || []).forEach(function (t) { if (!t.kept && (!best || Math.abs((t.r || 0) - r) < Math.abs((best.r || 0) - r))) best = t; });
+    if (best) { best.kept = 1; best.id = id; used[id] = 1; }
+    return !!best;
+  }
+  S.tx.forEach(function (o) {
+    if (!o.id || waiting[o.id] || used[o.id]) return;
+    var f = o.o || o, r = o.r || 0;
+    if (!claim(byKey[key(f.k || o.k, f.y || o.y, f.m, f.v, f.c, f.a)], r, o.id) && o.o) claim(byKey[key(o.k, o.y, o.m, o.v, o.c, o.a)], r, o.id);
+  });
+  tx.forEach(function (t) {
+    if (t.kept) { delete t.kept; return; }
+    var id = t.id, n = 1;
+    while (used[id]) id = t.id + '~' + (n++);       // its row's name belongs to an entry that moved: a name of its own
+    t.id = id; used[id] = 1;
+  });
+}
 function applyPull(data) {
   var tx = (data.tx || []).map(function (a) {
     return { id: 's' + a[0] + a[1] + '_' + a[3], k: a[0], y: a[1], m: a[2], r: a[3], v: a[4], c: a[5], a: a[6], n: a[7], d: a[8], tr: a[9] || '',
       fs: a[10] || '', ow: +a[11] || 0, pb: a[12] || '',
       o: { k: a[0], y: a[1], m: a[2], v: a[4], c: a[5], a: a[6] } };
   });
+  keepIds(tx);
   // an entry added and then deleted again before both reached the sheet: don't bring the local copy back
   var gone = function (ai) {
     var a0 = S.outbox[ai];
