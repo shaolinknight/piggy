@@ -28,7 +28,7 @@ async function openNewest(page) {
   var row = page.locator('#view button.tx[data-act="edit"]').first();
   var id = await row.getAttribute('data-v');
   await row.tap();
-  await expect(page.locator('#view #txform')).toBeVisible();
+  await expect(page.locator('#sheet #txform')).toBeVisible();
   return id;
 }
 
@@ -56,7 +56,7 @@ test('edit an entry: the new amount shows and is sent; Undo restores it', async 
   await page.fill('#f_a', '999.99');
   await page.tap('#f_save');
   await expect(page.locator('#toastBtn')).toHaveText('Undo');
-  await expect(page.locator('#view #txform')).toHaveCount(0);
+  await expect(page.locator('#sheet #txform')).toHaveCount(0);
   await expect(page.locator('#view').getByText('$999.99').first()).toBeVisible();
   await expect.poll(function () { return mock.sheet.logs.e2026.filter(function (e) { return e.v === before.v && e.a === 999.99; }).length; }).toBe(1);
 
@@ -154,7 +154,7 @@ test('only one entry form is ever on the page (adding, then editing)', async fun
   await page.waitForTimeout(600);                                          // the New entry sheet has slid away
   await page.tap('.tab[data-v="activity"]');
   await page.locator('#view button.tx[data-act="edit"]').first().tap();
-  await expect(page.locator('#view #txform')).toBeVisible();
+  await expect(page.locator('#sheet #txform')).toBeVisible();
   expect(await page.evaluate(function () { return [document.querySelectorAll('#txform').length, document.querySelectorAll('#f_a').length]; })).toEqual([1, 1]);
 });
 

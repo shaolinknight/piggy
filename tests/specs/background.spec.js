@@ -14,7 +14,7 @@ async function openLook(page) {
 }
 function look(page) {
   return page.evaluate(function () {
-    var r = document.documentElement, card = document.querySelector('#view .card');
+    var r = document.documentElement, card = document.querySelector('#view .card:not(.hero)');
     return { bg: r.getAttribute('data-bg'), glass: r.getAttribute('data-glass'), tone: r.getAttribute('data-tone'),
       pic: (r.style.getPropertyValue('--sc').match(/scenes\/([a-z]+-(?:day|night))\.svg/) || [])[1] || null,
       meta: document.querySelector('meta[name=theme-color]').getAttribute('content'),

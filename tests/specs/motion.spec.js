@@ -44,10 +44,10 @@ test('everyday interactions animate only transform and opacity', async function 
 
   await page.tap('.tab[data-v="activity"]');                               // an entry opens for editing, then closes
   await page.locator('#view button.tx[data-act="edit"]').nth(1).tap();
-  await expect(page.locator('#view #txform')).toBeVisible();
+  await expect(page.locator('#sheet #txform')).toBeVisible();
   await page.waitForTimeout(400);
-  await page.locator('#view [data-act="fcancel"]').tap();
-  await expect(page.locator('#view #txform')).toHaveCount(0);
+  await page.locator('#sheet [data-act="fcancel"]').tap();
+  await expect(page.locator('#sheet #txform')).toHaveCount(0);
   await page.waitForTimeout(400);
 
   await page.tap('#fab');                                                  // a new entry arrives in the list
@@ -87,5 +87,5 @@ test('a tap during the tab cross-fade isn’t lost', async function ({ page, app
   expect(await page.evaluate(function () { return document.documentElement.getAttribute('data-vt'); })).not.toBeNull();
   var box = await page.locator('#view button.tx[data-act="edit"]').first().boundingBox();
   await page.touchscreen.tap(box.x + 40, box.y + box.height / 2);
-  await expect(page.locator('#view #txform')).toBeVisible();
+  await expect(page.locator('#sheet #txform')).toBeVisible();
 });

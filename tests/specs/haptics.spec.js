@@ -36,7 +36,7 @@ test('saving and arming a delete each give one tap, with no phantom clicks', asy
   await page.waitForFunction(function () { return !document.documentElement.hasAttribute('data-vt') && document.getElementById('view').getAttribute('data-v') === 'activity'; });
   await page.waitForTimeout(450);                                          // the closed New entry sheet has been emptied
   await page.locator('#view button.tx[data-act="edit"]').first().tap();
-  await page.locator('#view #f_a').focus();
+  await page.locator('#sheet #f_a').focus();
   await page.locator('#f_del').dispatchEvent('click');                     // first tap arms "Sure? Tap again"
   await expect(page.locator('#f_del')).toHaveText('Sure? Tap again');
   var t = await taps(page);
