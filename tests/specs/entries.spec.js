@@ -89,7 +89,7 @@ test('offline: the change is queued, survives a restart, then is sent once back 
   await context.setOffline(true);
   await addEntry(page, { a: '4.50', v: 'Offline Coffee', c: 'coffee' });
   await expect(page.locator('#toastTxt')).toHaveText('Added $4.50 · coffee');
-  await expect(page.locator('#syncTxt')).toHaveText(/^\d+ waiting$/);      // the entry (and a settings update) are queued
+  await expect(page.locator('#syncTxt')).toHaveText(/^(Offline · )?\d+ waiting$/);      // the entry (and a settings update) are queued
   var saved = await app.saved();
   expect(saved.outbox.filter(function (o) { return o.op === 'add'; }).length).toBe(1);
   expect(inSheet(mock, 'Offline Coffee')).toBe(0);
@@ -101,7 +101,7 @@ test('offline: the change is queued, survives a restart, then is sent once back 
   await page.reload();
   expect(await local(page, 'Offline Coffee')).toBe(1);
   await expect.poll(function () { return mock.log.some(function (l) { return l.status === 'offline'; }); }).toBe(true);
-  await expect(page.locator('#syncTxt')).toHaveText(/^\d+ waiting$/);     // queued changes outrank "Sync issue" in the bar
+  await expect(page.locator('#syncTxt')).toHaveText(/^(Offline · )?\d+ waiting$/);     // queued changes outrank "Sync issue" in the bar
   expect(inSheet(mock, 'Offline Coffee')).toBe(0);
 
   mock.heal();                                              // back online: "online" fires and the app syncs by itself

@@ -58,7 +58,7 @@ test('when the phone refuses to save, Piggy says so and sends the change to the 
     Storage.prototype.setItem = function () { throw new DOMException('The quota has been exceeded.', 'QuotaExceededError'); };
   });
   await addEntry(page, { a: '3.21', v: 'Full Phone' });
-  await expect(page.locator('#toast')).toContainText('can’t save on this phone');
+  await expect(page.locator('#toast')).toContainText('can’t save on this phone', { timeout: 15000 });     // it waits for the Undo toast first
   await expect.poll(function () { return inSheet(mock, 'Full Phone'); }).toBe(1);       // it reached the sheet anyway
   await expect(page.locator('#syncBtn')).toHaveAttribute('aria-label', 'Can’t save on this phone');
 });
