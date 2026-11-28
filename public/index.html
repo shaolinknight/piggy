@@ -2848,11 +2848,11 @@ function animateNumbers(fromClose) {
       if (a0 && a0.pulse) addPulse(el, a0.pulse);
       return;
     }
-    var first = from === undefined;
-    if (first && !el.hasAttribute('data-delta')) return;          // only the big number counts up on opening the app
-    if (first) from = 0;
-    else if (Math.abs(to - from) >= 0.005) moved.push({ el: el, d: to - from, k: k });
-    var an = { from: from, to: to, t0: null, dur: first ? 650 : 900 };
+    // 2.58: on opening the app every number is already final (it used to count up from 0, so the first thing you
+    // read was wrong for half a second); only a number that changes while you watch counts to its new value
+    if (from === undefined) return;
+    if (Math.abs(to - from) >= 0.005) moved.push({ el: el, d: to - from, k: k });
+    var an = { from: from, to: to, t0: null, dur: 900 };
     ANIMS[k] = an;
     runCount(el, an);
   })(els[i]);
@@ -2862,7 +2862,7 @@ function animateNumbers(fromClose) {
     if (hold) { if (was !== undefined && was !== want && !REDUCED) { b.style.transition = 'none'; b.style.width = was; } return; }
     BARS[k] = want;
     if (REDUCED) { if (was !== undefined && was !== want) fadeIn(b, 300, 0.3); return; }
-    if (was === want) return;
+    if (was === want || was === undefined) return;      // 2.58: bars, too, are at their length when the app opens
     // 2.50: the bar takes its new length at once and grows (or shrinks) into it with scaleX, which the GPU draws;
     // animating width redid the layout of every bar on every frame
     var from = parseFloat(was || '0') || 0, to = parseFloat(want) || 0;
